@@ -26,7 +26,7 @@ export const Navbar = ({ connected, onConnect, walletAddress }: NavbarProps) => 
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
             <Shield className="h-7 w-7 text-primary" />
-            <span className="text-lg font-bold text-foreground">PrivatePay</span>
+            <span className="text-lg font-bold text-foreground">PriviPay</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
