@@ -39,11 +39,10 @@ const Landing = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-1.5 text-sm text-muted-foreground mb-6">
             <Shield className="h-4 w-4 text-primary" />
-            Powered by Zama Protocol & FHE
+            The First Payroll Platform For All
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold text-foreground tracking-tight max-w-4xl mx-auto">
-            Confidential Onchain{" "}
-            <span className="text-primary">Payroll</span>
+            <span className="text-primary">PriviPay</span>
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
             The first payroll platform for all. Organizations want it, managers choose it,
