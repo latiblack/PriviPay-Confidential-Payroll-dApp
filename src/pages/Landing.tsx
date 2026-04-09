@@ -46,8 +46,8 @@ const Landing = () => {
             <span className="text-primary">Payroll</span>
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Salaries shouldn't be public. PrivatePay enables encrypted compensation management
-            with role-based access — powered by Fully Homomorphic Encryption.
+            The first payroll platform for all. Organizations want it, managers choose it,
+            employees love it — powered by Fully Homomorphic Encryption.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/employer">
@@ -133,7 +133,7 @@ const Landing = () => {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>PrivatePay — Confidential Onchain Payroll powered by Zama Protocol & FHE</p>
+          <p>PriviPay — The first payroll platform for all. Powered by Zama Protocol & FHE</p>
         </div>
       </footer>
     </div>
