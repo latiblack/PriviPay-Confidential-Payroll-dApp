@@ -1,4 +1,5 @@
-import { Shield, Wallet } from "lucide-react";
+import { useState } from "react";
+import { Shield, Wallet, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface NavbarProps {
 
 export const Navbar = ({ connected, onConnect, walletAddress }: NavbarProps) => {
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
     { label: "Home", path: "/" },
@@ -46,19 +48,49 @@ export const Navbar = ({ connected, onConnect, walletAddress }: NavbarProps) => 
             ))}
           </div>
 
-          <Button
-            onClick={onConnect}
-            variant={connected ? "outline" : "default"}
-            size="sm"
-            className="gap-2"
-          >
-            <Wallet className="h-4 w-4" />
-            {connected
-              ? `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`
-              : "Connect Wallet"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={onConnect}
+              variant={connected ? "outline" : "default"}
+              size="sm"
+              className="gap-2"
+            >
+              <Wallet className="h-4 w-4" />
+              {connected
+                ? `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`
+                : "Connect Wallet"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </div>
+
+      {mobileOpen && (
+        <div className="md:hidden border-t bg-card px-4 pb-3 pt-2 space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                location.pathname === item.path
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
     </nav>
   );
 };
