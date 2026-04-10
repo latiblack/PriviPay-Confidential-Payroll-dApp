@@ -5,21 +5,9 @@ import { Link } from "react-router-dom";
 
 const Landing = () => {
   const features = [
-    {
-      icon: Lock,
-      title: "Encrypted Salaries",
-      description: "All salary data stored as euint on-chain. No raw values are ever exposed publicly.",
-    },
-    {
-      icon: Eye,
-      title: "Selective Transparency",
-      description: "Employees see only their own salary. Employers see all. Auditors see totals only.",
-    },
-    {
-      icon: Users,
-      title: "Confidential Bonus Voting",
-      description: "Managers vote on bonuses privately. Results computed on encrypted data via FHE.",
-    },
+    { icon: Lock, title: "Encrypted Salaries", description: "All salary data stored as euint on-chain. No raw values are ever exposed publicly." },
+    { icon: Eye, title: "Selective Transparency", description: "Employees see only their own salary. Employers see all. Auditors see totals only." },
+    { icon: Users, title: "Confidential Bonus Voting", description: "Managers vote on bonuses privately. Results computed on encrypted data via FHE." },
   ];
 
   const benefits = [
@@ -32,7 +20,24 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen font-sans">
+      {/* Minimal nav */}
+      <nav className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <Shield className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-lg font-bold text-foreground">PriviPay</span>
+          </Link>
+          <Link to="/employer">
+            <Button size="sm" className="gap-2 rounded-xl">
+              Launch App <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </nav>
+
       {/* Hero */}
       <section className="relative overflow-hidden py-20 sm:py-32">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
@@ -41,23 +46,20 @@ const Landing = () => {
             <Shield className="h-4 w-4 text-primary" />
             The First Payroll Platform For All
           </div>
-          <h1 className="text-4xl sm:text-6xl font-bold text-foreground tracking-tight max-w-4xl mx-auto">
+          <h1 className="text-4xl sm:text-6xl font-extrabold text-foreground tracking-tight max-w-4xl mx-auto">
             <span className="text-primary">PriviPay</span>
           </h1>
-          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-            The first payroll platform for all. Organizations want it, managers choose it,
-            employees love it — powered by Fully Homomorphic Encryption.
+          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Organizations want it, managers choose it, employees love it — powered by Fully Homomorphic Encryption.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/employer">
-              <Button size="lg" className="gap-2">
+              <Button size="lg" className="gap-2 rounded-xl px-8">
                 Launch App <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <a href="#features">
-              <Button size="lg" variant="outline">
-                Learn More
-              </Button>
+              <Button size="lg" variant="outline" className="rounded-xl px-8">Learn More</Button>
             </a>
           </div>
         </div>
@@ -69,15 +71,15 @@ const Landing = () => {
           <h2 className="text-3xl font-bold text-center text-foreground mb-12">
             Privacy + Compliance, Not Secrecy
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {features.map((f) => (
               <Card key={f.title} className="bg-card border shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
                     <f.icon className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">{f.title}</h3>
-                  <p className="text-muted-foreground text-sm">{f.description}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{f.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -89,15 +91,13 @@ const Landing = () => {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-foreground mb-4 text-center">
-              Why Confidential Payroll Matters
-            </h2>
+            <h2 className="text-3xl font-bold text-foreground mb-4 text-center">Why Confidential Payroll Matters</h2>
             <p className="text-muted-foreground text-center mb-10">
               Public salary data creates real operational and strategic problems for organizations.
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
               {benefits.map((b) => (
-                <div key={b} className="flex items-start gap-3 p-4 rounded-lg bg-card border">
+                <div key={b} className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
                   <CheckCircle className="h-5 w-5 text-accent mt-0.5 shrink-0" />
                   <span className="text-sm text-foreground">{b}</span>
                 </div>
@@ -118,11 +118,11 @@ const Landing = () => {
               { step: "3", title: "Decrypt Selectively", desc: "Only authorized roles can decrypt specific data based on access rules" },
             ].map((s) => (
               <div key={s.step} className="flex flex-col items-center">
-                <div className="h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold mb-4">
+                <div className="h-14 w-14 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold mb-4 shadow-lg">
                   {s.step}
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground">{s.desc}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>

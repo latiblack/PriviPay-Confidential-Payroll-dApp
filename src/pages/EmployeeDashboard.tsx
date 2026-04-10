@@ -3,7 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Lock, Eye, EyeOff, DollarSign, Calendar } from "lucide-react";
+import { Eye, EyeOff, DollarSign, Calendar, TrendingUp, ArrowRight } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+
+const earningsData = [
+  { month: "Jan", value: 8200 },
+  { month: "Feb", value: 8200 },
+  { month: "Mar", value: 8500 },
+  { month: "Apr", value: 8500 },
+  { month: "May", value: 8500 },
+  { month: "Jun", value: 9000 },
+];
 
 const EmployeeDashboard = () => {
   const [decrypted, setDecrypted] = useState(false);
@@ -25,84 +35,110 @@ const EmployeeDashboard = () => {
     { date: "2025-01-01", amount: 8200, tx: "0xfed1...2345" },
   ];
 
+  const statCards = [
+    {
+      label: "My Salary",
+      value: decrypted ? `$${myData.salary.toLocaleString()}/mo` : myData.encryptedSalary,
+      change: "3.5%", up: true, highlighted: true,
+    },
+    {
+      label: "My Bonus",
+      value: decrypted ? `$${myData.bonus.toLocaleString()}` : myData.encryptedBonus,
+      change: "20%", up: true, highlighted: false,
+    },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">My Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">View your encrypted compensation</p>
-        </div>
-        <Badge variant="outline" className="gap-1">
-          <Lock className="h-3 w-3" /> Employee Access
-        </Badge>
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {statCards.map((stat) => (
+          <Card
+            key={stat.label}
+            className={stat.highlighted ? "bg-primary text-primary-foreground border-0 shadow-lg" : "border shadow-sm"}
+          >
+            <CardContent className="p-5">
+              <p className={`text-sm font-medium ${stat.highlighted ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                {stat.label}
+              </p>
+              <p className={`text-2xl font-bold mt-1 ${stat.highlighted ? "text-primary-foreground" : "text-foreground"}`}>
+                {stat.value}
+              </p>
+              <div className="flex items-center gap-1 mt-2 text-xs">
+                <span className="flex items-center gap-0.5 text-accent">
+                  {stat.change} <TrendingUp className="h-3 w-3" />
+                </span>
+                <span className={stat.highlighted ? "text-primary-foreground/60" : "text-muted-foreground"}>
+                  vs last month
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>My Salary (Encrypted)</CardDescription>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              {decrypted ? `$${myData.salary.toLocaleString()}/mo` : myData.encryptedSalary}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>My Bonus (Encrypted)</CardDescription>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-accent" />
-              {decrypted ? `$${myData.bonus.toLocaleString()}` : myData.encryptedBonus}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      {/* Toggle + Chart */}
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={() => setDecrypted(!decrypted)} className="gap-2 rounded-xl" size="sm">
+          {decrypted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {decrypted ? "Re-encrypt View" : "Decrypt My Data"}
+        </Button>
       </div>
 
-      <Button
-        variant="outline"
-        onClick={() => setDecrypted(!decrypted)}
-        className="gap-2 mb-8"
-      >
-        {decrypted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        {decrypted ? "Re-encrypt View" : "Decrypt My Data"}
-      </Button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 border shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-bold">Earnings Report</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={earningsData}>
+                <defs>
+                  <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(231, 75%, 60%)" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="hsl(231, 75%, 60%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220, 13%, 91%)" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(220, 9%, 46%)" }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(220, 9%, 46%)" }} tickFormatter={(v) => `$${v / 1000}k`} />
+                <RechartsTooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid hsl(220, 13%, 91%)" }}
+                  formatter={(value: number) => [`$${value.toLocaleString()}`, "Salary"]}
+                />
+                <Area type="monotone" dataKey="value" stroke="hsl(231, 75%, 60%)" strokeWidth={2.5} fill="url(#colorEarnings)" dot={false} activeDot={{ r: 6, fill: "hsl(231, 75%, 60%)", stroke: "#fff", strokeWidth: 3 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" /> Payment History
-          </CardTitle>
-          <CardDescription>Only you can see your payment amounts</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Transaction</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paymentHistory.map((p) => (
-                <TableRow key={p.tx}>
-                  <TableCell className="text-foreground">{p.date}</TableCell>
-                  <TableCell>
-                    {decrypted ? (
-                      <span className="font-semibold text-foreground">${p.amount.toLocaleString()}</span>
-                    ) : (
-                      <code className="text-xs bg-secondary px-2 py-1 rounded text-muted-foreground">euint256(...)</code>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-xs text-muted-foreground">{p.tx}</code>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        {/* Payment History */}
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" /> History
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-primary text-xs gap-1">
+                All <ArrowRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {paymentHistory.map((p) => (
+              <div key={p.tx} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{p.date}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{p.tx}</p>
+                </div>
+                <span className="text-sm font-semibold text-foreground">
+                  {decrypted ? `$${p.amount.toLocaleString()}` : "euint256(...)"}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
