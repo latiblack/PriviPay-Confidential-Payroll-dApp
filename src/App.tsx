@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Navbar } from "@/components/Navbar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -14,26 +15,58 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const pageTitles: Record<string, string> = {
+  "/employer": "Dashboard",
+  "/employee": "My Dashboard",
+  "/auditor": "Auditor",
+  "/voting": "Bonus Voting",
+};
+
+const AppLayout = () => {
   const [connected, setConnected] = useState(false);
   const [walletAddress] = useState("0x1a2B3c4D5e6F7g8H9i0J");
+  const location = useLocation();
+  const isLanding = location.pathname === "/";
+  const title = pageTitles[location.pathname] || "PriviPay";
 
-  const handleConnect = () => setConnected(!connected);
+  if (isLanding) {
+    return <Landing />;
+  }
 
+  return (
+    <div className="flex min-h-screen">
+      <AppSidebar />
+      <div className="flex-1 ml-[72px]">
+        <TopBar
+          title={title}
+          connected={connected}
+          onConnect={() => setConnected(!connected)}
+          walletAddress={walletAddress}
+        />
+        <main className="px-6 pb-8">
+          <Routes>
+            <Route path="/employer" element={<EmployerDashboard />} />
+            <Route path="/employee" element={<EmployeeDashboard />} />
+            <Route path="/auditor" element={<AuditorDashboard />} />
+            <Route path="/voting" element={<BonusVoting />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Navbar connected={connected} onConnect={handleConnect} walletAddress={walletAddress} />
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/employer" element={<EmployerDashboard />} />
-            <Route path="/employee" element={<EmployeeDashboard />} />
-            <Route path="/auditor" element={<AuditorDashboard />} />
-            <Route path="/voting" element={<BonusVoting />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/*" element={<AppLayout />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

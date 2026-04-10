@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { mockBonusVotes, BonusVote } from "@/lib/mock-data";
-import { Vote, Lock, CheckCircle, ThumbsUp } from "lucide-react";
+import { Lock, CheckCircle, ThumbsUp, ArrowRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const BonusVoting = () => {
@@ -12,11 +12,7 @@ const BonusVoting = () => {
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
 
   const handleVote = (id: string) => {
-    setVotes((prev) =>
-      prev.map((v) =>
-        v.id === id ? { ...v, votes: v.votes + 1 } : v
-      )
-    );
+    setVotes((prev) => prev.map((v) => (v.id === id ? { ...v, votes: v.votes + 1 } : v)));
     setVotedIds((prev) => new Set(prev).add(id));
     toast({
       title: "Vote encrypted & submitted",
@@ -25,74 +21,63 @@ const BonusVoting = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Confidential Bonus Voting</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Vote on employee bonuses — all votes encrypted via FHE
-          </p>
-        </div>
-        <Badge variant="outline" className="gap-1">
-          <Vote className="h-3 w-3" /> Manager Access
-        </Badge>
-      </div>
-
-      <Card className="mb-8 bg-primary/5 border-primary/20">
-        <CardContent className="pt-6">
+    <div className="space-y-6">
+      {/* Info Card */}
+      <Card className="bg-primary/5 border-primary/20 shadow-sm">
+        <CardContent className="p-5">
           <div className="flex items-start gap-3">
             <Lock className="h-5 w-5 text-primary mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-foreground">How it works</p>
+              <p className="text-sm font-semibold text-foreground">How Confidential Voting Works</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Each vote is encrypted as an <code className="bg-secondary px-1 rounded">euint</code> before submission.
-                No one sees who voted for whom. The final bonus amount is computed on encrypted votes
-                using Fully Homomorphic Encryption — trust the result without seeing the inputs.
+                Each vote is encrypted as an <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">euint</code> before submission.
+                The final bonus is computed on encrypted votes using FHE — trust the result without seeing inputs.
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      {/* Vote Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {votes.map((vote) => (
-          <Card key={vote.id}>
+          <Card key={vote.id} className="border shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">{vote.employeeName}</CardTitle>
-                  <CardDescription>Bonus allocation vote</CardDescription>
-                </div>
-                <Badge variant={vote.status === "completed" ? "default" : "secondary"}>
+                <CardTitle className="text-base font-bold">{vote.employeeName}</CardTitle>
+                <Badge
+                  variant={vote.status === "completed" ? "default" : "secondary"}
+                  className={vote.status === "completed" ? "bg-accent/10 text-accent border-0 text-xs" : "text-xs"}
+                >
                   {vote.status === "completed" ? (
-                    <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Completed</span>
-                  ) : (
-                    "Active"
-                  )}
+                    <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Done</span>
+                  ) : "Active"}
                 </Badge>
               </div>
+              <CardDescription className="text-xs">Bonus allocation vote</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Encrypted votes: {vote.votes}/{vote.totalVoters}</span>
-                  <code className="text-xs bg-secondary px-2 py-1 rounded text-muted-foreground">
-                    {vote.encryptedResult}
-                  </code>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                  <span>Votes: {vote.votes}/{vote.totalVoters}</span>
+                  <span>{Math.round((vote.votes / vote.totalVoters) * 100)}%</span>
                 </div>
-                <Progress value={(vote.votes / vote.totalVoters) * 100} />
-                {vote.status === "active" && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleVote(vote.id)}
-                    disabled={votedIds.has(vote.id)}
-                    className="gap-2"
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    {votedIds.has(vote.id) ? "Vote Submitted (Encrypted)" : "Cast Encrypted Vote"}
-                  </Button>
-                )}
+                <Progress value={(vote.votes / vote.totalVoters) * 100} className="h-2" />
               </div>
+              <code className="block text-[11px] bg-secondary px-3 py-2 rounded-lg text-muted-foreground truncate">
+                {vote.encryptedResult}
+              </code>
+              {vote.status === "active" && (
+                <Button
+                  size="sm"
+                  onClick={() => handleVote(vote.id)}
+                  disabled={votedIds.has(vote.id)}
+                  className="w-full gap-2 rounded-xl"
+                >
+                  <ThumbsUp className="h-4 w-4" />
+                  {votedIds.has(vote.id) ? "Submitted" : "Cast Vote"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}
