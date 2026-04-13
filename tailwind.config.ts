@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Satoshi", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
