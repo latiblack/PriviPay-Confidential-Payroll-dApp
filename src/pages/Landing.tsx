@@ -1,4 +1,5 @@
 import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRight, TrendingUp, DollarSign, CheckCircle2 } from "lucide-react";
+import Logo from "../components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -113,9 +114,7 @@ const Landing = () => {
       <nav className="border-b border-border/50 bg-background/90 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Shield className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <Logo size={28} alt="Privapay" />
             <span className="text-lg font-semibold text-foreground tracking-tight">PriviPay</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
@@ -309,10 +308,8 @@ const Landing = () => {
       <footer className="border-t border-border/50 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Shield className="h-4 w-4 text-primary-foreground" />
-              </div>
+          <div className="flex items-center gap-2.5">
+              <Logo size={28} alt="Privapay" />
               <span className="font-semibold text-foreground">PriviPay</span>
             </div>
             <div className="flex items-center gap-8">

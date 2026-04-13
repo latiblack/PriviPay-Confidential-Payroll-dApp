@@ -1,18 +1,14 @@
 import { useState } from "react";
-import { Shield, Wallet, Menu, X } from "lucide-react";
+import { Shield, Wallet, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 
-interface NavbarProps {
-  connected: boolean;
-  onConnect: () => void;
-  walletAddress?: string;
-}
-
-export const Navbar = ({ connected, onConnect, walletAddress }: NavbarProps) => {
+export const Navbar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAuthenticated, walletAddress, connectWallet, disconnectWallet } = useWalletAuth();
 
   const navItems = [
     { label: "Home", path: "/" },
@@ -21,6 +17,11 @@ export const Navbar = ({ connected, onConnect, walletAddress }: NavbarProps) => 
     { label: "Auditor", path: "/auditor" },
     { label: "Bonus Voting", path: "/voting" },
   ];
+
+  const formatAddress = (address?: string) => {
+    if (!address) return "Connect Wallet";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   return (
     <nav className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-50">
@@ -50,15 +51,17 @@ export const Navbar = ({ connected, onConnect, walletAddress }: NavbarProps) => 
 
           <div className="flex items-center gap-2">
             <Button
-              onClick={onConnect}
-              variant={connected ? "outline" : "default"}
+              onClick={isAuthenticated ? disconnectWallet : connectWallet}
+              variant={isAuthenticated ? "outline" : "default"}
               size="sm"
               className="gap-2"
             >
-              <Wallet className="h-4 w-4" />
-              {connected
-                ? `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`
-                : "Connect Wallet"}
+              {isAuthenticated ? (
+                <LogOut className="h-4 w-4" />
+              ) : (
+                <Wallet className="h-4 w-4" />
+              )}
+              {formatAddress(walletAddress)}
             </Button>
             <Button
               variant="ghost"
