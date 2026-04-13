@@ -23,8 +23,6 @@ const pageTitles: Record<string, string> = {
 };
 
 const AppLayout = () => {
-  const [connected, setConnected] = useState(false);
-  const [walletAddress] = useState("0x1a2B3c4D5e6F7g8H9i0J");
   const location = useLocation();
   const isLanding = location.pathname === "/";
   const title = pageTitles[location.pathname] || "PriviPay";
@@ -37,12 +35,7 @@ const AppLayout = () => {
     <div className="flex min-h-screen">
       <AppSidebar />
       <div className="flex-1 ml-[72px]">
-        <TopBar
-          title={title}
-          connected={connected}
-          onConnect={() => setConnected(!connected)}
-          walletAddress={walletAddress}
-        />
+        <TopBar title={title} />
         <main className="px-6 pb-8">
           <Routes>
             <Route path="/employer" element={<EmployerDashboard />} />

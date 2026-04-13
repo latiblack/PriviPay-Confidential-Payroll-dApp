@@ -1,22 +1,26 @@
-import { Search, Bell, MessageSquare, Wallet, Sun, Moon } from "lucide-react";
+import { Search, Bell, MessageSquare, Wallet, Sun, Moon, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 
 interface TopBarProps {
   title: string;
-  connected: boolean;
-  onConnect: () => void;
-  walletAddress?: string;
 }
 
-export const TopBar = ({ title, connected, onConnect, walletAddress }: TopBarProps) => {
+export const TopBar = ({ title }: TopBarProps) => {
   const [dark, setDark] = useState(false);
+  const { isAuthenticated, walletAddress, connectWallet, disconnectWallet } = useWalletAuth();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+
+  const formatAddress = (address?: string) => {
+    if (!address) return "Connect";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   return (
     <header className="flex items-center justify-between px-6 py-4">
@@ -50,16 +54,18 @@ export const TopBar = ({ title, connected, onConnect, walletAddress }: TopBarPro
         </Button>
 
         <Button
-          onClick={onConnect}
-          variant={connected ? "outline" : "default"}
+          onClick={isAuthenticated ? disconnectWallet : connectWallet}
+          variant={isAuthenticated ? "outline" : "default"}
           size="sm"
           className="gap-2 rounded-xl"
         >
-          <Wallet className="h-4 w-4" />
+          {isAuthenticated ? (
+            <LogOut className="h-4 w-4" />
+          ) : (
+            <Wallet className="h-4 w-4" />
+          )}
           <span className="hidden sm:inline">
-            {connected
-              ? `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`
-              : "Connect"}
+            {formatAddress(walletAddress)}
           </span>
         </Button>
 
