@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LayoutGrid, FileText, BarChart3, Vote, Settings, LogOut } from "lucide-react";
+import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import Logo from "@/components/Logo";
@@ -10,6 +10,7 @@ const navItems = [
   { icon: FileText, label: "Employee", path: "/employee" },
   { icon: BarChart3, label: "Auditor", path: "/auditor" },
   { icon: Vote, label: "Voting", path: "/voting" },
+  { icon: Bell, label: "Notifications", path: "/notifications" },
 ];
 
 export const AppSidebar = () => {
