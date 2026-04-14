@@ -11,6 +11,7 @@ import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AuditorDashboard from "./pages/AuditorDashboard";
 import BonusVoting from "./pages/BonusVoting";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const pageTitles: Record<string, string> = {
   "/employee": "My Dashboard",
   "/auditor": "Auditor",
   "/voting": "Bonus Voting",
+  "/notifications": "Notifications",
 };
 
 const AppLayout = () => {
@@ -42,6 +44,7 @@ const AppLayout = () => {
             <Route path="/employee" element={<EmployeeDashboard />} />
             <Route path="/auditor" element={<AuditorDashboard />} />
             <Route path="/voting" element={<BonusVoting />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
