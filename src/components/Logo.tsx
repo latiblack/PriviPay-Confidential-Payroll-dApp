@@ -7,7 +7,7 @@ type LogoProps = {
 };
 
 export const Logo: React.FC<LogoProps> = ({ size = 40, alt = "Logo", className }) => (
-  <img src="/logo2.png" alt={alt} style={{ height: size, width: "auto" }} className={className} />
+  <img src="/logo.png" alt={alt} style={{ height: size, width: "auto" }} className={className} />
 );
 
 export default Logo;

@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Shield, LayoutGrid, FileText, BarChart3, Vote, Settings, LogOut } from "lucide-react";
+import { LayoutGrid, FileText, BarChart3, Vote, Settings, LogOut } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
+import Logo from "@/components/Logo";
 
 const navItems = [
   { icon: LayoutGrid, label: "Dashboard", path: "/employer" },
@@ -19,8 +20,8 @@ export const AppSidebar = () => {
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[72px] flex-col items-center border-r border-sidebar-border bg-sidebar py-6">
       {/* Logo */}
       <Link to="/" className="mb-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-          <Shield className="h-5 w-5 text-primary-foreground" />
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-1">
+          <Logo size={28} alt="PriviPay" className="shrink-0" />
         </div>
       </Link>
 
