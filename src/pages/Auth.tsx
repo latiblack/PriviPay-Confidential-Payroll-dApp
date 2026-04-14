@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, ArrowRight, CheckCircle2, Copy, Wallet } from "lucide-react";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
 import { authService } from "@/lib/auth-service";
 
@@ -16,7 +16,42 @@ type AuthStep = "select" | "create-org" | "join-org" | "success";
 export const AuthPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, walletAddress, connectWallet } = useWalletAuth();
+  const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<AuthStep>("select");
+  const [loading, setLoading] = useState(true);
+  
+  // Check if user already has an organization
+  useEffect(() => {
+    const checkExistingOrg = async () => {
+      if (isAuthenticated && walletAddress) {
+        try {
+          await refreshProfile();
+          // If user has an organization and role, redirect to app
+          if (profile?.currentRole === "owner") {
+            navigate("/admin");
+            return;
+          } else if (profile?.currentRole === "employee" || profile?.currentRole === "manager") {
+            navigate("/employee");
+            return;
+          }
+        } catch (e) {
+          console.log("No existing organization");
+        }
+      }
+      setLoading(false);
+    };
+    
+    checkExistingOrg();
+  }, [isAuthenticated, walletAddress]);
+
+  // Show loading while checking
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
   
   // Create org form
   const [orgName, setOrgName] = useState("");

@@ -1,19 +1,27 @@
-import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useCallback } from "react";
 
 export const useWalletAuth = () => {
-  const { user, primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
-  const isAuthenticated = useIsLoggedIn();
+  const dynamicContext = useDynamicContext();
+  
+  const user = dynamicContext.user;
+  const primaryWallet = dynamicContext.primaryWallet;
+  const isAuthenticated = !!(user && primaryWallet);
   const walletAddress = primaryWallet?.address;
 
   const connectWallet = useCallback(async () => {
-    setShowAuthFlow(true);
-  }, [setShowAuthFlow]);
+    // Open Dynamic widget for wallet connection
+    dynamicContext.setShowAuthFlow?.(true);
+  }, [dynamicContext]);
 
   const disconnectWallet = useCallback(async () => {
     if (!isAuthenticated) return;
-    await handleLogOut();
-  }, [handleLogOut, isAuthenticated]);
+    try {
+      await dynamicContext.handleLogOut?.();
+    } catch (e) {
+      window.location.reload();
+    }
+  }, [dynamicContext, isAuthenticated]);
 
   return {
     user,

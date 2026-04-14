@@ -15,7 +15,7 @@ const sdkOptions = {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <DynamicContextProvider settings={sdkOptions}>
+    <DynamicContextProvider settings={sdkOptions as any}>
       <App />
       <DynamicWidget />
     </DynamicContextProvider>
