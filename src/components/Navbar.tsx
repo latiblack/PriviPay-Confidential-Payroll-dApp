@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Shield, Wallet, Menu, X, LogOut } from "lucide-react";
+import { Wallet, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
+import Logo from "@/components/Logo";
 
 export const Navbar = () => {
   const location = useLocation();
@@ -28,7 +29,7 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
-            <Shield className="h-7 w-7 text-primary" />
+            <Logo size={30} alt="PriviPay" className="shrink-0" />
             <span className="text-lg font-bold text-foreground">PriviPay</span>
           </Link>
 
