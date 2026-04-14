@@ -26,14 +26,13 @@ export const AuthPage = () => {
       if (isAuthenticated && walletAddress) {
         try {
           await refreshProfile();
-          // If user has an organization and role, redirect to app
+          // If user is an owner, redirect to admin
           if (profile?.currentRole === "owner") {
             navigate("/admin");
             return;
-          } else if (profile?.currentRole === "employee" || profile?.currentRole === "manager") {
-            navigate("/employee");
-            return;
           }
+          // If user is just an employee, they can still join another org, so don't redirect
+          // Only redirect if they're pending (no role yet)
         } catch (e) {
           console.log("No existing organization");
         }
