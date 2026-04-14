@@ -123,12 +123,12 @@ const Landing = () => {
             <a href="#benefits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/employer">
+<Link to="/auth">
               <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-muted-foreground">
                 Sign In
               </Button>
             </Link>
-            <Link to="/employer">
+            <Link to="/auth">
               <Button size="sm" className="gap-2 rounded-lg px-5">
                 Get Started <ArrowRight className="h-4 w-4" />
               </Button>
@@ -163,8 +163,8 @@ const Landing = () => {
               Privacy-first payroll powered by on-chain encryption.
             </p>
 
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/employer">
+<div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth">
                 <Button size="lg" className="gap-2 rounded-lg px-8 h-12 text-base">
                   Launch Dashboard <ArrowRight className="h-5 w-5" />
                 </Button>
@@ -288,8 +288,8 @@ const Landing = () => {
             <p className="text-primary-foreground/80 max-w-lg mx-auto mb-8 text-lg">
               Join organizations that trust PriviPay for confidential, compliant, and verifiable payroll management.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/employer">
+<div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth">
                 <Button size="lg" variant="secondary" className="gap-2 rounded-lg px-8 h-12 text-base font-semibold">
                   Get Started Free <ArrowRight className="h-5 w-5" />
                 </Button>

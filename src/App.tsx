@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AuditorDashboard from "./pages/AuditorDashboard";
@@ -60,8 +61,9 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
+<Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="/*" element={<AppLayout />} />
           </Routes>
         </BrowserRouter>
