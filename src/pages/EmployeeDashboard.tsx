@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, EyeOff, DollarSign, Calendar, TrendingUp, ArrowRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, EyeOff, DollarSign, Calendar, TrendingUp, ArrowRight, User } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+import { useAuth } from "@/hooks/useAuth";
+import { authService } from "@/lib/auth-service";
 
 const earningsData = [
   { month: "Jan", value: 8200 },
@@ -15,16 +17,59 @@ const earningsData = [
   { month: "Jun", value: 9000 },
 ];
 
+interface EmployeeData {
+  id: string;
+  name: string;
+  wallet_address: string;
+  position: string | null;
+  department: string | null;
+  encrypted_salary: string | null;
+  encrypted_bonus: string | null;
+  status: string;
+}
+
 const EmployeeDashboard = () => {
+  const { profile } = useAuth();
+  const isOwnerView = profile?.currentRole === "owner";
+  
   const [decrypted, setDecrypted] = useState(false);
+  const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  // Mock data for employees (in real app, fetch from Supabase)
+  const mockEmployees: EmployeeData[] = [
+    { id: "1", name: "Alice Johnson", wallet_address: "0x1234...abcd", position: "Senior Developer", department: "Engineering", encrypted_salary: "euint256(0x7f3a...)", encrypted_bonus: "euint256(0x2b1c...)", status: "active" },
+    { id: "2", name: "Bob Smith", wallet_address: "0x5678...efgh", position: "Product Manager", department: "Product", encrypted_salary: "euint256(0x4d2b...)", encrypted_bonus: "euint256(0x1a3c...)", status: "active" },
+    { id: "3", name: "Carol Williams", wallet_address: "0x9abc...ijkl", position: "Designer", department: "Design", encrypted_salary: "euint256(0x8f1d...)", encrypted_bonus: "euint256(0x3b4d...)", status: "active" },
+  ];
+
+  const currentEmployee = selectedEmployeeId 
+    ? employees.find(e => e.id === selectedEmployeeId) 
+    : mockEmployees[0];
+
+  // Owner view: employees list
+  useEffect(() => {
+    if (isOwnerView) {
+      setLoading(true);
+      // In real app: authService.getOrganizationEmployees(profile.currentOrganization.id)
+      setTimeout(() => {
+        setEmployees(mockEmployees);
+        if (mockEmployees.length > 0) {
+          setSelectedEmployeeId(mockEmployees[0].id);
+        }
+        setLoading(false);
+      }, 500);
+    }
+  }, [isOwnerView, profile]);
 
   const myData = {
-    name: "Alice Johnson",
-    address: "0x1a2B...3c4D",
-    role: "Senior Developer",
-    encryptedSalary: "euint256(0x7f3a...)",
+    name: currentEmployee?.name || "Alice Johnson",
+    address: currentEmployee?.wallet_address || "0x1a2B...3c4D",
+    role: currentEmployee?.position || "Senior Developer",
+    encryptedSalary: currentEmployee?.encrypted_salary || "euint256(0x7f3a...)",
     salary: 8500,
-    encryptedBonus: "euint256(0x2b1c...)",
+    encryptedBonus: currentEmployee?.encrypted_bonus || "euint256(0x2b1c...)",
     bonus: 1200,
   };
 
@@ -37,12 +82,12 @@ const EmployeeDashboard = () => {
 
   const statCards = [
     {
-      label: "My Salary",
+      label: isOwnerView ? "Employee Salary" : "My Salary",
       value: decrypted ? `$${myData.salary.toLocaleString()}/mo` : myData.encryptedSalary,
       change: "3.5%", up: true, highlighted: true,
     },
     {
-      label: "My Bonus",
+      label: isOwnerView ? "Employee Bonus" : "My Bonus",
       value: decrypted ? `$${myData.bonus.toLocaleString()}` : myData.encryptedBonus,
       change: "20%", up: true, highlighted: false,
     },
@@ -50,6 +95,32 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Owner: Employee Selector */}
+      {isOwnerView && (
+        <Card className="border shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Select Employee:</span>
+              </div>
+              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Select an employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockEmployees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.name} - {emp.position}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {statCards.map((stat) => (
@@ -81,14 +152,16 @@ const EmployeeDashboard = () => {
       <div className="flex gap-3">
         <Button variant="outline" onClick={() => setDecrypted(!decrypted)} className="gap-2 rounded-xl" size="sm">
           {decrypted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          {decrypted ? "Re-encrypt View" : "Decrypt My Data"}
+          {decrypted ? "Re-encrypt View" : "Decrypt Data"}
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-bold">Earnings Report</CardTitle>
+            <CardTitle className="text-lg font-bold">
+              {isOwnerView ? `Earnings Report - ${currentEmployee?.name}` : "My Earnings Report"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>

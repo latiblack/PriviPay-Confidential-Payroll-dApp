@@ -1,21 +1,41 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut } from "lucide-react";
+import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useAuth } from "@/hooks/useAuth";
 import Logo from "@/components/Logo";
-
-const navItems = [
-  { icon: LayoutGrid, label: "Dashboard", path: "/employer" },
-  { icon: FileText, label: "Employee", path: "/employee" },
-  { icon: BarChart3, label: "Auditor", path: "/auditor" },
-  { icon: Vote, label: "Voting", path: "/voting" },
-  { icon: Bell, label: "Notifications", path: "/notifications" },
-];
+import { authService } from "@/lib/auth-service";
 
 export const AppSidebar = () => {
   const location = useLocation();
   const { isAuthenticated, disconnectWallet } = useWalletAuth();
+  const { profile } = useAuth();
+
+  // Owner sees Dashboard, Employees (all), Voting, Notifications
+  // Employee sees My Dashboard, Voting, Notifications
+  const ownerNavItems = [
+    { icon: LayoutGrid, label: "Dashboard", path: "/employer" },
+    { icon: Users, label: "Employees", path: "/employees" },
+    { icon: Vote, label: "Voting", path: "/voting" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
+  ];
+
+  const employeeNavItems = [
+    { icon: LayoutGrid, label: "My Dashboard", path: "/employee" },
+    { icon: Vote, label: "Voting", path: "/voting" },
+    { icon: BarChart3, label: "Auditor", path: "/auditor" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
+  ];
+
+  // Managers see same as employees but with actual access to vote on voting page
+  const isEmployeeOrManager = profile?.currentRole === "employee" || profile?.currentRole === "manager";
+  const navItems = profile?.currentRole === "owner" ? ownerNavItems : employeeNavItems;
+
+  const handleLogout = () => {
+    authService.clearProfile();
+    disconnectWallet();
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[72px] flex-col items-center border-r border-sidebar-border bg-sidebar py-6">
@@ -72,7 +92,7 @@ export const AppSidebar = () => {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
-                onClick={disconnectWallet}
+                onClick={handleLogout}
                 className="flex h-11 w-11 items-center justify-center rounded-xl text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <LogOut className="h-5 w-5" />
