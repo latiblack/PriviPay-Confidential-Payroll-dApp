@@ -2,6 +2,8 @@ import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRig
 import Logo from "../components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 const DashboardMockup = () => (
   <div className="relative w-full max-w-4xl mx-auto mt-16">
@@ -82,6 +84,7 @@ const DashboardMockup = () => (
 );
 
 const Landing = () => {
+  const { isAuthenticated } = useWalletAuth();
   const features = [
     { icon: Lock, title: "Encrypted Salaries", description: "All salary data stored as encrypted integers (euint) on-chain. No raw values are ever exposed publicly." },
     { icon: Eye, title: "Selective Transparency", description: "Employees see only their own salary. Employers see all. Auditors see totals only — role-based decryption." },
@@ -117,15 +120,15 @@ const Landing = () => {
             <Logo size={28} alt="Privapay" />
             <span className="text-lg font-semibold text-foreground tracking-tight">PriviPay</span>
           </Link>
-          <div className="hidden md:flex items-center gap-8">
+<div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
             <a href="#benefits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
           </div>
           <div className="flex items-center gap-3">
-<Link to="/auth">
+            <Link to="/auth">
               <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-muted-foreground">
-                Sign In
+                {isAuthenticated ? "Dashboard" : "Sign In"}
               </Button>
             </Link>
             <Link to="/auth">

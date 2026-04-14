@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Users, ArrowRight, CheckCircle2, Copy, Wallet } from "lucide-react";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { organizationService } from "@/lib/organization-service";
+import { authService } from "@/lib/auth-service";
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
@@ -29,7 +30,7 @@ export const AuthPage = () => {
   const [joinError, setJoinError] = useState("");
   const [validatedOrg, setValidatedOrg] = useState<{ id: string; name: string } | null>(null);
 
-  const handleCreateOrg = async () => {
+const handleCreateOrg = async () => {
     if (!walletAddress || !orgName) return;
     
     setCreating(true);
@@ -48,6 +49,10 @@ export const AuthPage = () => {
       });
       
       setCreatedOrg({ name: org.name, code: invitation.code });
+      
+      // Refresh profile to get the new organization
+      await authService.login(walletAddress);
+      
       setStep("success");
     } catch (error) {
       console.error("Error creating organization:", error);
@@ -138,7 +143,7 @@ export const AuthPage = () => {
               </div>
             </div>
             
-            <div className="text-sm text-muted-foreground">
+<div className="text-sm text-muted-foreground">
               <p>As the organization owner, you can:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Invite employees with this code</li>
@@ -148,7 +153,7 @@ export const AuthPage = () => {
             </div>
             
             <Button 
-              onClick={() => navigate("/employer")} 
+              onClick={() => navigate("/admin")} 
               className="w-full"
               size="lg"
             >
@@ -316,8 +321,12 @@ export const AuthPage = () => {
                   >
                     Back
                   </Button>
-                  <Button 
-                    onClick={() => navigate("/employee")}
+<Button 
+                    onClick={() => {
+                      // Save pending status and redirect
+                      localStorage.setItem("pending_org_id", validatedOrg.id);
+                      navigate("/pending");
+                    }}
                     className="flex-1"
                   >
                     Join Organization

@@ -15,7 +15,7 @@ export const AppSidebar = () => {
   // Owner sees Dashboard, Employees (all), Voting, Notifications
   // Employee sees My Dashboard, Voting, Notifications
   const ownerNavItems = [
-    { icon: LayoutGrid, label: "Dashboard", path: "/employer" },
+    { icon: LayoutGrid, label: "Admin", path: "/admin" },
     { icon: Users, label: "Employees", path: "/employees" },
     { icon: Vote, label: "Voting", path: "/voting" },
     { icon: Bell, label: "Notifications", path: "/notifications" },

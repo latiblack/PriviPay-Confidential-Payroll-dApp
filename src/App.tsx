@@ -8,17 +8,20 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AuditorDashboard from "./pages/AuditorDashboard";
 import BonusVoting from "./pages/BonusVoting";
 import Notifications from "./pages/Notifications";
+import PendingRole from "./pages/PendingRole";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
 const queryClient = new QueryClient();
 
 const pageTitles: Record<string, string> = {
+  "/admin": "Admin",
   "/employer": "Dashboard",
   "/employees": "Employees",
   "/employee": "My Dashboard",
@@ -43,7 +46,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   if (requiredRole && profile.currentRole !== requiredRole) {
     // Redirect based on role
     if (profile.currentRole === "owner") {
-      return <Navigate to="/employer" replace />;
+      return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/employee" replace />;
   }
@@ -73,6 +76,11 @@ const AppLayout = () => {
         <TopBar title={title} />
         <main className="px-6 pb-8">
           <Routes>
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="owner">
+                <Admin />
+              </ProtectedRoute>
+            } />
             <Route path="/employer" element={
               <ProtectedRoute requiredRole="owner">
                 <EmployerDashboard />
@@ -88,6 +96,7 @@ const AppLayout = () => {
                 <EmployeeDashboard />
               </ProtectedRoute>
             } />
+            <Route path="/pending" element={<PendingRole />} />
             <Route path="/auditor" element={
               <ProtectedRoute>
                 <AuditorDashboard />
