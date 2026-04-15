@@ -9,7 +9,7 @@ import { Building2, Users, ArrowRight, CheckCircle2, Copy, Wallet } from "lucide
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
-import { authService } from "@/lib/auth-service";
+// authService imported for potential future use
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
