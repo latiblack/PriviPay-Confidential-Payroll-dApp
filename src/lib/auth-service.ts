@@ -58,8 +58,8 @@ export const authService = {
       .insert({
         wallet_address: walletAddress,
         display_name: null,
-        user_id: walletAddress, // Using wallet address as user_id for wallet-based auth
-      } as any)
+        user_id: walletAddress,
+      })
       .select()
       .single();
 
