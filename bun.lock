@@ -5,8 +5,8 @@
     "": {
       "name": "vite_react_shadcn_ts",
       "dependencies": {
-        "@dynamic-labs/ethereum": "*",
-        "@dynamic-labs/sdk-react-core": "*",
+        "@dynamic-labs/ethereum": "^4.77.1",
+        "@dynamic-labs/sdk-react-core": "^4.77.1",
         "@hookform/resolvers": "^3.10.0",
         "@radix-ui/react-accordion": "^1.2.11",
         "@radix-ui/react-alert-dialog": "^1.1.14",
