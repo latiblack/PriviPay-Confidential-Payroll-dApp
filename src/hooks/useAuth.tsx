@@ -43,11 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadProfile();
   }, [isAuthenticated, walletAddress]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = async (): Promise<UserProfile | null> => {
     if (walletAddress) {
       const userProfile = await authService.login(walletAddress);
       setProfile(userProfile);
+      return userProfile;
     }
+    return null;
   };
 
   const updateProfile = async (updates: { displayName: string }) => {
