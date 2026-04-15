@@ -5,7 +5,7 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 interface AuthContextType {
   profile: UserProfile | null;
   isLoading: boolean;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<UserProfile | null>;
   updateProfile: (updates: { displayName: string }) => Promise<void>;
   setCurrentOrganization: (org: UserProfile["currentOrganization"]) => void;
 }
