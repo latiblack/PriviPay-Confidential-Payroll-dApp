@@ -19,6 +19,18 @@ export const AuthPage = () => {
   const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<AuthStep>("select");
   const [loading, setLoading] = useState(true);
+
+  // Create org form
+  const [orgName, setOrgName] = useState("");
+  const [orgDescription, setOrgDescription] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createdOrg, setCreatedOrg] = useState<{ name: string; code: string } | null>(null);
+  
+  // Join org form
+  const [inviteCode, setInviteCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState("");
+  const [validatedOrg, setValidatedOrg] = useState<{ id: string; name: string } | null>(null);
   
   // Check if user already has an organization
   useEffect(() => {
@@ -26,13 +38,10 @@ export const AuthPage = () => {
       if (isAuthenticated && walletAddress) {
         try {
           await refreshProfile();
-          // If user is an owner, redirect to admin
           if (profile?.currentRole === "owner") {
             navigate("/admin");
             return;
           }
-          // If user is just an employee, they can still join another org, so don't redirect
-          // Only redirect if they're pending (no role yet)
         } catch (e) {
           console.log("No existing organization");
         }
@@ -51,18 +60,6 @@ export const AuthPage = () => {
       </div>
     );
   }
-  
-  // Create org form
-  const [orgName, setOrgName] = useState("");
-  const [orgDescription, setOrgDescription] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [createdOrg, setCreatedOrg] = useState<{ name: string; code: string } | null>(null);
-  
-  // Join org form
-  const [inviteCode, setInviteCode] = useState("");
-  const [joining, setJoining] = useState(false);
-  const [joinError, setJoinError] = useState("");
-  const [validatedOrg, setValidatedOrg] = useState<{ id: string; name: string } | null>(null);
 
 const handleCreateOrg = async () => {
     if (!walletAddress || !orgName) return;
