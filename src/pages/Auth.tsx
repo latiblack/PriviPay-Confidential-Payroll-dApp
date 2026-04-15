@@ -87,9 +87,13 @@ const handleCreateOrg = async () => {
       setCreatedOrg({ name: org.name, code: invitation.code });
       
       // Refresh profile to get the new organization
-      await authService.login(walletAddress);
+      const updatedProfile = await refreshProfile();
       
-      setStep("success");
+      if (updatedProfile?.currentRole === "owner") {
+        setStep("success");
+      } else {
+        setStep("success");
+      }
     } catch (error) {
       console.error("Error creating organization:", error);
     } finally {
