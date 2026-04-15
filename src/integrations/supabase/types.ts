@@ -64,6 +64,53 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string
+          email: string | null
+          expires_at: string | null
+          id: string
+          organization_id: string
+          role: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by: string
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          organization_id: string
+          role?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          organization_id?: string
+          role?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
@@ -203,53 +250,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_roles_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invitations: {
-        Row: {
-          code: string
-          created_at: string
-          created_by: string
-          email: string | null
-          expires_at: string | null
-          id: string
-          organization_id: string
-          role: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          created_by: string
-          email?: string | null
-          expires_at?: string | null
-          id?: string
-          organization_id: string
-          role?: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          created_by?: string
-          email?: string | null
-          expires_at?: string | null
-          id?: string
-          organization_id?: string
-          role?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invitations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
