@@ -37,9 +37,14 @@ export const AuthPage = () => {
     const checkExistingOrg = async () => {
       if (isAuthenticated && walletAddress) {
         try {
-          await refreshProfile();
-          if (profile?.currentRole === "owner") {
+          const updatedProfile = await refreshProfile();
+          const p = updatedProfile || profile;
+          if (p?.currentRole === "owner") {
             navigate("/admin");
+            return;
+          }
+          if (p?.currentRole === "employee" || p?.currentRole === "manager" || p?.currentRole === "auditor") {
+            navigate("/employee");
             return;
           }
         } catch (e) {
