@@ -9,7 +9,7 @@ import { Building2, Users, ArrowRight, CheckCircle2, Copy, Wallet } from "lucide
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
-import { authService } from "@/lib/auth-service";
+// authService imported for potential future use
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
@@ -37,9 +37,14 @@ export const AuthPage = () => {
     const checkExistingOrg = async () => {
       if (isAuthenticated && walletAddress) {
         try {
-          await refreshProfile();
-          if (profile?.currentRole === "owner") {
+          const updatedProfile = await refreshProfile();
+          const p = updatedProfile || profile;
+          if (p?.currentRole === "owner") {
             navigate("/admin");
+            return;
+          }
+          if (p?.currentRole === "employee" || p?.currentRole === "manager" || p?.currentRole === "auditor") {
+            navigate("/employee");
             return;
           }
         } catch (e) {
@@ -82,9 +87,13 @@ const handleCreateOrg = async () => {
       setCreatedOrg({ name: org.name, code: invitation.code });
       
       // Refresh profile to get the new organization
-      await authService.login(walletAddress);
+      const updatedProfile = await refreshProfile();
       
-      setStep("success");
+      if (updatedProfile?.currentRole === "owner") {
+        setStep("success");
+      } else {
+        setStep("success");
+      }
     } catch (error) {
       console.error("Error creating organization:", error);
     } finally {
