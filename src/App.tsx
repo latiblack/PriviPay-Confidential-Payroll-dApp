@@ -9,6 +9,8 @@ import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import Payroll from "./pages/Payroll";
+import Settings from "./pages/Settings";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AuditorDashboard from "./pages/AuditorDashboard";
@@ -22,6 +24,8 @@ const queryClient = new QueryClient();
 
 const pageTitles: Record<string, string> = {
   "/admin": "Admin",
+  "/admin/payroll": "Process Payroll",
+  "/admin/settings": "Settings",
   "/employer": "Dashboard",
   "/employees": "Employees",
   "/employee": "My Dashboard",
@@ -79,6 +83,16 @@ const AppLayout = () => {
             <Route path="/admin" element={
               <ProtectedRoute requiredRole="owner">
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/payroll" element={
+              <ProtectedRoute requiredRole="owner">
+                <Payroll />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute requiredRole="owner">
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="/employer" element={

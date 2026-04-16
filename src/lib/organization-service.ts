@@ -6,6 +6,16 @@ type OrganizationInsert = Database["public"]["Tables"]["organizations"]["Insert"
 type Invitation = Database["public"]["Tables"]["invitations"]["Row"];
 type InvitationInsert = Database["public"]["Tables"]["invitations"]["Insert"];
 
+function generateInviteCode(): string {
+  return (
+    Math.random().toString(36).substring(2, 6).toUpperCase() +
+    "-" +
+    Math.random().toString(36).substring(2, 6).toUpperCase() +
+    "-" +
+    Math.random().toString(36).substring(2, 6).toUpperCase()
+  );
+}
+
 export const organizationService = {
   async createOrganization(data: {
     name: string;
@@ -13,6 +23,8 @@ export const organizationService = {
     ownerWalletAddress: string;
     ownerId: string;
   }): Promise<Organization> {
+    const inviteCode = generateInviteCode();
+    
     const { data: org, error } = await supabase
       .from("organizations")
       .insert({
@@ -20,6 +32,7 @@ export const organizationService = {
         description: data.description || null,
         wallet_address: data.ownerWalletAddress,
         owner_id: data.ownerId,
+        invite_code: inviteCode,
       } as OrganizationInsert)
       .select()
       .single();
@@ -51,6 +64,19 @@ export const organizationService = {
   },
 
   async getUserOrganizations(userId: string): Promise<Organization[]> {
+    // First check if user owns any organizations
+    const { data: ownedOrgs, error: ownerError } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("owner_id", userId);
+
+    if (ownerError && ownerError.code !== "PGRST116") throw new Error(ownerError.message);
+    
+    if (ownedOrgs && ownedOrgs.length > 0) {
+      return ownedOrgs;
+    }
+
+    // Check user_roles for membership
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select("organization_id")
@@ -68,6 +94,46 @@ export const organizationService = {
 
     if (error) throw new Error(error.message);
     return orgs || [];
+  },
+
+  async getOrganizationInviteCode(orgId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("invite_code")
+      .eq("id", orgId)
+      .single();
+
+    if (error && error.code !== "PGRST116") return null;
+    return data?.invite_code || null;
+  },
+
+  async getPendingInvitations(orgId: string): Promise<Invitation[]> {
+    const { data, error } = await supabase
+      .from("invitations")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("status", "pending");
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+
+  async approveInvitation(invitationId: string): Promise<void> {
+    const { error } = await supabase
+      .from("invitations")
+      .update({ status: "accepted" })
+      .eq("id", invitationId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  async rejectInvitation(invitationId: string): Promise<void> {
+    const { error } = await supabase
+      .from("invitations")
+      .update({ status: "rejected" })
+      .eq("id", invitationId);
+
+    if (error) throw new Error(error.message);
   },
 
   async createInvitation(data: {
@@ -166,15 +232,7 @@ export const organizationService = {
       });
 
     if (roleError) throw new Error(roleError.message);
-  },
+},
 };
-
-function generateInviteCode(): string {
-  return (
-    Math.random().toString(36).substring(2, 6).toUpperCase() +
-    "-" +
-    Math.random().toString(36).substring(2, 6).toUpperCase()
-  );
-}
 
 export default organizationService;
