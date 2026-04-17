@@ -140,7 +140,7 @@ const AdminDashboard = () => {
   const quickActions = [
     { icon: UserPlus, label: "Invite User", action: () => {}, color: "bg-blue-500" },
     { icon: DollarSign, label: "Process Payroll", action: () => navigate("/admin/payroll"), color: "bg-green-500" },
-    { icon: FileText, label: "Add Employee", action: () => navigate("/admin/payroll"), color: "bg-purple-500" },
+    { icon: FileText, label: "Add Employee", action: () => navigate("/admin/payroll?add=true"), color: "bg-purple-500" },
     { icon: Settings, label: "Settings", action: () => navigate("/admin/settings"), color: "bg-gray-500" },
   ];
 

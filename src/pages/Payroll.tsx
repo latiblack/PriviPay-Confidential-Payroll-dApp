@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useSearchParams } from "react-router-dom";
 import { 
   DollarSign, Users, Plus, Send, FileText, CheckCircle, Clock, Trash2
 } from "lucide-react";
@@ -23,6 +24,7 @@ interface Employee {
 const PayrollPage = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   
   const [employees, setEmployees] = useState<Employee[]>([
     { id: "1", name: "Alice Johnson", position: "Developer", salary: 8500, walletAddress: "0x1234...abcd", status: "active" },
@@ -38,6 +40,13 @@ const PayrollPage = () => {
   });
   
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // Check if add=true in URL params
+  useEffect(() => {
+    if (searchParams.get("add") === "true") {
+      setShowAddForm(true);
+    }
+  }, [searchParams]);
 
   const handleAddEmployee = () => {
     if (!newEmployee.name || !newEmployee.salary || !newEmployee.walletAddress) {

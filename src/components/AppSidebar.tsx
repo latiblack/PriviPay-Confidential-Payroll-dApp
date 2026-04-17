@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users } from "lucide-react";
+import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,11 +12,11 @@ export const AppSidebar = () => {
   const { isAuthenticated, disconnectWallet } = useWalletAuth();
   const { profile } = useAuth();
 
-  // Owner sees Dashboard, Employees (all), Voting, Notifications
-  // Employee sees My Dashboard, Voting, Notifications
+  // Owner sees Admin, Employees, Payroll, Voting, Notifications
   const ownerNavItems = [
     { icon: LayoutGrid, label: "Admin", path: "/admin" },
     { icon: Users, label: "Employees", path: "/employees" },
+    { icon: DollarSign, label: "Payroll", path: "/admin/payroll" },
     { icon: Vote, label: "Voting", path: "/voting" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
