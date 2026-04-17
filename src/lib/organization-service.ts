@@ -107,6 +107,32 @@ export const organizationService = {
     return data?.invite_code || null;
   },
 
+  async findOrgByInviteCode(code: string): Promise<{ id: string; name: string } | null> {
+    // Universal key - find org by invite code
+    const { data, error } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("invite_code", code.toUpperCase())
+      .single();
+
+    if (error && error.code !== "PGRST116") return null;
+    return data ? { id: data.id, name: data.name } : null;
+  },
+
+  async regenerateInviteCode(orgId: string): Promise<string> {
+    const newCode = generateInviteCode();
+    
+    const { data, error } = await supabase
+      .from("organizations")
+      .update({ invite_code: newCode })
+      .eq("id", orgId)
+      .select("invite_code")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data?.invite_code || newCode;
+  },
+
   async getPendingInvitations(orgId: string): Promise<Invitation[]> {
     const { data, error } = await supabase
       .from("invitations")

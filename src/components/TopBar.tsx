@@ -43,13 +43,8 @@ export const TopBar = ({ title }: TopBarProps) => {
 
   return (
     <header className="flex items-center justify-between px-6 py-4">
-      <div className="flex items-center gap-4">
+      <div>
         <h1 className="text-xl font-bold text-foreground">{title}</h1>
-        {profile?.currentOrganization && (
-          <span className="text-sm text-muted-foreground hidden sm:inline">
-            {profile.currentOrganization.name}
-          </span>
-        )}
       </div>
 
       <div className="flex items-center gap-3">

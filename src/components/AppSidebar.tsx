@@ -78,7 +78,7 @@ export const AppSidebar = () => {
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Link
-              to="#"
+              to="/admin/settings"
               className="flex h-11 w-11 items-center justify-center rounded-xl text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
               <Settings className="h-5 w-5" />

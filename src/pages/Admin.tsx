@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { 
   Users, Plus, Send, Copy, DollarSign, FileText, Settings, 
-  UserPlus, Shield, TrendingUp, CheckCircle, Clock, Building
+  UserPlus, Shield, TrendingUp, CheckCircle, Clock, Building, RefreshCw
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
@@ -127,6 +127,18 @@ const AdminDashboard = () => {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(inviteCode);
     toast({ title: "Copied!", description: "Invite code copied to clipboard" });
+  };
+
+  const handleRegenerateCode = async () => {
+    if (!profile?.currentOrganization) return;
+    
+    try {
+      const newCode = await organizationService.regenerateInviteCode(profile.currentOrganization.id);
+      setInviteCode(newCode);
+      toast({ title: "Code Regenerated", description: "New invite code generated successfully" });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to regenerate code", variant: "destructive" });
+    }
   };
 
   if (!profile?.currentOrganization) {
@@ -247,6 +259,9 @@ const AdminDashboard = () => {
                   <code className="flex-1 font-mono bg-muted px-3 py-2 rounded">{inviteCode}</code>
                   <Button variant="outline" size="icon" onClick={handleCopyCode}>
                     <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleRegenerateCode} title="Regenerate code">
+                    <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
