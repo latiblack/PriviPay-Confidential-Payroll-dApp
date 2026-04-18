@@ -5,6 +5,8 @@ type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 type OrganizationInsert = Database["public"]["Tables"]["organizations"]["Insert"];
 type Invitation = Database["public"]["Tables"]["invitations"]["Row"];
 type InvitationInsert = Database["public"]["Tables"]["invitations"]["Insert"];
+type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
+type UserRoleInsert = Database["public"]["Tables"]["user_roles"]["Insert"];
 
 function generateInviteCode(): string {
   return (
@@ -233,7 +235,7 @@ export const organizationService = {
     };
   },
 
-  async acceptInvitation(code: string, userId: string, walletAddress: string): Promise<void> {
+async acceptInvitation(code: string, userId: string, walletAddress: string): Promise<void> {
     const { error: updateError } = await supabase
       .from("invitations")
       .update({ status: "accepted", updated_at: new Date().toISOString() })
@@ -258,7 +260,68 @@ export const organizationService = {
       });
 
     if (roleError) throw new Error(roleError.message);
-},
+  },
+
+  async joinWithOrgCode(code: string, userId: string, walletAddress: string): Promise<void> {
+    const org = await this.findOrgByInviteCode(code);
+    if (!org) throw new Error("Invalid invite code");
+
+    const { error } = await supabase
+      .from("user_roles")
+      .insert({
+        organization_id: org.id,
+        user_id: userId,
+        role: "pending",
+      } as UserRoleInsert);
+
+    if (error) throw new Error(error.message);
+  },
+
+  async getPendingJoinRequests(orgId: string): Promise<UserRole[]> {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("role", "pending");
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+
+  async approveJoinRequest(userId: string, orgId: string, role: "employee" | "manager" | "auditor" = "employee"): Promise<void> {
+    const { error } = await supabase
+      .from("user_roles")
+      .update({ role, created_at: new Date().toISOString() })
+      .eq("organization_id", orgId)
+      .eq("user_id", userId)
+      .eq("role", "pending");
+
+    if (error) throw new Error(error.message);
+  },
+
+  async rejectJoinRequest(userId: string, orgId: string): Promise<void> {
+    const { error } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("organization_id", orgId)
+      .eq("user_id", userId)
+      .eq("role", "pending");
+
+    if (error) throw new Error(error.message);
+  },
+
+  async isUserPending(userId: string, orgId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("organization_id", orgId)
+      .eq("user_id", userId)
+      .eq("role", "pending")
+      .single();
+
+    if (error && error.code !== "PGRST116") return false;
+    return !!data;
+  },
 };
 
 export default organizationService;

@@ -1,6 +1,9 @@
-import { Bell, Calendar, DollarSign, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Calendar, DollarSign, FileText, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Notification {
   id: string;
@@ -10,49 +13,6 @@ interface Notification {
   date: string;
   read: boolean;
 }
-
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "announcement",
-    title: "Payroll Update",
-    message: "The monthly payroll for April 2026 has been processed. Please check your dashboard for details.",
-    date: "2026-04-14",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "payment",
-    title: "Bonus Payment",
-    message: "Your Q1 performance bonus of $2,500 has been disbursed to your account.",
-    date: "2026-04-10",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "document",
-    title: "New Document Available",
-    message: "Your updated tax certificate for FY 2025-26 is now available for download.",
-    date: "2026-04-08",
-    read: true,
-  },
-  {
-    id: "4",
-    type: "alert",
-    title: "Action Required",
-    message: "Please update your bank details by April 20th to ensure seamless salary disbursement.",
-    date: "2026-04-05",
-    read: true,
-  },
-  {
-    id: "5",
-    type: "announcement",
-    title: "Policy Update",
-    message: "New leave policy changes will be effective from May 1st. Please review the updated handbook.",
-    date: "2026-04-01",
-    read: true,
-  },
-];
 
 const getIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -81,7 +41,52 @@ const getBadgeColor = (type: Notification["type"]) => {
 };
 
 const Notifications = () => {
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const { profile } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!profile?.currentOrganization?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("notifications" as any)
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id)
+          .order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        
+        const formatted: Notification[] = (data || []).map((n: any) => ({
+          id: n.id,
+          type: n.type as Notification["type"],
+          title: n.title,
+          message: n.message || "",
+          date: new Date(n.created_at).toISOString().split("T")[0],
+          read: n.read || false,
+        }));
+        
+        setNotifications(formatted);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchNotifications();
+  }, [profile?.currentOrganization?.id]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -98,7 +103,7 @@ const Notifications = () => {
       </div>
 
       <div className="space-y-4">
-        {mockNotifications.map((notification) => (
+        {notifications.map((notification) => (
           <Card
             key={notification.id}
             className={`transition-all hover:shadow-md ${
@@ -151,7 +156,7 @@ const Notifications = () => {
         ))}
       </div>
 
-      {mockNotifications.length === 0 && (
+      {notifications.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Bell className="h-12 w-12 text-muted-foreground mb-4" />

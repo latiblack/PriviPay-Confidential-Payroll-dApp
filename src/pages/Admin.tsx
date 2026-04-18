@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { 
   Users, Plus, Send, Copy, DollarSign, FileText, Settings, 
   UserPlus, Shield, TrendingUp, CheckCircle, Clock, Building, RefreshCw
@@ -14,13 +16,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
 
-interface PendingInvitation {
-  id: string;
-  email: string | null;
-  role: string;
-  status: string;
-  created_at: string;
-}
+type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
 
 interface OrgStats {
   totalEmployees: number;
@@ -36,7 +32,7 @@ const AdminDashboard = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("employee");
   const [inviteCode, setInviteCode] = useState("");
-  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<UserRole[]>([]);
   const [stats, setStats] = useState<OrgStats>({
     totalEmployees: 0,
     totalPayroll: 0,
@@ -44,36 +40,54 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadOrgData = async () => {
-      if (!profile?.currentOrganization) return;
-      
-      try {
-        // Get invite code
-        const code = await organizationService.getOrganizationInviteCode(profile.currentOrganization.id);
-        setInviteCode(code || "");
-        
-        // Get pending invitations
-        const pending = await organizationService.getPendingInvitations(profile.currentOrganization.id);
-        setPendingInvitations(pending);
-        
-        // Update stats
-        setStats(prev => ({
-          ...prev,
-          pendingApprovals: pending.length,
-        }));
-      } catch (error) {
-        console.error("Error loading org data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadOrgData = async () => {
+    if (!profile?.currentOrganization?.id) return;
     
+    try {
+      const orgId = profile.currentOrganization.id;
+      
+      // Get invite code
+      const code = await organizationService.getOrganizationInviteCode(orgId);
+      setInviteCode(code || "");
+      
+      // Get pending join requests (role = 'pending')
+      const pending = await organizationService.getPendingJoinRequests(orgId);
+      setPendingRequests(pending);
+      
+      // Get employees count
+      const { count: empCount } = await supabase
+        .from("employees")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", orgId);
+      
+      // Get total payroll
+      const { data: employees } = await supabase
+        .from("employees")
+        .select("encrypted_salary")
+        .eq("organization_id", orgId)
+        .eq("status", "active");
+      
+      const totalSalary = employees?.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0) || 0;
+      
+      // Update stats
+      setStats({
+        totalEmployees: empCount || 0,
+        totalPayroll: totalSalary,
+        pendingApprovals: pending.length,
+      });
+    } catch (error) {
+      console.error("Error loading org data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     loadOrgData();
-  }, [profile?.currentOrganization]);
+  }, [profile?.currentOrganization?.id]);
 
   const handleInvite = async () => {
-    if (!inviteEmail || !profile?.currentOrganization) return;
+    if (!inviteEmail || !profile?.currentOrganization?.id) return;
     
     try {
       await organizationService.createInvitation({
@@ -85,40 +99,30 @@ const AdminDashboard = () => {
       
       toast({ title: "Invitation sent", description: `Invite sent to ${inviteEmail}` });
       setInviteEmail("");
-      
-      // Refresh pending invitations
-      const pending = await organizationService.getPendingInvitations(profile.currentOrganization.id);
-      setPendingInvitations(pending);
     } catch (error) {
       toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" });
     }
   };
 
-  const handleApprove = async (invitationId: string) => {
+  const handleApprove = async (userId: string, role: "employee" | "manager" | "auditor" = "employee") => {
+    if (!profile?.currentOrganization?.id) return;
+    
     try {
-      await organizationService.approveInvitation(invitationId);
-      toast({ title: "Approved", description: "Invitation approved" });
-      
-      // Refresh list
-      if (profile?.currentOrganization) {
-        const pending = await organizationService.getPendingInvitations(profile.currentOrganization.id);
-        setPendingInvitations(pending);
-      }
+      await organizationService.approveJoinRequest(userId, profile.currentOrganization.id, role);
+      toast({ title: "Approved", description: "User has been granted access" });
+      loadOrgData();
     } catch (error) {
       toast({ title: "Error", description: "Failed to approve", variant: "destructive" });
     }
   };
 
-  const handleReject = async (invitationId: string) => {
+  const handleReject = async (userId: string) => {
+    if (!profile?.currentOrganization?.id) return;
+    
     try {
-      await organizationService.rejectInvitation(invitationId);
-      toast({ title: "Rejected", description: "Invitation rejected" });
-      
-      // Refresh list
-      if (profile?.currentOrganization) {
-        const pending = await organizationService.getPendingInvitations(profile.currentOrganization.id);
-        setPendingInvitations(pending);
-      }
+      await organizationService.rejectJoinRequest(userId, profile.currentOrganization.id);
+      toast({ title: "Rejected", description: "Access request denied" });
+      loadOrgData();
     } catch (error) {
       toast({ title: "Error", description: "Failed to reject", variant: "destructive" });
     }
@@ -269,30 +273,30 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Pending Invitations */}
+        {/* Pending Join Requests */}
         <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5" /> Pending Invitations
+              <Clock className="h-5 w-5" /> Pending Access Requests
             </CardTitle>
-            <CardDescription>Users waiting for approval</CardDescription>
+            <CardDescription>Users waiting for approval to join your organization</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {pendingInvitations.length > 0 ? (
-              pendingInvitations.map((invite) => (
-                <div key={invite.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            {pendingRequests.length > 0 ? (
+              pendingRequests.map((req) => (
+                <div key={req.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div>
-                    <p className="font-medium text-sm">{invite.email || "Wallet invite"}</p>
-                    <p className="text-xs text-muted-foreground">{invite.role} • {new Date(invite.created_at).toLocaleDateString()}</p>
+                    <p className="font-medium text-sm">{req.user_id.slice(0, 8)}...{req.user_id.slice(-4)}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(req.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleApprove(invite.id)}>Approve</Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleReject(invite.id)}>Reject</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleApprove(req.user_id)}>Approve</Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleReject(req.user_id)}>Reject</Button>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No pending invitations</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No pending access requests</p>
             )}
           </CardContent>
         </Card>

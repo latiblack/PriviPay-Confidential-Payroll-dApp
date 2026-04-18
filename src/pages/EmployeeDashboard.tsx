@@ -3,10 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff, DollarSign, Calendar, TrendingUp, ArrowRight, User } from "lucide-react";
+import { Eye, EyeOff, DollarSign, Calendar, TrendingUp, ArrowRight, User, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/hooks/useAuth";
-import { authService } from "@/lib/auth-service";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type Employee = Database["public"]["Tables"]["employees"]["Row"];
+type PayrollRecord = Database["public"]["Tables"]["payroll_records"]["Row"];
 
 const earningsData = [
   { month: "Jan", value: 8200 },
@@ -17,68 +21,89 @@ const earningsData = [
   { month: "Jun", value: 9000 },
 ];
 
-interface EmployeeData {
-  id: string;
-  name: string;
-  wallet_address: string;
-  position: string | null;
-  department: string | null;
-  encrypted_salary: string | null;
-  encrypted_bonus: string | null;
-  status: string;
-}
-
 const EmployeeDashboard = () => {
   const { profile } = useAuth();
   const isOwnerView = profile?.currentRole === "owner";
   
   const [decrypted, setDecrypted] = useState(false);
-  const [employees, setEmployees] = useState<EmployeeData[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PayrollRecord[]>([]);
 
-  // Mock data for employees (in real app, fetch from Supabase)
-  const mockEmployees: EmployeeData[] = [
-    { id: "1", name: "Alice Johnson", wallet_address: "0x1234...abcd", position: "Senior Developer", department: "Engineering", encrypted_salary: "euint256(0x7f3a...)", encrypted_bonus: "euint256(0x2b1c...)", status: "active" },
-    { id: "2", name: "Bob Smith", wallet_address: "0x5678...efgh", position: "Product Manager", department: "Product", encrypted_salary: "euint256(0x4d2b...)", encrypted_bonus: "euint256(0x1a3c...)", status: "active" },
-    { id: "3", name: "Carol Williams", wallet_address: "0x9abc...ijkl", position: "Designer", department: "Design", encrypted_salary: "euint256(0x8f1d...)", encrypted_bonus: "euint256(0x3b4d...)", status: "active" },
-  ];
+  const fetchEmployees = async () => {
+    if (!profile?.currentOrganization?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
+      
+      if (error) throw error;
+      setEmployees(data || []);
+      if (data && data.length > 0) {
+        setSelectedEmployeeId(data[0].id);
+      }
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMyData = async () => {
+    if (!profile?.currentOrganization?.id || !profile.walletAddress) return;
+    
+    try {
+      const { data: empData, error: empError } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("wallet_address", profile.walletAddress)
+        .single();
+      
+      if (empError && empError.code !== "PGRST116") throw empError;
+      setMyEmployee(empData || null);
+      
+      if (empData) {
+        const { data: history, error: histError } = await supabase
+          .from("payroll_records")
+          .select("*")
+          .eq("employee_id", empData.id)
+          .order("created_at", { ascending: false });
+        
+        if (!histError) {
+          setPaymentHistory(history || []);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching my data:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isOwnerView) {
+      fetchEmployees();
+    } else {
+      fetchMyData();
+    }
+  }, [profile?.currentOrganization?.id, isOwnerView, profile?.walletAddress]);
 
   const currentEmployee = selectedEmployeeId 
     ? employees.find(e => e.id === selectedEmployeeId) 
-    : mockEmployees[0];
-
-  // Owner view: employees list
-  useEffect(() => {
-    if (isOwnerView) {
-      setLoading(true);
-      // In real app: authService.getOrganizationEmployees(profile.currentOrganization.id)
-      setTimeout(() => {
-        setEmployees(mockEmployees);
-        if (mockEmployees.length > 0) {
-          setSelectedEmployeeId(mockEmployees[0].id);
-        }
-        setLoading(false);
-      }, 500);
-    }
-  }, [isOwnerView, profile]);
+    : null;
 
   const myData = {
-    name: currentEmployee?.name || "Alice Johnson",
-    address: currentEmployee?.wallet_address || "0x1a2B...3c4D",
-    role: currentEmployee?.position || "Senior Developer",
-    encryptedSalary: currentEmployee?.encrypted_salary || "euint256(0x7f3a...)",
-    salary: 8500,
-    encryptedBonus: currentEmployee?.encrypted_bonus || "euint256(0x2b1c...)",
-    bonus: 1200,
+    name: myEmployee?.wallet_address ? `${myEmployee.wallet_address.slice(0, 6)}...${myEmployee.wallet_address.slice(-4)}` : "Unknown",
+    address: myEmployee?.wallet_address || "",
+    role: myEmployee?.position || "Employee",
+    encryptedSalary: myEmployee?.encrypted_salary || "euint256(...)",
+    salary: Number(myEmployee?.encrypted_salary) || 0,
+    encryptedBonus: myEmployee?.encrypted_bonus || "euint256(...)",
+    bonus: Number(myEmployee?.encrypted_bonus) || 0,
   };
-
-  const paymentHistory = [
-    { date: "2025-04-01", amount: 8500, tx: "0xabc1...def2" },
-    { date: "2025-03-01", amount: 8500, tx: "0x1234...5678" },
-    { date: "2025-02-01", amount: 8500, tx: "0x9abc...def0" },
-    { date: "2025-01-01", amount: 8200, tx: "0xfed1...2345" },
-  ];
 
   const statCards = [
     {
@@ -99,24 +124,30 @@ const EmployeeDashboard = () => {
       {isOwnerView && (
         <Card className="border shadow-sm">
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">Select Employee:</span>
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                <SelectTrigger className="w-[250px]">
-                  <SelectValue placeholder="Select an employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockEmployees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.name} - {emp.position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">Select Employee:</span>
+                </div>
+                <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Select an employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.wallet_address.slice(0, 8)}...{emp.wallet_address.slice(-4)} - {emp.position || "Employee"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -160,7 +191,7 @@ const EmployeeDashboard = () => {
         <Card className="lg:col-span-2 border shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-bold">
-              {isOwnerView ? `Earnings Report - ${currentEmployee?.name}` : "My Earnings Report"}
+              {isOwnerView ? `Earnings Report - ${currentEmployee?.wallet_address?.slice(0, 8)}...${currentEmployee?.wallet_address?.slice(-4)}` : "My Earnings Report"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -198,17 +229,23 @@ const EmployeeDashboard = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {paymentHistory.map((p) => (
-              <div key={p.tx} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{p.date}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{p.tx}</p>
+            {paymentHistory.length > 0 ? (
+              paymentHistory.map((p) => (
+                <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : new Date(p.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono">{p.tx_hash || p.id}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {decrypted ? `$${Number(p.encrypted_amount).toLocaleString()}` : "euint256(...)"}
+                  </span>
                 </div>
-                <span className="text-sm font-semibold text-foreground">
-                  {decrypted ? `$${p.amount.toLocaleString()}` : "euint256(...)"}
-                </span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No payment history</p>
+            )}
           </CardContent>
         </Card>
       </div>

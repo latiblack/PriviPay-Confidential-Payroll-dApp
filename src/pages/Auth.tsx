@@ -93,12 +93,7 @@ export const AuthPage = () => {
       if (org) {
         setValidatedOrg({ id: org.id, name: org.name });
       } else {
-        const result = await organizationService.validateInvitation(inviteCode);
-        if (result.valid && result.organization) {
-          setValidatedOrg(result.organization);
-        } else {
-          setJoinError("Invalid invite code. Please check and try again.");
-        }
+        setJoinError("Invalid invite code. Please check and try again.");
       }
     } catch (error) {
       setJoinError("Failed to validate invite code");
@@ -240,10 +235,19 @@ export const AuthPage = () => {
                   <p className="text-sm text-muted-foreground mb-1">You're joining:</p>
                   <p className="font-semibold text-lg">{validatedOrg.name}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">Once you join, you'll be able to view your encrypted salary and payment history.</p>
+                <p className="text-sm text-muted-foreground">Your request will be pending until an admin approves it.</p>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => { setValidatedOrg(null); setInviteCode(""); }} className="flex-1">Back</Button>
-                  <Button onClick={() => navigate("/pending")} className="flex-1">Join Organization</Button>
+                  <Button onClick={async () => {
+                    if (walletAddress) {
+                      try {
+                        await organizationService.joinWithOrgCode(inviteCode, walletAddress, walletAddress);
+                        navigate("/pending");
+                      } catch (e) {
+                        setJoinError("Failed to join organization");
+                      }
+                    }
+                  }} className="flex-1">Join Organization</Button>
                 </div>
               </>
             )}

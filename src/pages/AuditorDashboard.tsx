@@ -1,14 +1,47 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, DollarSign, Lock, Users, TrendingUp, ArrowRight, EyeOff } from "lucide-react";
+import { CheckCircle, DollarSign, Lock, Users, TrendingUp, ArrowRight, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { mockEmployees, totalDecryptedPayroll, totalDecryptedBonuses } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type Employee = Database["public"]["Tables"]["employees"]["Row"];
 
 const AuditorDashboard = () => {
   const { profile } = useAuth();
   const isEmployeeOrManager = profile?.currentRole === "employee" || profile?.currentRole === "manager";
+  const isAuditor = profile?.currentRole === "auditor";
+  
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!profile?.currentOrganization?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("employees")
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id);
+        
+        if (error) throw error;
+        setEmployees(data || []);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [profile?.currentOrganization?.id]);
+
+  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0);
+  const totalBonuses = employees.reduce((sum, e) => sum + (Number(e.encrypted_bonus) || 0), 0);
 
   const verifications = [
     { check: "Total payroll matches sum of encrypted salaries", status: "verified" },
@@ -19,9 +52,9 @@ const AuditorDashboard = () => {
   ];
 
   const statCards = [
-    { label: "Total Employees", value: isEmployeeOrManager ? "***" : String(mockEmployees.length), icon: Users, change: "0%", highlighted: false },
-    { label: "Total Payroll", value: isEmployeeOrManager ? "euint256(***)" : `$${totalDecryptedPayroll.toLocaleString()}`, icon: DollarSign, change: "6%", highlighted: true },
-    { label: "Total Bonuses", value: isEmployeeOrManager ? "euint256(***)" : `$${totalDecryptedBonuses.toLocaleString()}`, icon: DollarSign, change: "1%", highlighted: false },
+    { label: "Total Employees", value: isEmployeeOrManager ? "***" : String(employees.length), icon: Users, change: "0%", highlighted: false },
+    { label: "Total Payroll", value: isEmployeeOrManager ? "euint256(***)" : `$${totalPayroll.toLocaleString()}`, icon: DollarSign, change: "6%", highlighted: true },
+    { label: "Total Bonuses", value: isEmployeeOrManager ? "euint256(***)" : `$${totalBonuses.toLocaleString()}`, icon: DollarSign, change: "1%", highlighted: false },
   ];
 
   return (
@@ -100,17 +133,33 @@ const AuditorDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockEmployees.map((emp) => (
-                  <TableRow key={emp.id}>
-                    <TableCell className="font-medium">{isEmployeeOrManager ? "***" : emp.name}</TableCell>
-                    <TableCell className="font-mono text-muted-foreground">
-                      {isEmployeeOrManager ? "euint256(***)" : emp.encryptedSalary}
-                    </TableCell>
-                    <TableCell className="font-mono text-muted-foreground">
-                      {isEmployeeOrManager ? "euint256(***)" : emp.encryptedBonus}
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : employees.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      No employees found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  employees.map((emp) => (
+                    <TableRow key={emp.id}>
+                      <TableCell className="font-medium">
+                        {isEmployeeOrManager ? "***" : emp.wallet_address.slice(0, 8) + "..." + emp.wallet_address.slice(-4)}
+                      </TableCell>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {isEmployeeOrManager ? "euint256(***)" : emp.encrypted_salary || "Not set"}
+                      </TableCell>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {isEmployeeOrManager ? "euint256(***)" : emp.encrypted_bonus || "Not set"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

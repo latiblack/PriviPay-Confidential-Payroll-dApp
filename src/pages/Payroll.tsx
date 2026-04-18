@@ -8,30 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { 
-  DollarSign, Users, Plus, Send, FileText, CheckCircle, Clock, Trash2
+  DollarSign, Users, Plus, Send, FileText, CheckCircle, Clock, Trash2, Loader2
 } from "lucide-react";
 
-interface Employee {
-  id: string;
-  name: string;
-  position: string;
-  salary: number;
-  walletAddress: string;
-  status: "active" | "pending";
-}
+type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
 
 const PayrollPage = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   
-  const [employees, setEmployees] = useState<Employee[]>([
-    { id: "1", name: "Alice Johnson", position: "Developer", salary: 8500, walletAddress: "0x1234...abcd", status: "active" },
-    { id: "2", name: "Bob Smith", position: "Manager", salary: 12000, walletAddress: "0x5678...efgh", status: "active" },
-    { id: "3", name: "Carol Williams", position: "Designer", salary: 7500, walletAddress: "0x9abc...ijkl", status: "pending" },
-  ]);
-  
+  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     position: "",
@@ -41,44 +32,117 @@ const PayrollPage = () => {
   
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Check if add=true in URL params
+  const fetchEmployees = async () => {
+    if (!profile?.currentOrganization?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
+      
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [profile?.currentOrganization]);
+
   useEffect(() => {
     if (searchParams.get("add") === "true") {
       setShowAddForm(true);
     }
   }, [searchParams]);
 
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!newEmployee.name || !newEmployee.salary || !newEmployee.walletAddress) {
       toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
       return;
     }
     
-    const emp: Employee = {
-      id: Date.now().toString(),
-      name: newEmployee.name,
-      position: newEmployee.position || "Employee",
-      salary: Number(newEmployee.salary),
-      walletAddress: newEmployee.walletAddress,
-      status: "pending",
-    };
+    if (!profile?.currentOrganization?.id) {
+      toast({ title: "Error", description: "No organization selected", variant: "destructive" });
+      return;
+    }
     
-    setEmployees([...employees, emp]);
-    setNewEmployee({ name: "", position: "", salary: "", walletAddress: "" });
-    setShowAddForm(false);
-    toast({ title: "Employee Added", description: `${emp.name} has been added to the payroll` });
+    try {
+      const { data, error } = await supabase
+        .from("employees")
+        .insert({
+          organization_id: profile.currentOrganization.id,
+          wallet_address: newEmployee.walletAddress,
+          position: newEmployee.position || "Employee",
+          status: "pending",
+          encrypted_salary: newEmployee.salary, // Would be FHE encrypted in production
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setEmployees([...employees, data]);
+      }
+      
+      setNewEmployee({ name: "", position: "", salary: "", walletAddress: "" });
+      setShowAddForm(false);
+      toast({ title: "Employee Added", description: `${newEmployee.name} has been added to the payroll` });
+    } catch (err) {
+      console.error("Error adding employee:", err);
+      toast({ title: "Error", description: "Failed to add employee", variant: "destructive" });
+    }
   };
 
-  const handleDeleteEmployee = (id: string) => {
-    setEmployees(employees.filter(e => e.id !== id));
-    toast({ title: "Employee Removed" });
+  const handleDeleteEmployee = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("employees")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      setEmployees(employees.filter(e => e.id !== id));
+      toast({ title: "Employee Removed" });
+    } catch (err) {
+      console.error("Error deleting employee:", err);
+      toast({ title: "Error", description: "Failed to delete employee", variant: "destructive" });
+    }
   };
-
-  const totalPayroll = employees.filter(e => e.status === "active").reduce((sum, e) => sum + e.salary, 0);
   const pendingCount = employees.filter(e => e.status === "pending").length;
+  
+  const getEmployeeName = (emp: EmployeeRow) => {
+    if (emp.wallet_address) {
+      return `${emp.wallet_address.slice(0, 6)}...${emp.wallet_address.slice(-4)}`;
+    }
+    return "Unknown";
+  };
+
+  const getEmployeeSalary = (emp: EmployeeRow): number => {
+    if (emp.encrypted_salary) {
+      return Number(emp.encrypted_salary);
+    }
+    return 0;
+  };
+  
+  const totalPayroll = employees.filter(e => e.status === "active").reduce((sum, e) => sum + getEmployeeSalary(e), 0);
 
   if (!profile?.currentOrganization) {
     return <div className="p-6">No organization found</div>;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -199,17 +263,17 @@ const PayrollPage = () => {
               <div key={emp.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-semibold">{emp.name.charAt(0)}</span>
+                    <span className="text-sm font-semibold">{getEmployeeName(emp).charAt(0)}</span>
                   </div>
                   <div>
-                    <p className="font-medium">{emp.name}</p>
+                    <p className="font-medium">{getEmployeeName(emp)}</p>
                     <p className="text-sm text-muted-foreground">{emp.position}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-semibold">${emp.salary.toLocaleString()}/mo</p>
-                    <p className="text-xs text-muted-foreground font-mono">{emp.walletAddress}</p>
+                    <p className="font-semibold">${getEmployeeSalary(emp).toLocaleString()}/mo</p>
+                    <p className="text-xs text-muted-foreground font-mono">{emp.wallet_address}</p>
                   </div>
                   <Badge variant={emp.status === "active" ? "default" : "secondary"}>
                     {emp.status}
