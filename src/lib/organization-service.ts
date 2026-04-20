@@ -290,49 +290,77 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
   },
 
   async approveJoinRequest(userId: string, orgId: string, role: "employee" | "manager" | "auditor" = "employee"): Promise<void> {
+    console.log("approveJoinRequest called:", { userId, orgId, role });
+    
     // First get the current pending record
     const { data: pendingRecord, error: fetchError } = await supabase
       .from("user_roles")
-      .select("*")
+      .select("id, organization_id, user_id, role")
       .eq("organization_id", orgId)
       .eq("user_id", userId)
       .eq("role", "pending")
       .single();
 
+    console.log("Pending record found:", { pendingRecord, fetchError });
+
     if (fetchError || !pendingRecord) {
+      console.error("Pending request not found:", fetchError);
       throw new Error("Pending request not found");
     }
 
-    // Update the role to employee
-    const { error } = await supabase
+    console.log("Updating record with ID:", pendingRecord.id);
+    
+    // Update the role to employee - using ID directly
+    const { error: updateError } = await supabase
       .from("user_roles")
-      .update({ role, created_at: new Date().toISOString() })
+      .update({ role: role, created_at: new Date().toISOString() })
       .eq("id", pendingRecord.id);
 
-    if (error) throw new Error(error.message);
+    console.log("Update result:", { updateError });
+
+    if (updateError) {
+      console.error("Update error:", updateError);
+      throw new Error(updateError.message);
+    }
+    
+    console.log("Approval successful!");
   },
 
   async rejectJoinRequest(userId: string, orgId: string): Promise<void> {
+    console.log("rejectJoinRequest called:", { userId, orgId });
+    
     // First get the current pending record
     const { data: pendingRecord, error: fetchError } = await supabase
       .from("user_roles")
-      .select("*")
+      .select("id, organization_id, user_id, role")
       .eq("organization_id", orgId)
       .eq("user_id", userId)
       .eq("role", "pending")
       .single();
 
+    console.log("Pending record found:", { pendingRecord, fetchError });
+
     if (fetchError || !pendingRecord) {
+      console.error("Pending request not found:", fetchError);
       throw new Error("Pending request not found");
     }
 
-    // Delete the pending request
-    const { error } = await supabase
+    console.log("Deleting record with ID:", pendingRecord.id);
+    
+    // Delete the pending request - using ID directly
+    const { error: deleteError } = await supabase
       .from("user_roles")
       .delete()
       .eq("id", pendingRecord.id);
 
-    if (error) throw new Error(error.message);
+    console.log("Delete result:", { deleteError });
+
+    if (deleteError) {
+      console.error("Delete error:", deleteError);
+      throw new Error(deleteError.message);
+    }
+    
+    console.log("Rejection successful!");
   },
 
   async isUserPending(userId: string, orgId: string): Promise<boolean> {
