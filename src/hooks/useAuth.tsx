@@ -16,42 +16,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, walletAddress } = useWalletAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingWallet, setLoadingWallet] = useState<string | null>(null);
 
   // Load profile when wallet connects or changes
   useEffect(() => {
     const loadProfile = async () => {
-      // Always try to fetch fresh data when we have a wallet
-      if (walletAddress) {
-        setIsLoading(true);
-        try {
-          const userProfile = await authService.login(walletAddress);
-          console.log("Profile loaded from DB:", userProfile);
+      // Prevent multiple simultaneous loads
+      if (!walletAddress || loadingWallet === walletAddress) {
+        if (!walletAddress) setIsLoading(false);
+        return;
+      }
+      
+      console.log("Loading profile for wallet:", walletAddress);
+      setLoadingWallet(walletAddress);
+      setIsLoading(true);
+      
+      try {
+        const userProfile = await authService.login(walletAddress);
+        console.log("Profile loaded from DB:", userProfile);
+        
+        // Only update if this is still the current wallet
+        if (userProfile.walletAddress === walletAddress) {
           setProfile(userProfile);
-        } catch (error) {
-          console.error("Error loading profile:", error);
-          // On error, try loading from localStorage as fallback
-          const stored = authService.loadProfile();
-          if (stored) {
-            setProfile(stored);
-          }
-        } finally {
-          setIsLoading(false);
         }
-      } else if (isAuthenticated && !walletAddress) {
-        // Waiting for wallet to be created (email auth)
-        setIsLoading(true);
-      } else {
-        // No wallet, load from localStorage
-        const stored = authService.loadProfile();
-        if (stored) {
-          setProfile(stored);
-        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setLoadingWallet(null);
         setIsLoading(false);
       }
     };
 
     loadProfile();
-  }, [isAuthenticated, walletAddress]);
+  }, [walletAddress]);
 
   const refreshProfile = async (): Promise<UserProfile | null> => {
     if (walletAddress) {

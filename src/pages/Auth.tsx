@@ -80,41 +80,60 @@ export const AuthPage = () => {
 
   useEffect(() => {
     const checkExistingOrg = async () => {
-      console.log("Auth check:", { isAuthenticated, walletAddress, hasProfile: !!profile, user });
+      console.log("Auth check:", { isAuthenticated, walletAddress, user });
       
-      if (isAuthenticated && walletAddress) {
-        try {
-          // Always refresh profile from DB to get the latest role
-          const freshProfile = await refreshProfile();
-          console.log("Fresh profile from DB:", freshProfile);
-          
-          const role = freshProfile?.currentRole as string | null;
-          
-          if (role === "owner") {
-            navigate("/admin");
-            return;
-          }
-          // If user is pending, go to pending page
-          if (role === "pending") {
-            navigate("/pending");
-            return;
-          }
-          // If user has a valid role (employee, manager, auditor), go to their dashboard
-          if (role && role !== "pending") {
-            navigate(role === "employee" ? "/employee" : "/admin");
-            return;
-          }
-        } catch (e) {
-          console.log("No existing organization - will show create/join screen");
+      // Only check if we have a wallet address
+      if (!walletAddress) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // Always refresh profile from DB to get the latest role
+        const freshProfile = await refreshProfile();
+        console.log("Fresh profile from DB:", freshProfile);
+        
+        // If no profile yet, show create/join screen
+        if (!freshProfile) {
+          console.log("No profile - showing create/join screen");
+          setLoading(false);
+          return;
         }
-      } else if (isAuthenticated && user && !walletAddress) {
-        // User authenticated (email) but waiting for wallet to be created
-        console.log("User authenticated, waiting for wallet...");
+        
+        const role = freshProfile.currentRole as string | null;
+        const org = freshProfile.currentOrganization;
+        
+        console.log("Role:", role, "Org:", org);
+        
+        if (role === "owner" && org) {
+          navigate("/admin");
+          return;
+        }
+        // If user is pending, go to pending page
+        if (role === "pending") {
+          navigate("/pending");
+          return;
+        }
+        // If user has a valid role (employee, manager, auditor), go to their dashboard
+        if (role && role !== "pending" && org) {
+          navigate("/employee");
+          return;
+        }
+        // If we have a role but no org yet, show create/join screen
+        // No need to navigate - just show the screen
+      } catch (e) {
+        console.log("Error loading profile:", e);
       }
       setLoading(false);
     };
-    checkExistingOrg();
-  }, [isAuthenticated, walletAddress, user]);
+    
+    // Only run when we have wallet address
+    if (walletAddress) {
+      checkExistingOrg();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, walletAddress]);
 
   if (loading) {
     return (

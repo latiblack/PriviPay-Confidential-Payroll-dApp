@@ -58,11 +58,38 @@ const AdminDashboard = () => {
       const pending = await organizationService.getPendingJoinRequests(orgId);
       setPendingRequests(pending);
       
-      // Get employees count
-      const { count: empCount } = await supabase
+      // Get employees count from employees table
+      const { count: empCount, data: empData } = await supabase
         .from("employees")
-        .select("*", { count: "exact", head: true })
+        .select("*", { count: "exact" })
         .eq("organization_id", orgId);
+      
+      console.log("Employees table count:", empCount, "Data:", empData);
+      
+      // Get members count from user_roles (employees, managers, auditors - not pending)
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("organization_id", orgId)
+        .neq("role", "pending");
+      
+      console.log("User roles data:", rolesData);
+      
+      const memberCount = rolesData?.length || 0;
+      
+      // For total employees - count everyone who has joined (user_roles) AND employees in table
+      // Combine and deduplicate
+      const allWallets = new Set();
+      
+      // Add from employees table
+      empData?.forEach(e => allWallets.add(e.wallet_address));
+      
+      // Add from user_roles
+      rolesData?.forEach(r => allWallets.add(r.user_id));
+      
+      const totalMembers = allWallets.size;
+      
+      console.log("Total unique members:", totalMembers);
       
       // Get total payroll
       const { data: employees } = await supabase
@@ -75,7 +102,7 @@ const AdminDashboard = () => {
       
       // Update stats
       setStats({
-        totalEmployees: empCount || 0,
+        totalEmployees: totalMembers,
         totalPayroll: totalSalary,
         pendingApprovals: pending.length,
       });
