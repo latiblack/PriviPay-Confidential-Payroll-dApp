@@ -37,6 +37,7 @@ const pageTitles: Record<string, string> = {
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode; requiredRole?: string }) => {
   const { profile, isLoading } = useAuth();
+  const location = useLocation();
   
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -51,23 +52,29 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
     return <Navigate to="/pending" replace />;
   }
   
-  // If role is required and user doesn't have it, redirect
-  if (requiredRole && profile.currentRole !== requiredRole) {
-    // Redirect based on role
+  // If role is required and user doesn't have it
+  if (requiredRole) {
+    if (profile.currentRole !== requiredRole) {
+      // Owner trying to access employee-only route -> go to admin
+      if (profile.currentRole === "owner") {
+        return <Navigate to="/admin" replace />;
+      }
+      // Non-owner trying to access admin-only route -> go to employee
+      return <Navigate to="/employee" replace />;
+    }
+  } else {
+    // No specific role required - redirect based on user's role
+    // Owner should go to /admin, not /employee
     if (profile.currentRole === "owner") {
       return <Navigate to="/admin" replace />;
     }
-    return <Navigate to="/employee" replace />;
-  }
-  
-  // Redirect owner away from employee-only pages
-  if (profile.currentRole === "owner" && window.location.pathname === "/employee") {
-    return <Navigate to="/admin" replace />;
-  }
-  
-  // Redirect non-owners from admin pages
-  if (profile.currentRole !== "owner" && window.location.pathname.startsWith("/admin")) {
-    return <Navigate to="/employee" replace />;
+    // Employee/manager/auditor should go to /employee
+    if (profile.currentRole === "employee" || profile.currentRole === "manager" || profile.currentRole === "auditor") {
+      // Already on employee page - allow it, otherwise redirect
+      if (location.pathname !== "/employee") {
+        return <Navigate to="/employee" replace />;
+      }
+    }
   }
   
   return <>{children}</>;

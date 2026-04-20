@@ -93,7 +93,7 @@ export const authService = {
       };
     }
 
-    // Check user_roles for membership
+    // Check user_roles for membership (all roles except pending)
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
       .select(`
@@ -101,7 +101,7 @@ export const authService = {
         organizations:organization_id (*)
       `)
       .eq("user_id", walletAddress)
-      .eq("role", "employee");
+      .neq("role", "pending");
 
     if (rolesError) throw new Error(rolesError.message);
 
