@@ -3,16 +3,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { 
-  Settings, Globe, Palette, Bell, Shield, Moon, Sun, Monitor
+  Settings, Globe, Palette, Bell, Shield, Moon, Sun, Monitor, Building2, Loader2
 } from "lucide-react";
 
 const SettingsPage = () => {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
+  
+  const [orgName, setOrgName] = useState(profile?.currentOrganization?.name || "");
+  const [orgDescription, setOrgDescription] = useState(profile?.currentOrganization?.description || "");
+  const [savingOrg, setSavingOrg] = useState(false);
   
   const [settings, setSettings] = useState({
     currency: "USD",
@@ -21,6 +27,31 @@ const SettingsPage = () => {
     emailNotifications: true,
     pushNotifications: true,
   });
+
+  const handleSaveOrg = async () => {
+    if (!profile?.currentOrganization?.id) return;
+    
+    setSavingOrg(true);
+    try {
+      const { error } = await supabase
+        .from("organizations")
+        .update({ 
+          name: orgName,
+          description: orgDescription 
+        })
+        .eq("id", profile.currentOrganization.id);
+      
+      if (error) throw error;
+      
+      await refreshProfile();
+      toast({ title: "Organization Updated", description: "Your organization details have been saved" });
+    } catch (err) {
+      console.error("Error updating org:", err);
+      toast({ title: "Error", description: "Failed to update organization", variant: "destructive" });
+    } finally {
+      setSavingOrg(false);
+    }
+  };
 
   const handleSave = () => {
     toast({ title: "Settings Saved", description: "Your preferences have been updated" });
@@ -39,6 +70,38 @@ const SettingsPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Organization Details */}
+        <Card className="border shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" /> Organization Details
+            </CardTitle>
+            <CardDescription>Update your organization information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Organization Name</Label>
+              <Input 
+                value={orgName} 
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="Acme Corporation"
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea 
+                value={orgDescription} 
+                onChange={(e) => setOrgDescription(e.target.value)}
+                placeholder="Brief description of your organization"
+                rows={3}
+              />
+            </div>
+            <Button onClick={handleSaveOrg} disabled={savingOrg} className="w-full">
+              {savingOrg ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save Organization
+            </Button>
+          </CardContent>
+        </Card>
         {/* Currency & Language */}
         <Card className="border shadow-sm">
           <CardHeader>

@@ -29,7 +29,7 @@ export const AuthPage = () => {
   const [inviteCode, setInviteCode] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
-  const [validatedOrg, setValidatedOrg] = useState<{ id: string; name: string } | null>(null);
+  const [validatedOrg, setValidatedOrg] = useState<{ id: string; name: string; description: string | null } | null>(null);
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
   const [checkingInvites, setCheckingInvites] = useState(true);
 
@@ -55,14 +55,15 @@ export const AuthPage = () => {
               const orgIds = [...new Set(invitations.map(i => i.organization_id))];
               const { data: orgs } = await supabase
                 .from("organizations")
-                .select("id, name")
+                .select("id, name, description")
                 .in("id", orgIds);
               
-              const orgMap = new Map(orgs?.map(o => [o.id, o.name]) || []);
+              const orgMap = new Map(orgs?.map(o => [o.id, { name: o.name, description: o.description }]) || []);
               
               const formatted = invitations.map(inv => ({
                 ...inv,
-                organization_name: orgMap.get(inv.organization_id) || "Organization"
+                organization_name: orgMap.get(inv.organization_id)?.name || "Organization",
+                organization_description: orgMap.get(inv.organization_id)?.description || ""
               }));
               
               setPendingInvitations(formatted);
@@ -172,11 +173,16 @@ export const AuthPage = () => {
     setValidatedOrg(null);
     
     try {
-      const org = await organizationService.findOrgByInviteCode(inviteCode);
-      if (org) {
-        setValidatedOrg({ id: org.id, name: org.name });
-      } else {
+      const { data: org, error } = await supabase
+        .from("organizations")
+        .select("id, name, description")
+        .eq("invite_code", inviteCode.toUpperCase())
+        .single();
+      
+      if (error || !org) {
         setJoinError("Invalid invite code. Please check and try again.");
+      } else {
+        setValidatedOrg({ id: org.id, name: org.name, description: org.description });
       }
     } catch (error) {
       setJoinError("Failed to validate invite code");
@@ -326,7 +332,10 @@ export const AuthPage = () => {
                 <p className="text-sm text-muted-foreground mb-4">You have pending invitations:</p>
                 {pendingInvitations.map((inv) => (
                   <div key={inv.id} className="border rounded-lg p-4 space-y-2">
-                    <p className="font-semibold">{inv.organization_name}</p>
+                    <p className="font-semibold text-lg">{inv.organization_name}</p>
+                    {inv.organization_description && (
+                      <p className="text-sm text-muted-foreground">{inv.organization_description}</p>
+                    )}
                     <p className="text-xs text-muted-foreground">Role: {inv.role}</p>
                     <div className="flex gap-2">
                       <Button 
@@ -393,6 +402,9 @@ export const AuthPage = () => {
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                   <p className="text-sm text-muted-foreground mb-1">You're joining:</p>
                   <p className="font-semibold text-lg">{validatedOrg.name}</p>
+                  {validatedOrg.description && (
+                    <p className="text-sm text-muted-foreground mt-2">{validatedOrg.description}</p>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">Your request will be pending until an admin approves it.</p>
                 <div className="flex gap-2">
