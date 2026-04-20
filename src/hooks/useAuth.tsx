@@ -17,21 +17,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load profile when wallet connects
+  // Load profile when wallet connects or changes
   useEffect(() => {
     const loadProfile = async () => {
-      if (isAuthenticated && walletAddress) {
+      // Always try to fetch fresh data when we have a wallet
+      if (walletAddress) {
         setIsLoading(true);
         try {
           const userProfile = await authService.login(walletAddress);
+          console.log("Profile loaded from DB:", userProfile);
           setProfile(userProfile);
         } catch (error) {
           console.error("Error loading profile:", error);
+          // On error, try loading from localStorage as fallback
+          const stored = authService.loadProfile();
+          if (stored) {
+            setProfile(stored);
+          }
         } finally {
           setIsLoading(false);
         }
+      } else if (isAuthenticated && !walletAddress) {
+        // Waiting for wallet to be created (email auth)
+        setIsLoading(true);
       } else {
-        // No wallet connected - try to load from localStorage
+        // No wallet, load from localStorage
         const stored = authService.loadProfile();
         if (stored) {
           setProfile(stored);

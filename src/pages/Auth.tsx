@@ -84,14 +84,24 @@ export const AuthPage = () => {
       
       if (isAuthenticated && walletAddress) {
         try {
-          await refreshProfile();
-          if (profile?.currentRole === "owner") {
+          // Always refresh profile from DB to get the latest role
+          const freshProfile = await refreshProfile();
+          console.log("Fresh profile from DB:", freshProfile);
+          
+          const role = freshProfile?.currentRole as string | null;
+          
+          if (role === "owner") {
             navigate("/admin");
             return;
           }
-          // If user is authenticated and has a wallet but no org, show the select screen
-          if (profile && profile.currentRole) {
-            navigate(`/${profile.currentRole === "employee" ? "employee" : "admin"}`);
+          // If user is pending, go to pending page
+          if (role === "pending") {
+            navigate("/pending");
+            return;
+          }
+          // If user has a valid role (employee, manager, auditor), go to their dashboard
+          if (role && role !== "pending") {
+            navigate(role === "employee" ? "/employee" : "/admin");
             return;
           }
         } catch (e) {
@@ -104,7 +114,7 @@ export const AuthPage = () => {
       setLoading(false);
     };
     checkExistingOrg();
-  }, [isAuthenticated, walletAddress, user, profile]);
+  }, [isAuthenticated, walletAddress, user]);
 
   if (loading) {
     return (

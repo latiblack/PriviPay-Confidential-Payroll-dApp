@@ -46,12 +46,27 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
     return <Navigate to="/auth" replace />;
   }
   
+  // If user is pending, redirect to pending page
+  if (profile.currentRole === "pending") {
+    return <Navigate to="/pending" replace />;
+  }
+  
   // If role is required and user doesn't have it, redirect
   if (requiredRole && profile.currentRole !== requiredRole) {
     // Redirect based on role
     if (profile.currentRole === "owner") {
       return <Navigate to="/admin" replace />;
     }
+    return <Navigate to="/employee" replace />;
+  }
+  
+  // Redirect owner away from employee-only pages
+  if (profile.currentRole === "owner" && window.location.pathname === "/employee") {
+    return <Navigate to="/admin" replace />;
+  }
+  
+  // Redirect non-owners from admin pages
+  if (profile.currentRole !== "owner" && window.location.pathname.startsWith("/admin")) {
     return <Navigate to="/employee" replace />;
   }
   
