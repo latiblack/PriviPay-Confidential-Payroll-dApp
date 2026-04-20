@@ -195,7 +195,7 @@ export type Database = {
           },
         ]
       }
-      profiles: {
+profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
@@ -224,6 +224,47 @@ export type Database = {
           wallet_address?: string | null
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string | null
+          type: string
+          title: string
+          message: string | null
+          read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id?: string | null
+          type: string
+          title: string
+          message?: string | null
+          read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string | null
+          type?: string
+          title?: string
+          message?: string | null
+          read?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       user_roles: {
         Row: {

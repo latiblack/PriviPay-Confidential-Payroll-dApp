@@ -117,9 +117,11 @@ const AdminDashboard = () => {
     
     try {
       await organizationService.approveJoinRequest(userId, profile.currentOrganization.id, role);
+      await organizationService.notifyJoinApproved(profile.currentOrganization.id, userId);
       toast({ title: "Approved", description: "User has been granted access" });
       loadOrgData();
     } catch (error) {
+      console.error("Error approving:", error);
       toast({ title: "Error", description: "Failed to approve", variant: "destructive" });
     }
   };
@@ -129,9 +131,11 @@ const AdminDashboard = () => {
     
     try {
       await organizationService.rejectJoinRequest(userId, profile.currentOrganization.id);
+      await organizationService.notifyJoinRejected(profile.currentOrganization.id, userId);
       toast({ title: "Rejected", description: "Access request denied" });
       loadOrgData();
     } catch (error) {
+      console.error("Error rejecting:", error);
       toast({ title: "Error", description: "Failed to reject", variant: "destructive" });
     }
   };

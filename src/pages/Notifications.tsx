@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Calendar, DollarSign, FileText, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Bell, Calendar, DollarSign, FileText, AlertCircle, CheckCircle2, Loader2, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Notification {
   id: string;
-  type: "announcement" | "payment" | "document" | "alert";
+  type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected";
   title: string;
   message: string;
   date: string;
@@ -24,6 +24,12 @@ const getIcon = (type: Notification["type"]) => {
       return <FileText className="h-5 w-5" />;
     case "alert":
       return <AlertCircle className="h-5 w-5" />;
+    case "join_request":
+      return <Users className="h-5 w-5" />;
+    case "join_approved":
+      return <CheckCircle2 className="h-5 w-5" />;
+    case "join_rejected":
+      return <AlertCircle className="h-5 w-5" />;
   }
 };
 
@@ -37,6 +43,12 @@ const getBadgeColor = (type: Notification["type"]) => {
       return "bg-purple-500";
     case "alert":
       return "bg-orange-500";
+    case "join_request":
+      return "bg-amber-500";
+    case "join_approved":
+      return "bg-green-500";
+    case "join_rejected":
+      return "bg-red-500";
   }
 };
 
@@ -47,13 +59,15 @@ const Notifications = () => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (!profile?.currentOrganization?.id) return;
+      if (!profile?.currentOrganization?.id || !profile.walletAddress) return;
       
       try {
+        // Fetch org-wide notifications AND user-specific notifications
         const { data, error } = await supabase
           .from("notifications" as any)
           .select("*")
           .eq("organization_id", profile.currentOrganization.id)
+          .or(`user_id.eq.${profile.walletAddress},user_id.is.null`)
           .order("created_at", { ascending: false });
         
         if (error) throw error;
@@ -76,7 +90,7 @@ const Notifications = () => {
     };
     
     fetchNotifications();
-  }, [profile?.currentOrganization?.id]);
+  }, [profile?.currentOrganization?.id, profile?.walletAddress]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

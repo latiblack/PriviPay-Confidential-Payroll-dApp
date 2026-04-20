@@ -25,8 +25,7 @@ export const organizationService = {
     ownerWalletAddress: string;
     ownerId: string;
   }): Promise<Organization> {
-    const inviteCode = generateInviteCode();
-    
+    // Don't pass invite_code - let Supabase trigger auto-generate it
     const { data: org, error } = await supabase
       .from("organizations")
       .insert({
@@ -34,7 +33,6 @@ export const organizationService = {
         description: data.description || null,
         wallet_address: data.ownerWalletAddress,
         owner_id: data.ownerId,
-        invite_code: inviteCode,
       } as OrganizationInsert)
       .select()
       .single();
@@ -275,6 +273,9 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
       } as UserRoleInsert);
 
     if (error) throw new Error(error.message);
+
+    // Notify admin about new join request
+    await this.notifyJoinRequest(org.id, userId);
   },
 
   async getPendingJoinRequests(orgId: string): Promise<UserRole[]> {
@@ -289,23 +290,47 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
   },
 
   async approveJoinRequest(userId: string, orgId: string, role: "employee" | "manager" | "auditor" = "employee"): Promise<void> {
+    // First get the current pending record
+    const { data: pendingRecord, error: fetchError } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("user_id", userId)
+      .eq("role", "pending")
+      .single();
+
+    if (fetchError || !pendingRecord) {
+      throw new Error("Pending request not found");
+    }
+
+    // Update the role to employee
     const { error } = await supabase
       .from("user_roles")
       .update({ role, created_at: new Date().toISOString() })
-      .eq("organization_id", orgId)
-      .eq("user_id", userId)
-      .eq("role", "pending");
+      .eq("id", pendingRecord.id);
 
     if (error) throw new Error(error.message);
   },
 
   async rejectJoinRequest(userId: string, orgId: string): Promise<void> {
+    // First get the current pending record
+    const { data: pendingRecord, error: fetchError } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("organization_id", orgId)
+      .eq("user_id", userId)
+      .eq("role", "pending")
+      .single();
+
+    if (fetchError || !pendingRecord) {
+      throw new Error("Pending request not found");
+    }
+
+    // Delete the pending request
     const { error } = await supabase
       .from("user_roles")
       .delete()
-      .eq("organization_id", orgId)
-      .eq("user_id", userId)
-      .eq("role", "pending");
+      .eq("id", pendingRecord.id);
 
     if (error) throw new Error(error.message);
   },
@@ -321,6 +346,86 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
 
     if (error && error.code !== "PGRST116") return false;
     return !!data;
+  },
+
+  // Notifications
+  async createNotification(data: {
+    organizationId: string;
+    userId?: string;
+    type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected";
+    title: string;
+    message: string;
+  }): Promise<void> {
+    const { error } = await supabase
+      .from("notifications")
+      .insert({
+        organization_id: data.organizationId,
+        user_id: data.userId || null,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        read: false,
+      });
+
+    if (error) throw new Error(error.message);
+  },
+
+  async notifyJoinRequest(orgId: string, requesterId: string): Promise<void> {
+    // Get org details
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("id", orgId)
+      .single();
+
+    // Notify admin (owner) - find the owner
+    const { data: owner } = await supabase
+      .from("organizations")
+      .select("owner_id")
+      .eq("id", orgId)
+      .single();
+
+    if (owner) {
+      await this.createNotification({
+        organizationId: orgId,
+        userId: owner.owner_id,
+        type: "join_request",
+        title: "New Join Request",
+        message: `User ${requesterId.slice(0, 8)}...${requesterId.slice(-4)} wants to join ${org?.name || "your organization"}`,
+      });
+    }
+  },
+
+  async notifyJoinApproved(orgId: string, userId: string): Promise<void> {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .single();
+
+    await this.createNotification({
+      organizationId: orgId,
+      userId,
+      type: "join_approved",
+      title: "Join Request Approved",
+      message: `Your request to join ${org?.name || "the organization"} has been approved!`,
+    });
+  },
+
+  async notifyJoinRejected(orgId: string, userId: string): Promise<void> {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .single();
+
+    await this.createNotification({
+      organizationId: orgId,
+      userId,
+      type: "join_rejected",
+      title: "Join Request Declined",
+      message: `Your request to join ${org?.name || "the organization"} has been declined.`,
+    });
   },
 };
 

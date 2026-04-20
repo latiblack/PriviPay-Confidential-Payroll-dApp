@@ -436,6 +436,7 @@ export const AuthPage = () => {
                         await organizationService.joinWithOrgCode(inviteCode, walletAddress, walletAddress);
                         navigate("/pending");
                       } catch (e) {
+                        console.error("Join error:", e);
                         setJoinError("Failed to join organization");
                       }
                     }
