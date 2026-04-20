@@ -173,18 +173,25 @@ export const AuthPage = () => {
     setValidatedOrg(null);
     
     try {
+      const codeInput = inviteCode.toUpperCase().replace(/[-\s]/g, '');
+      console.log("Looking for invite code:", codeInput);
+      
       const { data: org, error } = await supabase
         .from("organizations")
-        .select("id, name, description")
-        .eq("invite_code", inviteCode.toUpperCase())
+        .select("id, name, description, invite_code")
+        .eq("invite_code", codeInput)
         .single();
+      
+      console.log("Org lookup result:", { org, error });
       
       if (error || !org) {
         setJoinError("Invalid invite code. Please check and try again.");
       } else {
+        console.log("Found org:", org);
         setValidatedOrg({ id: org.id, name: org.name, description: org.description });
       }
     } catch (error) {
+      console.error("Error validating invite:", error);
       setJoinError("Failed to validate invite code");
     } finally {
       setJoining(false);

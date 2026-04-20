@@ -48,7 +48,10 @@ const AdminDashboard = () => {
       const orgId = profile.currentOrganization.id;
       
       // Get invite code
-      const code = await organizationService.getOrganizationInviteCode(orgId);
+      let code = await organizationService.getOrganizationInviteCode(orgId);
+      if (!code) {
+        code = await organizationService.regenerateInviteCode(orgId);
+      }
       setInviteCode(code || "");
       
       // Get pending join requests (role = 'pending')
