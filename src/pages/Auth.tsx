@@ -173,8 +173,18 @@ export const AuthPage = () => {
     setValidatedOrg(null);
     
     try {
-      const codeInput = inviteCode.toUpperCase().replace(/[-\s]/g, '');
+      // Keep the dashes - just convert to uppercase
+      const codeInput = inviteCode.toUpperCase().trim();
+      
+      // First, let's see what invite codes exist in the database
+      const { data: allOrgs } = await supabase
+        .from("organizations")
+        .select("id, name, invite_code")
+        .limit(5);
+      
+      // Log to UI for debugging
       console.log("Looking for invite code:", codeInput);
+      console.log("Sample orgs in DB:", allOrgs);
       
       const { data: org, error } = await supabase
         .from("organizations")
@@ -185,14 +195,18 @@ export const AuthPage = () => {
       console.log("Org lookup result:", { org, error });
       
       if (error || !org) {
-        setJoinError("Invalid invite code. Please check and try again.");
+        // Show more helpful error
+        if (allOrgs && allOrgs.length > 0) {
+          setJoinError(`Code not found. Available codes: ${allOrgs.map(o => o.invite_code).join(', ')}`);
+        } else {
+          setJoinError("No organizations exist yet.");
+        }
       } else {
-        console.log("Found org:", org);
         setValidatedOrg({ id: org.id, name: org.name, description: org.description });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error validating invite:", error);
-      setJoinError("Failed to validate invite code");
+      setJoinError(error.message || "Failed to validate invite code");
     } finally {
       setJoining(false);
     }
