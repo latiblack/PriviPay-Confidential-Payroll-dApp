@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2, Users, ArrowRight, CheckCircle2, Copy, Loader2 } from "lucide-react";
+import { Building2, Users, ArrowRight, CheckCircle2, Copy, Loader2, Wallet, Mail } from "lucide-react";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
+import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
+import { supabase } from "@/integrations/supabase/client";
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
@@ -18,7 +20,6 @@ export const AuthPage = () => {
   const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<AuthStep>("select");
   const [loading, setLoading] = useState(true);
-  const [walletLoading, setWalletLoading] = useState(false);
 
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
@@ -29,6 +30,52 @@ export const AuthPage = () => {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [validatedOrg, setValidatedOrg] = useState<{ id: string; name: string } | null>(null);
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
+  const [checkingInvites, setCheckingInvites] = useState(true);
+
+  // Check for pending email invitations
+  useEffect(() => {
+    const checkPendingInvitations = async () => {
+      if (isAuthenticated && walletAddress) {
+        setCheckingInvites(true);
+        try {
+          // Get user email from Dynamic if available
+          const userEmail = (user as any)?.email;
+          
+          if (userEmail) {
+            // Fetch pending invitations for this email
+            const { data: invitations, error } = await supabase
+              .from("invitations")
+              .select("*")
+              .eq("email", userEmail.toLowerCase())
+              .eq("status", "pending");
+            
+            if (!error && invitations && invitations.length > 0) {
+              // Get organization names
+              const orgIds = [...new Set(invitations.map(i => i.organization_id))];
+              const { data: orgs } = await supabase
+                .from("organizations")
+                .select("id, name")
+                .in("id", orgIds);
+              
+              const orgMap = new Map(orgs?.map(o => [o.id, o.name]) || []);
+              
+              const formatted = invitations.map(inv => ({
+                ...inv,
+                organization_name: orgMap.get(inv.organization_id) || "Organization"
+              }));
+              
+              setPendingInvitations(formatted);
+            }
+          }
+        } catch (e) {
+          console.log("No pending invitations");
+        }
+      }
+      setCheckingInvites(false);
+    };
+    checkPendingInvitations();
+  }, [isAuthenticated, walletAddress, user]);
 
   useEffect(() => {
     const checkExistingOrg = async () => {
@@ -150,13 +197,31 @@ export const AuthPage = () => {
             <CardTitle className="text-2xl">Welcome to PriviPay</CardTitle>
             <CardDescription>Sign in to manage your confidential payroll</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground text-center mb-4">
-                Sign in with email to get a secure wallet automatically, or connect your existing wallet
+          <CardContent className="space-y-6">
+            <p className="text-sm text-muted-foreground text-center">
+              Sign in with email to get a secure wallet automatically, or connect your existing wallet
+            </p>
+            
+            <Button onClick={connectWallet} className="w-full h-12 text-lg gap-2" size="lg">
+              <Wallet className="h-5 w-5" /> Sign In / Get Started
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">or continue with</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <p className="text-xs text-muted-foreground text-center mb-3">
+                Connect your own crypto wallet
               </p>
-              {/* Dynamic Widget will show email + wallet options */}
-              <div id="dynamic-auth-container"></div>
+              <div className="flex justify-center">
+                <DynamicWidget />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -252,7 +317,44 @@ export const AuthPage = () => {
         
         {step === "join-org" && (
           <CardContent className="space-y-4">
-            {!validatedOrg ? (
+            {checkingInvites ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : pendingInvitations.length > 0 ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">You have pending invitations:</p>
+                {pendingInvitations.map((inv) => (
+                  <div key={inv.id} className="border rounded-lg p-4 space-y-2">
+                    <p className="font-semibold">{inv.organization_name}</p>
+                    <p className="text-xs text-muted-foreground">Role: {inv.role}</p>
+                    <Button 
+                      onClick={async () => {
+                        if (walletAddress) {
+                          try {
+                            setJoining(true);
+                            await organizationService.acceptInvitation(inv.code, walletAddress, walletAddress);
+                            await refreshProfile();
+                            navigate("/employee");
+                          } catch (e) {
+                            setJoinError("Failed to accept invitation");
+                          } finally {
+                            setJoining(false);
+                          }
+                        }
+                      }}
+                      disabled={joining}
+                      className="w-full"
+                    >
+                      {joining ? "Joining..." : "Accept Invitation"}
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" onClick={() => setPendingInvitations([])} className="w-full">
+                  Or join with invite code
+                </Button>
+              </>
+            ) : !validatedOrg ? (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="inviteCode">Invite Code</Label>

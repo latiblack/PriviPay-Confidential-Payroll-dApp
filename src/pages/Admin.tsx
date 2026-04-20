@@ -33,6 +33,7 @@ const AdminDashboard = () => {
   const [inviteRole, setInviteRole] = useState("employee");
   const [inviteCode, setInviteCode] = useState("");
   const [pendingRequests, setPendingRequests] = useState<UserRole[]>([]);
+  const [inviting, setInviting] = useState(false);
   const [stats, setStats] = useState<OrgStats>({
     totalEmployees: 0,
     totalPayroll: 0,
@@ -89,6 +90,7 @@ const AdminDashboard = () => {
   const handleInvite = async () => {
     if (!inviteEmail || !profile?.currentOrganization?.id) return;
     
+    setInviting(true);
     try {
       await organizationService.createInvitation({
         organizationId: profile.currentOrganization.id,
@@ -100,7 +102,10 @@ const AdminDashboard = () => {
       toast({ title: "Invitation sent", description: `Invite sent to ${inviteEmail}` });
       setInviteEmail("");
     } catch (error) {
+      console.error("Error sending invite:", error);
       toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" });
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -252,8 +257,8 @@ const AdminDashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleInvite} className="w-full" disabled={!inviteEmail}>
-              Send Invite
+            <Button onClick={handleInvite} className="w-full" disabled={!inviteEmail || inviting}>
+              {inviting ? "Sending..." : "Send Invite"}
             </Button>
 
             {inviteCode && (

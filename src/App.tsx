@@ -63,7 +63,11 @@ const AppLayout = () => {
   const { profile } = useAuth();
   const isLanding = location.pathname === "/";
   const isAuth = location.pathname === "/auth";
+  const isPending = location.pathname === "/pending";
   const title = pageTitles[location.pathname] || "PriviPay";
+
+  // Only show sidebar when user is authenticated and has an org
+  const showSidebar = !isLanding && !isAuth && profile?.currentOrganization;
 
   if (isLanding) {
     return <Landing />;
@@ -75,8 +79,8 @@ const AppLayout = () => {
 
   return (
     <div className="flex min-h-screen">
-      <AppSidebar />
-      <div className="flex-1 ml-[72px]">
+      {showSidebar && <AppSidebar />}
+      <div className={`flex-1 ${showSidebar ? 'ml-[72px]' : ''}`}>
         <TopBar title={title} />
         <main className="px-6 pb-8">
           <Routes>
