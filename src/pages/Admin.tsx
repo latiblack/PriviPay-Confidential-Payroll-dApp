@@ -116,13 +116,41 @@ const AdminDashboard = () => {
     if (!profile?.currentOrganization?.id) return;
     
     try {
+      console.log("Approving user:", { userId, orgId: profile.currentOrganization.id, role });
+      
+      // First check if the pending request exists
+      const { data: pendingCheck, error: checkError } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("user_id", userId)
+        .eq("role", "pending");
+      
+      console.log("Pending check result:", { pendingCheck, checkError });
+      
+      if (!pendingCheck || pendingCheck.length === 0) {
+        toast({ title: "Error", description: "No pending request found for this user", variant: "destructive" });
+        return;
+      }
+      
       await organizationService.approveJoinRequest(userId, profile.currentOrganization.id, role);
       await organizationService.notifyJoinApproved(profile.currentOrganization.id, userId);
-      toast({ title: "Approved", description: "User has been granted access" });
+      
+      // Verify it worked
+      const { data: verify } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("user_id", userId)
+        .single();
+      
+      console.log("After approval, user role:", verify);
+      
+      toast({ title: "Approved", description: `User has been granted access. New role: ${verify?.role}` });
       loadOrgData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error approving:", error);
-      toast({ title: "Error", description: "Failed to approve", variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to approve", variant: "destructive" });
     }
   };
 
@@ -130,13 +158,31 @@ const AdminDashboard = () => {
     if (!profile?.currentOrganization?.id) return;
     
     try {
+      console.log("Rejecting user:", { userId, orgId: profile.currentOrganization.id });
+      
+      // First check if the pending request exists
+      const { data: pendingCheck, error: checkError } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("user_id", userId)
+        .eq("role", "pending");
+      
+      console.log("Pending check result:", { pendingCheck, checkError });
+      
+      if (!pendingCheck || pendingCheck.length === 0) {
+        toast({ title: "Error", description: "No pending request found for this user", variant: "destructive" });
+        return;
+      }
+      
       await organizationService.rejectJoinRequest(userId, profile.currentOrganization.id);
       await organizationService.notifyJoinRejected(profile.currentOrganization.id, userId);
+      
       toast({ title: "Rejected", description: "Access request denied" });
       loadOrgData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error rejecting:", error);
-      toast({ title: "Error", description: "Failed to reject", variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to reject", variant: "destructive" });
     }
   };
 
