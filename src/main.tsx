@@ -11,6 +11,12 @@ import "./index.css";
 const sdkOptions = {
   environmentId: "c9d199bd-fddd-4e61-97a5-1573e7f1e2e1",
   walletConnectors: [EthereumWalletConnectors],
+  // Enable embedded wallet for email users
+  enableEmbeddedWallet: true,
+  // Show the Dynamic widget for auth options
+  showDynamicWidget: true,
+  // Allow multi-wallet connections
+  allowMultiWalletConnections: true,
 };
 
 createRoot(document.getElementById("root")!).render(

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2, Users, ArrowRight, CheckCircle2, Copy, Wallet } from "lucide-react";
+import { Building2, Users, ArrowRight, CheckCircle2, Copy, Loader2 } from "lucide-react";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
@@ -14,10 +14,11 @@ type AuthStep = "select" | "create-org" | "join-org" | "success";
 
 export const AuthPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, walletAddress, connectWallet } = useWalletAuth();
+  const { isAuthenticated, walletAddress, connectWallet, user } = useWalletAuth();
   const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<AuthStep>("select");
   const [loading, setLoading] = useState(true);
+  const [walletLoading, setWalletLoading] = useState(false);
 
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
@@ -31,6 +32,8 @@ export const AuthPage = () => {
 
   useEffect(() => {
     const checkExistingOrg = async () => {
+      console.log("Auth check:", { isAuthenticated, walletAddress, hasProfile: !!profile, user });
+      
       if (isAuthenticated && walletAddress) {
         try {
           await refreshProfile();
@@ -38,19 +41,52 @@ export const AuthPage = () => {
             navigate("/admin");
             return;
           }
+          // If user is authenticated and has a wallet but no org, show the select screen
+          if (profile && profile.currentRole) {
+            navigate(`/${profile.currentRole === "employee" ? "employee" : "admin"}`);
+            return;
+          }
         } catch (e) {
-          console.log("No existing organization");
+          console.log("No existing organization - will show create/join screen");
         }
+      } else if (isAuthenticated && user && !walletAddress) {
+        // User authenticated (email) but waiting for wallet to be created
+        console.log("User authenticated, waiting for wallet...");
       }
       setLoading(false);
     };
     checkExistingOrg();
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated, walletAddress, user, profile]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Setting up your secure environment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // User is authenticated but waiting for embedded wallet to be created
+  if (isAuthenticated && user && !walletAddress) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-2xl">Creating Your Wallet</CardTitle>
+            <CardDescription>Setting up your secure wallet for confidential payroll</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Please wait while we create your secure wallet. This will enable FHE-encrypted salary payments.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -111,16 +147,17 @@ export const AuthPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Connect Wallet</CardTitle>
-            <CardDescription>Connect your wallet to get started with PriviPay</CardDescription>
+            <CardTitle className="text-2xl">Welcome to PriviPay</CardTitle>
+            <CardDescription>Sign in to manage your confidential payroll</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={connectWallet} className="w-full h-12 text-lg gap-2" size="lg">
-              <Wallet className="h-5 w-5" /> Connect Wallet
-            </Button>
-            <p className="text-sm text-muted-foreground text-center">
-              You'll be able to create or join an organization after connecting
-            </p>
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground text-center mb-4">
+                Sign in with email to get a secure wallet automatically, or connect your existing wallet
+              </p>
+              {/* Dynamic Widget will show email + wallet options */}
+              <div id="dynamic-auth-container"></div>
+            </div>
           </CardContent>
         </Card>
       </div>

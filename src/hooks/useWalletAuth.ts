@@ -6,11 +6,13 @@ export const useWalletAuth = () => {
   
   const user = dynamicContext.user;
   const primaryWallet = dynamicContext.primaryWallet;
-  const isAuthenticated = !!(user && primaryWallet);
-  const walletAddress = primaryWallet?.address;
+  // User is authenticated if they have a Dynamic user (even without wallet)
+  const isAuthenticated = !!user;
+  // Wallet address can come from primary wallet OR from Dynamic user (for email auth)
+  const walletAddress = primaryWallet?.address || user?.userId;
 
   const connectWallet = useCallback(async () => {
-    // Open Dynamic widget for wallet connection
+    // Open Dynamic widget for wallet connection or email login
     dynamicContext.setShowAuthFlow?.(true);
   }, [dynamicContext]);
 
