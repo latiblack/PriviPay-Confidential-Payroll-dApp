@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,17 @@ const SettingsPage = () => {
   const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   
-  const [orgName, setOrgName] = useState(profile?.currentOrganization?.name || "");
-  const [orgDescription, setOrgDescription] = useState(profile?.currentOrganization?.description || "");
+  const [orgName, setOrgName] = useState("");
+  const [orgDescription, setOrgDescription] = useState("");
   const [savingOrg, setSavingOrg] = useState(false);
+
+  // Load org data when profile changes
+  useEffect(() => {
+    if (profile?.currentOrganization) {
+      setOrgName(profile.currentOrganization.name || "");
+      setOrgDescription(profile.currentOrganization.description || "");
+    }
+  }, [profile?.currentOrganization]);
   
   const [settings, setSettings] = useState({
     currency: "USD",

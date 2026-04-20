@@ -67,7 +67,7 @@ export const authService = {
     return newProfile!;
   },
 
-  // Get user's organizations and role
+// Get user's organizations and role
   async getUserOrganizationsAndRole(walletAddress: string): Promise<{
     organizations: Organization[];
     role: UserRole | null;
@@ -85,8 +85,9 @@ export const authService = {
 
     // If user owns orgs, they're an employer/owner
     if (ownedOrgs && ownedOrgs.length > 0) {
+      // Return only the first org (most recent) for owners
       return {
-        organizations: ownedOrgs,
+        organizations: [ownedOrgs[0]],
         role: null,
         isOwner: true,
       };
@@ -99,7 +100,8 @@ export const authService = {
         *,
         organizations:organization_id (*)
       `)
-      .eq("user_id", walletAddress);
+      .eq("user_id", walletAddress)
+      .eq("role", "employee");
 
     if (rolesError) throw new Error(rolesError.message);
 
@@ -108,6 +110,24 @@ export const authService = {
       return {
         organizations: roles.map((r: any) => r.organizations).filter(Boolean),
         role: role,
+        isOwner: false,
+      };
+    }
+
+    // Check for pending roles
+    const { data: pendingRoles } = await supabase
+      .from("user_roles")
+      .select(`
+        *,
+        organizations:organization_id (*)
+      `)
+      .eq("user_id", walletAddress)
+      .eq("role", "pending");
+
+    if (pendingRoles && pendingRoles.length > 0) {
+      return {
+        organizations: [],
+        role: pendingRoles[0],
         isOwner: false,
       };
     }
