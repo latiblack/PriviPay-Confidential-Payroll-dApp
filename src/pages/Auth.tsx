@@ -328,26 +328,46 @@ export const AuthPage = () => {
                   <div key={inv.id} className="border rounded-lg p-4 space-y-2">
                     <p className="font-semibold">{inv.organization_name}</p>
                     <p className="text-xs text-muted-foreground">Role: {inv.role}</p>
-                    <Button 
-                      onClick={async () => {
-                        if (walletAddress) {
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={async () => {
+                          if (walletAddress) {
+                            try {
+                              setJoining(true);
+                              await organizationService.acceptInvitation(inv.code, walletAddress, walletAddress);
+                              await refreshProfile();
+                              navigate("/employee");
+                            } catch (e) {
+                              setJoinError("Failed to accept invitation");
+                            } finally {
+                              setJoining(false);
+                            }
+                          }
+                        }}
+                        disabled={joining}
+                        className="flex-1"
+                      >
+                        {joining ? "..." : "Accept"}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={async () => {
                           try {
                             setJoining(true);
-                            await organizationService.acceptInvitation(inv.code, walletAddress, walletAddress);
-                            await refreshProfile();
-                            navigate("/employee");
+                            await organizationService.rejectInvitation(inv.id);
+                            setPendingInvitations(prev => prev.filter(i => i.id !== inv.id));
                           } catch (e) {
-                            setJoinError("Failed to accept invitation");
+                            setJoinError("Failed to reject invitation");
                           } finally {
                             setJoining(false);
                           }
-                        }
-                      }}
-                      disabled={joining}
-                      className="w-full"
-                    >
-                      {joining ? "Joining..." : "Accept Invitation"}
-                    </Button>
+                        }}
+                        disabled={joining}
+                        className="flex-1"
+                      >
+                        Reject
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 <Button variant="outline" onClick={() => setPendingInvitations([])} className="w-full">
