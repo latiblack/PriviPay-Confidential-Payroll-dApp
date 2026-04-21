@@ -28,9 +28,21 @@ export const AppSidebar = () => {
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
-  // Managers see same as employees but with actual access to vote on voting page
-  const isEmployeeOrManager = profile?.currentRole === "employee" || profile?.currentRole === "manager";
-  const navItems = profile?.currentRole === "owner" ? ownerNavItems : employeeNavItems;
+  // Managers can see voting with actual vote button (handled in page)
+  const managerNavItems = [
+    { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
+    { icon: Vote, label: "Voting", path: "/voting" },
+    { icon: BarChart3, label: "Auditor", path: "/auditor" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
+  ];
+
+  // Select nav based on role
+  let navItems = employeeNavItems;
+  if (profile?.currentRole === "owner") {
+    navItems = ownerNavItems;
+  } else if (profile?.currentRole === "manager") {
+    navItems = managerNavItems;
+  }
 
   const handleLogout = () => {
     authService.clearProfile();

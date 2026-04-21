@@ -63,17 +63,10 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
       return <Navigate to="/employee" replace />;
     }
   } else {
-    // No specific role required - redirect based on user's role
-    // Owner should go to /admin, not /employee
-    if (profile.currentRole === "owner") {
-      return <Navigate to="/admin" replace />;
-    }
-    // Employee/manager/auditor should go to /employee
-    if (profile.currentRole === "employee" || profile.currentRole === "manager" || profile.currentRole === "auditor") {
-      // Already on employee page - allow it, otherwise redirect
-      if (location.pathname !== "/employee") {
-        return <Navigate to="/employee" replace />;
-      }
+    // No specific role required - only redirect if user has no org yet
+    if (!profile.currentOrganization && profile.currentRole !== "pending") {
+      // No organization yet - redirect to auth to create/join
+      return <Navigate to="/auth" replace />;
     }
   }
   
