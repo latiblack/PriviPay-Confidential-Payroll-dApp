@@ -59,15 +59,16 @@ const Notifications = () => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (!profile?.currentOrganization?.id || !profile.walletAddress) return;
+      if (!profile?.currentOrganization?.id || !profile.walletAddress) {
+        setLoading(false);
+        return;
+      }
       
       try {
-        // Fetch org-wide notifications AND user-specific notifications
         const { data, error } = await supabase
           .from("notifications" as any)
           .select("*")
           .eq("organization_id", profile.currentOrganization.id)
-          .or(`user_id.eq.${profile.walletAddress},user_id.is.null`)
           .order("created_at", { ascending: false });
         
         if (error) throw error;
@@ -117,68 +118,72 @@ const Notifications = () => {
       </div>
 
       <div className="space-y-4">
-        {notifications.map((notification) => (
-          <Card
-            key={notification.id}
-            className={`transition-all hover:shadow-md ${
-              !notification.read ? "border-l-4 border-l-primary" : ""
-            }`}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                    notification.type === "announcement"
-                      ? "bg-blue-100 text-blue-600"
-                      : notification.type === "payment"
-                      ? "bg-green-100 text-green-600"
-                      : notification.type === "document"
-                      ? "bg-purple-100 text-purple-600"
-                      : "bg-orange-100 text-orange-600"
-                  }`}
-                >
-                  {getIcon(notification.type)}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">{notification.title}</p>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {notification.date}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{notification.message}</p>
-                  <div className="flex items-center gap-2 pt-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white ${getBadgeColor(
-                        notification.type
-                      )}`}
-                    >
-                      {notification.type}
-                    </span>
-                    {!notification.read && (
-                      <span className="flex items-center gap-1 text-xs text-primary">
-                        <CheckCircle2 className="h-3 w-3" />
-                        New
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+        {notifications.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Bell className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-lg font-medium">No notifications</p>
+              <p className="text-sm text-muted-foreground">You're all caught up!</p>
             </CardContent>
           </Card>
-        ))}
+        ) : (
+          notifications.map((notification) => (
+            <Card
+              key={notification.id}
+              className={`transition-all hover:shadow-md ${
+                !notification.read ? "border-l-4 border-l-primary" : ""
+              }`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                      notification.type === "announcement"
+                        ? "bg-blue-100 text-blue-600"
+                        : notification.type === "payment"
+                        ? "bg-green-100 text-green-600"
+                        : notification.type === "document"
+                        ? "bg-purple-100 text-purple-600"
+                        : notification.type === "join_request"
+                        ? "bg-amber-100 text-amber-600"
+                        : notification.type === "join_approved"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-orange-100 text-orange-600"
+                    }`}
+                  >
+                    {getIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{notification.title}</p>
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {notification.date}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{notification.message}</p>
+                    <div className="flex items-center gap-2 pt-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white ${getBadgeColor(
+                          notification.type
+                        )}`}
+                      >
+                        {notification.type}
+                      </span>
+                      {!notification.read && (
+                        <span className="flex items-center gap-1 text-xs text-primary">
+                          <CheckCircle2 className="h-3 w-3" />
+                          New
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
-
-      {notifications.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium">No notifications</p>
-            <p className="text-sm text-muted-foreground">You're all caught up!</p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

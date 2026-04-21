@@ -55,19 +55,22 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   // If role is required and user doesn't have it
   if (requiredRole) {
     if (profile.currentRole !== requiredRole) {
-      // Owner trying to access employee-only route -> go to admin
-      if (profile.currentRole === "owner") {
-        return <Navigate to="/admin" replace />;
-      }
-      // Non-owner trying to access admin-only route -> go to employee
-      return <Navigate to="/employee" replace />;
+      // Redirect based on role mismatch
+      return <Navigate to={profile.currentRole === "owner" ? "/admin" : "/employee"} replace />;
     }
-  } else {
-    // No specific role required - only redirect if user has no org yet
-    if (!profile.currentOrganization && profile.currentRole !== "pending") {
-      // No organization yet - redirect to auth to create/join
+  }
+  
+  // For routes with no requiredRole - allow access if user has valid role and org
+  // This allows owners to access /voting, /notifications, etc.
+  if (!requiredRole) {
+    // Check if user has a valid role and organization
+    const hasValidAccess = profile.currentRole && profile.currentRole !== "pending" && profile.currentOrganization;
+    
+    if (!hasValidAccess) {
+      // No valid access - go to auth
       return <Navigate to="/auth" replace />;
     }
+    // Valid access - allow
   }
   
   return <>{children}</>;

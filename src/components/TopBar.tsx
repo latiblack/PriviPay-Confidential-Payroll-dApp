@@ -3,22 +3,56 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { authService } from "@/lib/auth-service";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TopBarProps {
   title: string;
 }
 
 export const TopBar = ({ title }: TopBarProps) => {
+  const navigate = useNavigate();
   const [dark, setDark] = useState(false);
   const { isAuthenticated, walletAddress, connectWallet, disconnectWallet } = useWalletAuth();
   const { profile } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+
+  // Fetch unread notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!profile?.currentOrganization?.id || !walletAddress) return;
+      
+      setLoadingNotifications(true);
+      try {
+        // Get unread notifications for this org AND for this user specifically
+        const { data, error } = await supabase
+          .from("notifications" as any)
+          .select("id, read")
+          .eq("organization_id", profile.currentOrganization.id)
+          .or(`user_id.eq.${walletAddress},user_id.is.null`)
+          .eq("read", false);
+        
+        if (!error && data) {
+          setUnreadCount(data.length);
+          console.log("Unread notifications:", data.length);
+        }
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [profile?.currentOrganization?.id, walletAddress]);
 
   const formatAddress = (address?: string) => {
     if (!address) return "Connect";
@@ -28,6 +62,10 @@ export const TopBar = ({ title }: TopBarProps) => {
   const handleLogout = () => {
     authService.clearProfile();
     disconnectWallet();
+  };
+
+  const handleNotificationsClick = () => {
+    navigate("/notifications");
   };
 
   const getRoleLabel = () => {
@@ -65,9 +103,18 @@ export const TopBar = ({ title }: TopBarProps) => {
           {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative rounded-xl">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative rounded-xl"
+          onClick={handleNotificationsClick}
+        >
           <Bell className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
+          {unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] text-white font-bold">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </Button>
 
         <Button
