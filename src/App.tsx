@@ -9,7 +9,7 @@ import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
-import Payroll from "./pages/Payroll";
+import Payments from "./pages/Payments";
 import Settings from "./pages/Settings";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -24,7 +24,7 @@ const queryClient = new QueryClient();
 
 const pageTitles: Record<string, string> = {
   "/admin": "Admin",
-  "/admin/payroll": "Process Payroll",
+  "/admin/payments": "Payments",
   "/admin/settings": "Settings",
   "/employer": "Dashboard",
   "/employees": "Employees",
@@ -107,9 +107,9 @@ const AppLayout = () => {
                 <Admin />
               </ProtectedRoute>
             } />
-            <Route path="/admin/payroll" element={
+            <Route path="/admin/payments" element={
               <ProtectedRoute requiredRole="owner">
-                <Payroll />
+                <Payments />
               </ProtectedRoute>
             } />
             <Route path="/admin/settings" element={
@@ -130,6 +130,11 @@ const AppLayout = () => {
             <Route path="/employee" element={
               <ProtectedRoute>
                 <EmployeeDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/payments" element={
+              <ProtectedRoute>
+                <Payments />
               </ProtectedRoute>
             } />
             <Route path="/pending" element={<PendingRole />} />

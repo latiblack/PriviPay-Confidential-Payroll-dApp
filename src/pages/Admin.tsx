@@ -33,6 +33,7 @@ const AdminDashboard = () => {
   const [inviteRole, setInviteRole] = useState("employee");
   const [inviteCode, setInviteCode] = useState("");
   const [pendingRequests, setPendingRequests] = useState<UserRole[]>([]);
+  const [orgMembers, setOrgMembers] = useState<UserRole[]>([]);
   const [inviting, setInviting] = useState(false);
   const [stats, setStats] = useState<OrgStats>({
     totalEmployees: 0,
@@ -76,6 +77,7 @@ const AdminDashboard = () => {
       console.log("User roles data:", rolesData);
       
       const memberCount = rolesData?.length || 0;
+      setOrgMembers(rolesData || []);
       
       // For total employees - count everyone who has joined (user_roles) AND employees in table
       // Combine and deduplicate
@@ -128,6 +130,9 @@ const AdminDashboard = () => {
         email: inviteEmail,
         createdBy: profile.walletAddress,
       });
+      
+      // Send notification to the invited user
+      await organizationService.notifyInvitationSent(profile.currentOrganization.id, inviteEmail);
       
       toast({ title: "Invitation sent", description: `Invite sent to ${inviteEmail}` });
       setInviteEmail("");
@@ -382,6 +387,58 @@ const AdminDashboard = () => {
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No pending access requests</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" /> Organization Members
+            </CardTitle>
+            <CardDescription>Manage roles for organization members</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {orgMembers && orgMembers.length > 0 ? (
+              <div className="space-y-2">
+                {orgMembers.map((member) => (
+                  <div key={member.user_id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">{member.user_id.slice(0, 8)}...{member.user_id.slice(-4)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Joined {new Date(member.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Select
+                      value={member.role}
+                      onValueChange={async (newRole) => {
+                        try {
+                          await supabase
+                            .from("user_roles")
+                            .update({ role: newRole as "manager" | "employee" | "auditor" })
+                            .eq("organization_id", profile.currentOrganization.id)
+                            .eq("user_id", member.user_id);
+                          toast({ title: "Role Updated", description: `Role changed to ${newRole}` });
+                          loadOrgData();
+                        } catch (err) {
+                          toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="employee">Employee</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="auditor">Auditor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No organization members yet</p>
             )}
           </CardContent>
         </Card>

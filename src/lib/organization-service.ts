@@ -380,7 +380,7 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
   async createNotification(data: {
     organizationId: string;
     userId?: string;
-    type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected";
+    type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected" | "invitation_sent" | "vote_started" | "vote_ended" | "new_vote";
     title: string;
     message: string;
   }): Promise<void> {
@@ -398,15 +398,14 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
     if (error) throw new Error(error.message);
   },
 
+  // Notify owner when someone requests to join via invite code
   async notifyJoinRequest(orgId: string, requesterId: string): Promise<void> {
-    // Get org details
     const { data: org } = await supabase
       .from("organizations")
       .select("id, name")
       .eq("id", orgId)
       .single();
 
-    // Notify admin (owner) - find the owner
     const { data: owner } = await supabase
       .from("organizations")
       .select("owner_id")
@@ -424,6 +423,7 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
     }
   },
 
+  // Notify user when their join request is approved
   async notifyJoinApproved(orgId: string, userId: string): Promise<void> {
     const { data: org } = await supabase
       .from("organizations")
@@ -440,6 +440,7 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
     });
   },
 
+  // Notify user when their join request is rejected
   async notifyJoinRejected(orgId: string, userId: string): Promise<void> {
     const { data: org } = await supabase
       .from("organizations")
@@ -453,6 +454,55 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
       type: "join_rejected",
       title: "Join Request Declined",
       message: `Your request to join ${org?.name || "the organization"} has been declined.`,
+    });
+  },
+
+  // Notify user when they're invited via email
+  async notifyInvitationSent(orgId: string, inviteeEmail: string): Promise<void> {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .single();
+
+    // For email invitations, we store the email in the notification
+    // The user will see this when they log in with that email
+    await this.createNotification({
+      organizationId: orgId,
+      userId: inviteeEmail, // Using email as userId for email invites
+      type: "invitation_sent",
+      title: "You've Been Invited",
+      message: `You've been invited to join ${org?.name || "an organization"} on PriviPay.`,
+    });
+  },
+
+  // Notify all org members about a new vote
+  async notifyVoteStarted(orgId: string, voteTitle: string): Promise<void> {
+    await this.createNotification({
+      organizationId: orgId,
+      type: "vote_started",
+      title: "New Vote Started",
+      message: `A new vote has started: ${voteTitle}`,
+    });
+  },
+
+  // Notify all org members about vote results
+  async notifyVoteEnded(orgId: string, voteTitle: string): Promise<void> {
+    await this.createNotification({
+      organizationId: orgId,
+      type: "vote_ended",
+      title: "Vote Completed",
+      message: `The vote for "${voteTitle}" has ended.`,
+    });
+  },
+
+  // Notify when someone votes
+  async notifyNewVote(orgId: string, voterCount: number): Promise<void> {
+    await this.createNotification({
+      organizationId: orgId,
+      type: "new_vote",
+      title: "New Vote Cast",
+      message: `${voterCount} member${voterCount > 1 ? "s have" : " has"} voted in the current poll.`,
     });
   },
 };

@@ -65,6 +65,7 @@ const Notifications = () => {
       }
       
       try {
+        // Fetch all notifications for the org
         const { data, error } = await supabase
           .from("notifications" as any)
           .select("*")
@@ -73,7 +74,36 @@ const Notifications = () => {
         
         if (error) throw error;
         
-        const formatted: Notification[] = (data || []).map((n: any) => ({
+        // Filter based on role
+        const role = profile.currentRole;
+        const wallet = profile.walletAddress;
+        
+        let filtered = data || [];
+        
+        if (role === "owner") {
+          // Owners see: join_request notifications + org-wide notifications
+          filtered = (data || []).filter((n: any) => 
+            n.type === "join_request" || 
+            n.type === "vote_started" || 
+            n.type === "vote_ended" || 
+            n.type === "new_vote" ||
+            n.user_id === null
+          );
+        } else if (role === "manager") {
+          // Managers see: their own notifications + org-wide
+          filtered = (data || []).filter((n: any) => 
+            n.user_id === wallet ||
+            n.user_id === null
+          );
+        } else if (role === "employee" || role === "auditor") {
+          // Employees see: their own notifications + org-wide
+          filtered = (data || []).filter((n: any) => 
+            n.user_id === wallet ||
+            n.user_id === null
+          );
+        }
+        
+        const formatted: Notification[] = filtered.map((n: any) => ({
           id: n.id,
           type: n.type as Notification["type"],
           title: n.title,
@@ -91,7 +121,7 @@ const Notifications = () => {
     };
     
     fetchNotifications();
-  }, [profile?.currentOrganization?.id, profile?.walletAddress]);
+  }, [profile?.currentOrganization?.id, profile?.walletAddress, profile?.currentRole]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 

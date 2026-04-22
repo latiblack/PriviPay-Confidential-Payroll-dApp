@@ -25,34 +25,72 @@ export const TopBar = ({ title }: TopBarProps) => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
 
-  // Fetch unread notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!profile?.currentOrganization?.id || !walletAddress) return;
+  const fetchNotifications = async () => {
+    if (!profile?.currentOrganization?.id || !walletAddress) return;
+    
+    setLoadingNotifications(true);
+    try {
+      const { data, error } = await supabase
+        .from("notifications" as any)
+        .select("id, read, user_id, type")
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("read", false);
       
-      setLoadingNotifications(true);
-      try {
-        // Get unread notifications for this org AND for this user specifically
-        const { data, error } = await supabase
-          .from("notifications" as any)
-          .select("id, read")
-          .eq("organization_id", profile.currentOrganization.id)
-          .or(`user_id.eq.${walletAddress},user_id.is.null`)
-          .eq("read", false);
+      if (!error && data) {
+        let filtered = data;
+        const role = profile.currentRole;
         
-        if (!error && data) {
-          setUnreadCount(data.length);
-          console.log("Unread notifications:", data.length);
+        if (role === "owner") {
+          filtered = data.filter((n: any) => 
+            n.type === "join_request" || 
+            n.type === "vote_started" || 
+            n.type === "vote_ended" || 
+            n.type === "new_vote" ||
+            n.user_id === null
+          );
+        } else {
+          filtered = data.filter((n: any) => 
+            n.user_id === walletAddress ||
+            n.user_id === null
+          );
         }
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-      } finally {
-        setLoadingNotifications(false);
+        
+        setUnreadCount(filtered.length);
       }
-    };
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
 
+  useEffect(() => {
     fetchNotifications();
-  }, [profile?.currentOrganization?.id, walletAddress]);
+  }, [profile?.currentOrganization?.id, walletAddress, profile?.currentRole]);
+
+  useEffect(() => {
+    if (!profile?.currentOrganization?.id) return;
+
+    const channel = supabase
+      .channel("notifications:topbar")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `organization_id=eq.${profile.currentOrganization.id}`,
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.currentOrganization?.id]);
 
   const formatAddress = (address?: string) => {
     if (!address) return "Connect";

@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import organizationService from "@/lib/organization-service";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 
@@ -59,6 +60,7 @@ const BonusVoting = () => {
       
       if (error) throw error;
       
+      await organizationService.notifyNewVote(profile.currentOrganization.id, votedIds.size + 1);
       setVotedIds((prev) => new Set(prev).add(employeeId));
       toast({
         title: "Vote encrypted & submitted",

@@ -239,6 +239,30 @@ const handleSelectEmployeeFromList = (emp: EmployeeRow) => {
       toast({ title: "Error", description: "Failed to delete employee", variant: "destructive" });
     }
   };
+
+  const handleUpdateRole = async (walletAddress: string, newRole: "manager" | "employee" | "auditor") => {
+    if (!profile?.currentOrganization?.id) return;
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ role: newRole })
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("user_id", walletAddress);
+
+      if (error) throw error;
+
+      setOrgMembers(prev => prev.map(m => m.user_id === walletAddress ? { ...m, role: newRole } : m));
+      toast({ title: "Role Updated", description: `Role changed to ${newRole}` });
+    } catch (err) {
+      console.error("Error updating role:", err);
+      toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
+    }
+  };
+
+  const getMemberRole = (walletAddress: string): string => {
+    const member = orgMembers.find(m => m.user_id === walletAddress);
+    return member?.role || "employee";
+  };
   const pendingCount = employees.filter(e => e.status === "pending").length;
   
   const getEmployeeName = (emp: EmployeeRow) => {
@@ -412,7 +436,7 @@ const handleSelectEmployeeFromList = (emp: EmployeeRow) => {
       <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" /> Employee List ({orgMembers.length + employees.length} total)
+            <Users className="h-5 w-5" /> Employee List ({employees.length} total)
           </CardTitle>
         </CardHeader>
         <CardContent>
