@@ -12,15 +12,17 @@ export const AppSidebar = () => {
   const { isAuthenticated, disconnectWallet } = useWalletAuth();
   const { profile } = useAuth();
 
-  // Owner sees Admin, Employees, Payments, Voting, Notifications
+  // Owner sees everything - Admin, Employees, Payments, Voting, Notifications
   const ownerNavItems = [
     { icon: LayoutGrid, label: "Admin", path: "/admin" },
     { icon: Users, label: "Employees", path: "/employees" },
-    { icon: DollarSign, label: "Payments", path: "/admin/payments" },
+    { icon: DollarSign, label: "Treasury", path: "/admin/payments" },
     { icon: Vote, label: "Voting", path: "/voting" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
+  // Employees see only their own dashboard, payments (withdraw), voting, auditor, notifications
+  // They CANNOT see: Admin, Employees list (others' details), Treasury
   const employeeNavItems = [
     { icon: LayoutGrid, label: "My Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
@@ -29,7 +31,8 @@ export const AppSidebar = () => {
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
-  // Managers can see voting with actual vote button (handled in page)
+  // Managers see dashboard, payments, voting, auditor, notifications
+  // They CANNOT see: Admin, Employees list (others' details), Treasury
   const managerNavItems = [
     { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Calendar, DollarSign, FileText, AlertCircle, CheckCircle2, Loader2, Users } from "lucide-react";
+import { Bell, Calendar, DollarSign, FileText, AlertCircle, CheckCircle2, Loader2, Users, Mail, ThumbsUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Notification {
   id: string;
-  type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected";
+  type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected" | "invitation_sent" | "vote_started" | "vote_ended" | "new_vote";
   title: string;
   message: string;
   date: string;
@@ -30,6 +30,12 @@ const getIcon = (type: Notification["type"]) => {
       return <CheckCircle2 className="h-5 w-5" />;
     case "join_rejected":
       return <AlertCircle className="h-5 w-5" />;
+    case "invitation_sent":
+      return <Mail className="h-5 w-5" />;
+    case "vote_started":
+    case "vote_ended":
+    case "new_vote":
+      return <ThumbsUp className="h-5 w-5" />;
   }
 };
 
@@ -49,6 +55,12 @@ const getBadgeColor = (type: Notification["type"]) => {
       return "bg-green-500";
     case "join_rejected":
       return "bg-red-500";
+    case "invitation_sent":
+      return "bg-cyan-500";
+    case "vote_started":
+    case "vote_ended":
+    case "new_vote":
+      return "bg-violet-500";
   }
 };
 

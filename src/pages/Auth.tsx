@@ -137,10 +137,25 @@ export const AuthPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Setting up your secure environment...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
+              <Wallet className="h-10 w-10 text-primary-foreground" />
+            </div>
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-24 h-1 bg-primary/20 rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold tracking-tight">PriviPay</h2>
+            <p className="text-sm text-muted-foreground">Setting up your secure environment</p>
+          </div>
+          <div className="flex items-center justify-center gap-1">
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
         </div>
       </div>
     );

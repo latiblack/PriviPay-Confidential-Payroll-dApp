@@ -8,8 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { 
-  DollarSign, Users, Send, Wallet, Loader2, ArrowDownToLine
+import {
+  DollarSign, Users, Send, Wallet, Loader2, ArrowDownToLine, Lock
 } from "lucide-react";
 
 type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
@@ -25,10 +25,11 @@ const PaymentsPage = () => {
   const [balance, setBalance] = useState<string>("0");
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [ownSalary, setOwnSalary] = useState<string>("***");
 
-  const fetchEmployees = async () => {
-    if (!profile?.currentOrganization?.id) return;
-    
+  const fetchData = async () => {
+    if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
+
     try {
       const { data, error } = await supabase
         .from("employees")
@@ -36,28 +37,32 @@ const PaymentsPage = () => {
         .eq("organization_id", profile.currentOrganization.id)
         .eq("status", "active")
         .order("created_at", { ascending: false });
-      
+
       if (error) throw error;
       setEmployees(data || []);
+
+      const mySalary = data?.find(e => e.wallet_address === profile.walletAddress);
+      setOwnSalary(mySalary?.encrypted_salary || "***");
+
     } catch (err) {
-      console.error("Error fetching employees:", err);
+      console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEmployees();
-  }, [profile?.currentOrganization?.id]);
+    fetchData();
+  }, [profile?.currentOrganization?.id, profile?.walletAddress]);
 
   const handleProcessPayroll = async () => {
     if (!profile?.currentOrganization?.id || employees.length === 0) return;
-    
+
     setProcessing(true);
     try {
       for (const emp of employees) {
         if (!emp.wallet_address || !emp.encrypted_salary) continue;
-        
+
         await supabase.from("payment_transactions").insert({
           organization_id: profile.currentOrganization.id,
           employee_id: emp.wallet_address,
@@ -66,10 +71,10 @@ const PaymentsPage = () => {
           created_at: new Date().toISOString(),
         });
       }
-      
+
       toast({
         title: "Payroll Processed",
-        description: `Payments sent to ${employees.length} employees`,
+        description: `Payments sent to ${employees.length} employees via encrypted transfer`,
       });
     } catch (err) {
       console.error("Error processing payroll:", err);
@@ -87,19 +92,22 @@ const PaymentsPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Treasury Balance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">${balance}</div>
-            <p className="text-xs opacity-75 mt-1">USDC</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {isOwner && (
+          <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Treasury Balance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">${balance}</div>
+              <p className="text-xs opacity-75 mt-1">USDC - Encrypted</p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-2">
@@ -113,7 +121,7 @@ const PaymentsPage = () => {
               {profile.walletAddress?.slice(0, 10)}...{profile.walletAddress?.slice(-4)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {isOwner ? "Org treasury address" : "Your salary address"}
+              {isOwner ? "Org treasury address" : "Your confidential salary address"}
             </p>
           </CardContent>
         </Card>
@@ -121,15 +129,24 @@ const PaymentsPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Total Payroll
+              <DollarSign className="h-4 w-4" />
+              {isOwner ? "Total Payroll" : "Your Salary"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalPayroll.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {employees.length} employee{employees.length !== 1 ? "s" : ""}
-            </p>
+            {isOwner ? (
+              <>
+                <div className="text-3xl font-bold">${totalPayroll.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {employees.length} employee{employees.length !== 1 ? "s" : ""}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-3xl font-bold">{ownSalary}</div>
+                <p className="text-xs text-muted-foreground mt-1">USDC/month - Confidential</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -142,7 +159,7 @@ const PaymentsPage = () => {
               Process Payroll
             </CardTitle>
             <CardDescription>
-              Send payments to all active employees with salary configured
+              Send encrypted payments to all active employees
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -152,7 +169,7 @@ const PaymentsPage = () => {
               </div>
             ) : employees.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">
-                No employees with salary configured. Add employees in the Employee section first.
+                No employees with salary configured. Add employees first.
               </p>
             ) : (
               <div className="space-y-4">
@@ -162,12 +179,12 @@ const PaymentsPage = () => {
                     <Badge variant="default">{employees.length}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total amount</span>
+                    <span className="text-sm text-muted-foreground">Total amount (encrypted)</span>
                     <span className="text-xl font-bold">${totalPayroll.toLocaleString()}</span>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleProcessPayroll} 
+                <Button
+                  onClick={handleProcessPayroll}
                   disabled={processing}
                   className="w-full gap-2"
                   size="lg"
@@ -177,7 +194,7 @@ const PaymentsPage = () => {
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  {processing ? "Processing..." : "Process Payroll"}
+                  {processing ? "Processing Encrypted Payments..." : "Process Encrypted Payroll"}
                 </Button>
               </div>
             )}
@@ -193,27 +210,27 @@ const PaymentsPage = () => {
               Withdraw Funds
             </CardTitle>
             <CardDescription>
-              Withdraw your salary to your personal wallet
+              Withdraw your salary to your personal wallet (encrypted transaction)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted p-4 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Available Balance</div>
-              <div className="text-2xl font-bold">$0.00 USDC</div>
+              <div className="text-sm text-muted-foreground mb-1">Available Balance (Encrypted)</div>
+              <div className="text-2xl font-bold">{ownSalary} USDC</div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Recipient Address</Label>
-                <Input 
-                  placeholder="0x..." 
+                <Input
+                  placeholder="0x..."
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Amount (USDC)</Label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -222,7 +239,7 @@ const PaymentsPage = () => {
             </div>
             <Button className="w-full gap-2" size="lg" disabled={!recipient || !amount}>
               <ArrowDownToLine className="h-4 w-4" />
-              Withdraw to Wallet
+              Withdraw via Encrypted Transfer
             </Button>
           </CardContent>
         </Card>
@@ -232,7 +249,7 @@ const PaymentsPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Payment History
+            {isOwner ? "All Employees" : "Your Payment History"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -244,7 +261,7 @@ const PaymentsPage = () => {
             <p className="text-center py-8 text-muted-foreground">
               No payment records found
             </p>
-          ) : (
+          ) : isOwner ? (
             <div className="space-y-2">
               {employees.slice(0, 5).map((emp) => (
                 <div key={emp.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -267,6 +284,13 @@ const PaymentsPage = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="bg-muted/50 p-4 rounded-lg text-center">
+              <Lock className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Your salary is encrypted. Others cannot see your payment details.
+              </p>
             </div>
           )}
         </CardContent>

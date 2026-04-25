@@ -1,0 +1,27 @@
+# Build outputs
+out/
+cache/
+broadcast/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Libraries (installed via forge install)
+lib/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tenderly (if used)
+tenderly.yaml
+
+# Coverage
+coverage/
+lcov.info
