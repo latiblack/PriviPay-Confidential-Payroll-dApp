@@ -262,24 +262,7 @@ export const AuthPage = () => {
               <Wallet className="h-5 w-5" /> Sign In / Get Started
             </Button>
             
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">or continue with</span>
-              </div>
-            </div>
-            
-            <div className="p-4 border rounded-lg bg-muted/30">
-              <p className="text-xs text-muted-foreground text-center mb-3">
-                Connect your own crypto wallet
-              </p>
-              <div className="flex justify-center">
-                <DynamicWidget />
-              </div>
-            </div>
-          </CardContent>
+</CardContent>
         </Card>
       </div>
     );
