@@ -1,3 +1,4 @@
-@zama/fhe-sdk/contracts/=node_modules/@zama/fhe-sdk/contracts/
+@fhevm/solidity/=node_modules/@fhevm/solidity/
 forge-std/=lib/forge-std/src/
 ds-test/=lib/forge-std/lib/ds-test/src/
+encrypted-types/=node_modules/encrypted-types/
