@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract, JsonRpcSigner, parseUnits, formatUnits } from "ethers";
-import { encryptSalary, decryptSalary, reencryptForUser, decryptWithPrivateKey, placeholderSalary, KeyPair, generateKeyPair, salaryToCents, centsToSalary } from "./encryption";
+import { encryptSalary, decryptSalary, reencryptForUser, decryptWithPrivateKey, salaryToCents, centsToSalary, generateKeyPair, KeyPair } from "./encryption";
 
 const CONTRACT_ABI = [
   "function setSalary(address employee, bytes32 encryptedSalary) external",
@@ -45,7 +45,7 @@ class FHEPayrollService {
   private contract: Contract | null = null;
   private signer: JsonRpcSigner | null = null;
   private userKeys: FHEWalletKeys | null = null;
-  private relayerUrl: string = "/api/relayer";
+  private relayerUrl: string = import.meta.env.VITE_RELAYER_URL || "http://localhost:3001";
 
   async initialize(contractAddress: string, provider: BrowserProvider) {
     this.contractAddress = contractAddress;
@@ -53,7 +53,7 @@ class FHEPayrollService {
     this.contract = new Contract(contractAddress, CONTRACT_ABI, this.signer);
   }
 
-  async generateUserKeys(): Promise<FHEWalletKeys> {
+  generateUserKeys(): FHEWalletKeys {
     const keyPair = generateKeyPair();
     this.userKeys = {
       keyPair,
@@ -63,15 +63,25 @@ class FHEPayrollService {
     return this.userKeys;
   }
 
-  async getUserKeys(): Promise<FHEWalletKeys | null> {
+  getUserKeys(): FHEWalletKeys | null {
     if (this.userKeys) return this.userKeys;
 
-    const stored = localStorage.getItem("fhe_keys");
-    if (stored) {
-      this.userKeys = JSON.parse(stored);
-      return this.userKeys;
+    try {
+      const stored = localStorage.getItem("fhe_keys");
+      if (stored) {
+        this.userKeys = JSON.parse(stored);
+        return this.userKeys;
+      }
+    } catch {
+      // Ignore storage errors
     }
 
+    return null;
+  }
+
+  async getUserKeysAsync(): Promise<FHEWalletKeys> {
+    const existing = this.getUserKeys();
+    if (existing) return existing;
     return this.generateUserKeys();
   }
 
@@ -91,12 +101,12 @@ class FHEPayrollService {
 
   async getMySalary(userAddress: string): Promise<string> {
     if (!this.contract) {
-      throw new Error("Contract not initialized");
+      return "***";
     }
 
-    const keys = await this.getUserKeys();
+    const keys = await this.getUserKeysAsync();
     if (!keys) {
-      throw new Error("User keys not generated");
+      return "***";
     }
 
     try {
@@ -231,5 +241,4 @@ class FHEPayrollService {
 }
 
 export const fhePayrollService = new FHEPayrollService();
-
 export default fhePayrollService;

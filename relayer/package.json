@@ -9,11 +9,11 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@zama/fhevm": "^0.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "ethers": "^6.13.0",
     "express": "^4.21.0",
-    "viem": "^2.21.0"
+    "vite_react_shadcn_ts": "file:.."
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
