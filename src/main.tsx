@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { StrictMode } from "react";
+import { StrictMode, Component, ReactNode } from "react";
 import {
   DynamicContextProvider,
   DynamicWidget,
@@ -11,19 +11,38 @@ import "./index.css";
 const sdkOptions = {
   environmentId: "c9d199bd-fddd-4e61-97a5-1573e7f1e2e1",
   walletConnectors: [EthereumWalletConnectors],
-  // Enable embedded wallet for email users
   enableEmbeddedWallet: true,
-  // Show the Dynamic widget for auth options
   showDynamicWidget: true,
-  // Allow multi-wallet connections
   allowMultiWalletConnections: true,
 };
 
+class WalletProviderBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("Dynamic wallet provider failed to initialize", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <App />;
+    }
+
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <DynamicContextProvider settings={sdkOptions as any}>
-      <App />
-      <DynamicWidget />
-    </DynamicContextProvider>
+    <WalletProviderBoundary>
+      <DynamicContextProvider settings={sdkOptions as any}>
+        <App />
+        <DynamicWidget />
+      </DynamicContextProvider>
+    </WalletProviderBoundary>
   </StrictMode>
 );
