@@ -1,8 +1,28 @@
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useCallback } from "react";
 
+const fallbackAuth = {
+  user: null,
+  isAuthenticated: false,
+  walletAddress: null,
+  provider: null,
+  connectWallet: async () => {
+    console.warn("Dynamic auth context is unavailable.");
+  },
+  disconnectWallet: async () => {
+    // no-op
+  },
+};
+
 export const useWalletAuth = () => {
-  const dynamicContext = useDynamicContext();
+  let dynamicContext: ReturnType<typeof useDynamicContext>;
+
+  try {
+    dynamicContext = useDynamicContext();
+  } catch (error) {
+    console.error("Failed to load Dynamic auth context:", error);
+    return fallbackAuth;
+  }
 
   const user = dynamicContext.user;
   const primaryWallet = dynamicContext.primaryWallet;
