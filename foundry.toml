@@ -1,17 +1,12 @@
 [profile.default]
 src = "contracts/src"
 out = "contracts/out"
-libs = ["contracts/lib"]
-solc = "0.8.27"
+libs = ["node_modules", "contracts/lib"]
+solc = "0.8.24"
+remappings = [
+    "@fhevm/solidity/=node_modules/@fhevm/solidity/",
+    "encrypted-types/=node_modules/encrypted-types/",
+]
 
-[fhe]
-supportedNetworks = ["zama_fhevm", "zama_fhevm_sepolia"]
-
-[rpc_env]
-zama_fhevm_sepolia = "${ZAMA_FHEVM_RPC_URL}"
-
-[etherscan]
-zama_fhevm_sepolia = { key = "${ZAMA_FHEVM_API_KEY}" }
-
-[private_keys]
-default = "${DEPLOYER_PRIVATE_KEY}"
+[rpc_endpoints]
+zama_sepolia = "https://sepolia.fheoma.zama.xyz"
