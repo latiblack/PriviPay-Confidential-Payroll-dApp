@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,17 +8,24 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import Payments from "./pages/Payments";
-import Settings from "./pages/Settings";
-import EmployerDashboard from "./pages/EmployerDashboard";
-import EmployeeDashboard from "./pages/EmployeeDashboard";
-import AuditorDashboard from "./pages/AuditorDashboard";
-import BonusVoting from "./pages/BonusVoting";
-import Notifications from "./pages/Notifications";
 import PendingRole from "./pages/PendingRole";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+
+const Admin = lazy(() => import("./pages/Admin"));
+const Payments = lazy(() => import("./pages/Payments"));
+const Settings = lazy(() => import("./pages/Settings"));
+const EmployerDashboard = lazy(() => import("./pages/EmployerDashboard"));
+const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
+const AuditorDashboard = lazy(() => import("./pages/AuditorDashboard"));
+const BonusVoting = lazy(() => import("./pages/BonusVoting"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -101,60 +108,60 @@ const AppLayout = () => {
       <div className={`flex-1 ${showSidebar ? 'ml-[72px]' : ''}`}>
         <TopBar title={title} />
         <main className="px-6 pb-8">
-          <Routes>
-            <Route path="/admin" element={
-              <ProtectedRoute requiredRole="owner">
-                <Admin />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/payments" element={
-              <ProtectedRoute requiredRole="owner">
-                <Payments />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/settings" element={
-              <ProtectedRoute requiredRole="owner">
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="/employer" element={
-              <ProtectedRoute requiredRole="owner">
-                <EmployerDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/employees" element={
-              <ProtectedRoute requiredRole="owner">
-                <EmployeeDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/employee" element={
-              <ProtectedRoute>
-                <EmployeeDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/payments" element={
-              <ProtectedRoute>
-                <Payments />
-              </ProtectedRoute>
-            } />
-            <Route path="/pending" element={<PendingRole />} />
-            <Route path="/auditor" element={
-              <ProtectedRoute>
-                <AuditorDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/voting" element={
-              <ProtectedRoute>
-                <BonusVoting />
-              </ProtectedRoute>
-            } />
-            <Route path="/notifications" element={
-              <ProtectedRoute>
-                <Notifications />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+        <Routes>
+          <Route path="/admin" element={
+            <ProtectedRoute requiredRole="owner">
+              <Suspense fallback={<PageLoader />}><Admin /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/payments" element={
+            <ProtectedRoute requiredRole="owner">
+              <Suspense fallback={<PageLoader />}><Payments /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/settings" element={
+            <ProtectedRoute requiredRole="owner">
+              <Suspense fallback={<PageLoader />}><Settings /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/employer" element={
+            <ProtectedRoute requiredRole="owner">
+              <Suspense fallback={<PageLoader />}><EmployerDashboard /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/employees" element={
+            <ProtectedRoute requiredRole="owner">
+              <Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/employee" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/payments" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoader />}><Payments /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/pending" element={<PendingRole />} />
+          <Route path="/auditor" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoader />}><AuditorDashboard /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/voting" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoader />}><BonusVoting /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoader />}><Notifications /></Suspense>
+            </ProtectedRoute>
+          } />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
         </main>
       </div>
     </div>

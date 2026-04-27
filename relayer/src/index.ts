@@ -1,7 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
-import { createPublicClient, http, hexToBytes, bytesToHex } from "viem";
-import { zamaConsole } from "@zama/fhevm";
+import { createPublicClient, http } from "viem";
 
 const app = express();
 const PORT = process.env.PORT || 3001;

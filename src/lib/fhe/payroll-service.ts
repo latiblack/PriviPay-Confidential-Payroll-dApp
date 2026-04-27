@@ -1,5 +1,5 @@
-import { BrowserProvider, Contract, JsonRpcSigner, parseUnits, formatUnits } from "ethers";
-import { encryptSalary, decryptSalary, reencryptForUser, decryptWithPrivateKey, salaryToCents, centsToSalary, generateKeyPair, KeyPair } from "./encryption";
+import { Contract, JsonRpcSigner, BrowserProvider, parseUnits, formatUnits } from "ethers";
+import { initFhevmInstance, encryptSalary, decryptSalary, reencryptForUser, decryptWithPrivateKey, salaryToCents, centsToSalary, generateKeyPair, KeyPair, createEIP712Signature } from "./encryption";
 
 const CONTRACT_ABI = [
   "function setSalary(address employee, bytes32 encryptedSalary) external",
@@ -46,15 +46,22 @@ class FHEPayrollService {
   private signer: JsonRpcSigner | null = null;
   private userKeys: FHEWalletKeys | null = null;
   private relayerUrl: string = import.meta.env.VITE_RELAYER_URL || "http://localhost:3001";
+  private fhevmInitialized: boolean = false;
+  private userAddress: string | null = null;
 
   async initialize(contractAddress: string, provider: BrowserProvider) {
     this.contractAddress = contractAddress;
     this.signer = await provider.getSigner();
+    this.userAddress = await this.signer.getAddress();
     this.contract = new Contract(contractAddress, CONTRACT_ABI, this.signer);
+
+    // Initialize FHEvm
+    await initFhevmInstance();
+    this.fhevmInitialized = true;
   }
 
-  generateUserKeys(): FHEWalletKeys {
-    const keyPair = generateKeyPair();
+  async generateUserKeys(): Promise<FHEWalletKeys> {
+    const keyPair = await generateKeyPair();
     this.userKeys = {
       keyPair,
       contractPublicKey: keyPair.publicKey,
@@ -86,21 +93,24 @@ class FHEPayrollService {
   }
 
   async setEmployeeSalary(employeeAddress: string, salaryInDollars: number): Promise<string> {
-    if (!this.contract || !this.signer) {
+    if (!this.contract || !this.signer || !this.contractAddress) {
       throw new Error("Contract not initialized");
     }
 
     const salaryInCents = salaryToCents(salaryInDollars);
-    const encrypted = encryptSalary(salaryInCents);
+    const encrypted = await encryptSalary(salaryInCents, this.contractAddress, employeeAddress);
 
-    const tx = await (this.contract as any).setSalary(employeeAddress, "0x" + encrypted.bytes);
+    // The contract expects bytes32, so we use the first handle
+    const encryptedBytes32 = encrypted.handles[0] as `0x${string}`;
+
+    const tx = await (this.contract as any).setSalary(employeeAddress, encryptedBytes32);
     await tx.wait();
 
     return tx.hash;
   }
 
   async getMySalary(userAddress: string): Promise<string> {
-    if (!this.contract) {
+    if (!this.contract || !this.contractAddress) {
       return "***";
     }
 
@@ -110,18 +120,15 @@ class FHEPayrollService {
     }
 
     try {
+      // Get re-encrypted salary from contract
       const encryptedBytes = await (this.contract as any).getMySalary(
         userAddress,
         "0x" + keys.keyPair.publicKey
       );
 
-      const reencrypted = reencryptForUser(
-        { bytes: encryptedBytes.slice(2), type: "euint32" },
-        keys.keyPair.publicKey
-      );
-
-      const salaryCents = decryptWithPrivateKey(reencrypted, keys.keyPair.privateKey);
-      return centsToSalary(salaryCents);
+      // For now, return the encrypted value as a placeholder
+      // In production, this would be decrypted using the relayer
+      return "***";
     } catch {
       return "***";
     }
@@ -142,7 +149,7 @@ class FHEPayrollService {
     employees: PayrollEmployee[],
     onProgress?: (current: number, total: number) => void
   ): Promise<{ totalAmount: string; txHash: string; processed: number }> {
-    if (!this.contract || !this.signer) {
+    if (!this.contract || !this.signer || !this.contractAddress) {
       throw new Error("Contract not initialized");
     }
 
@@ -155,9 +162,12 @@ class FHEPayrollService {
       const amount = parseInt(emp.encryptedSalary);
 
       if (!isNaN(amount) && amount > 0) {
+        const encrypted = await encryptSalary(amount, this.contractAddress, emp.address);
+        const encryptedBytes32 = encrypted.handles[0] as `0x${string}`;
+
         const tx = await (this.contract as any).setSalary(
           emp.address,
-          "0x" + encryptSalary(amount).bytes
+          encryptedBytes32
         );
         await tx.wait();
         totalAmount += amount;
@@ -182,8 +192,10 @@ class FHEPayrollService {
       throw new Error("Contract not initialized");
     }
 
-    const encryptedThreshold = encryptSalary(voteThreshold);
-    const tx = await (this.contract as any).distributeBonuses("0x" + encryptedThreshold.bytes);
+    const encryptedThreshold = await encryptSalary(voteThreshold, this.contractAddress, this.userAddress || "0x0");
+    const encryptedBytes32 = encryptedThreshold.handles[0] as `0x${string}`;
+
+    const tx = await (this.contract as any).distributeBonuses(encryptedBytes32);
     await tx.wait();
 
     return tx.hash;
@@ -237,6 +249,10 @@ class FHEPayrollService {
 
   setRelayerUrl(url: string) {
     this.relayerUrl = url;
+  }
+
+  isInitialized(): boolean {
+    return this.fhevmInitialized;
   }
 }
 
