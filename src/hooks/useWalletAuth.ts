@@ -10,8 +10,8 @@ export const useWalletAuth = () => {
   const isAuthenticated = !!user;
   // Wallet address can come from primary wallet OR from Dynamic user (for email auth)
   const walletAddress = primaryWallet?.address || user?.userId;
-  // Get the provider from the wallet connector
-  const provider = primaryWallet?.connector?.getProvider?.() || null;
+  // Get the provider from the wallet connector (if available)
+  const provider = (primaryWallet as any)?.connector?.getProvider?.() || null;
 
   const connectWallet = useCallback(async () => {
     // Open Dynamic widget for wallet connection or email login

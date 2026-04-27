@@ -32,9 +32,9 @@ export default defineConfig(({ mode }) => ({
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
 
-          if (id.includes("@dynamic-labs") || id.includes("@turnkey")) return "dynamic";
-          if (id.includes("@reown") || id.includes("@walletconnect")) return "walletconnect";
-          if (id.includes("ox/")) return "walletconnect";
+          if (id.includes("@dynamic-labs")) return "dynamic";
+          if (id.includes("@reown")) return "reown";
+          if (id.includes("@walletconnect")) return "walletconnect";
           if (id.includes("ethers")) return "ethers";
           if (id.includes("@supabase")) return "supabase";
           if (id.includes("recharts")) return "charts";
@@ -61,4 +61,8 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  optimizeDeps: {
+    exclude: ['fhevmjs'],
+  },
 }));
+

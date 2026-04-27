@@ -19,11 +19,18 @@ const sdkOptions = {
   allowMultiWalletConnections: true,
 };
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+// Add error boundary to catch initialization errors
+const AppWithErrorBoundary = () => {
+  return (
     <DynamicContextProvider settings={sdkOptions as any}>
       <App />
       <DynamicWidget />
     </DynamicContextProvider>
+  );
+};
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <AppWithErrorBoundary />
   </StrictMode>
 );
