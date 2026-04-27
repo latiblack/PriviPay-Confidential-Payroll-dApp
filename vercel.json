@@ -1,7 +1,6 @@
-bpsip: 
 {
   "installCommand": "npm install",
-  "buildCommand": "npn run build",
+  "buildCommand": "npm run build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]
