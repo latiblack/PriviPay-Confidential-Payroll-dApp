@@ -29,6 +29,7 @@ const EmployeeDashboard = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [payments, setPayments] = useState<PaymentData[]>([]);
+  const [bonuses, setBonuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,9 +44,17 @@ const EmployeeDashboard = () => {
           .eq("status", "active");
 
         if (empError) throw empError;
-        
+
         const activeEmployees = (empData || []).filter(e => Number(e.encrypted_salary) > 0);
         setEmployees(activeEmployees);
+
+        // Get bonuses for calculating total
+        const { data: bonusData } = await supabase
+          .from("bonuses")
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id);
+        
+        if (bonusData) setBonuses(bonusData);
 
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
@@ -54,6 +63,15 @@ const EmployeeDashboard = () => {
 
         if (roleError) throw roleError;
         setMembers(roleData || []);
+
+        // Find current user's employee record
+        const currentUserEmployee = (empData || []).find(
+          e => e.wallet_address?.toLowerCase() === walletAddress?.toLowerCase()
+        );
+        
+        if (currentUserEmployee) {
+          setEmployee(currentUserEmployee);
+        }
 
         if ((isOwner || isManager) && activeEmployees.length > 0 && !selectedEmployeeId) {
           setSelectedEmployeeId(activeEmployees[0].id);
@@ -66,7 +84,7 @@ const EmployeeDashboard = () => {
     };
 
     fetchData();
-  }, [profile?.currentOrganization?.id, isOwner, isManager]);
+  }, [profile?.currentOrganization?.id, isOwner, isManager, walletAddress]);
 
   useEffect(() => {
     const fetchEmployeeData = async () => {
@@ -154,26 +172,27 @@ const EmployeeDashboard = () => {
                 </p>
               </div>
             </div>
-            {employee ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">Position</p>
-                  <p className="text-xl font-semibold">{employee.position || "Employee"}</p>
-                </div>
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">Department</p>
-                  <p className="text-xl font-semibold">{employee.department || "General"}</p>
-                </div>
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">Monthly Salary</p>
-                  <p className="text-xl font-semibold">${Number(employee.encrypted_salary || 0).toLocaleString()}</p>
-                </div>
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge variant="default" className="mt-1">{employee.status}</Badge>
-                </div>
-              </div>
-            ) : (
+{employee ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Position</p>
+              <p className="text-xl font-semibold">{employee.position || "Employee"}</p>
+            </div>
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Department</p>
+              <p className="text-xl font-semibold">{employee.department || "General"}</p>
+            </div>
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Monthly Salary</p>
+              <p className="text-xl font-semibold">${(Number(employee.encrypted_salary || 0) + ((bonuses.filter(b => b.employee_id === employee.id).reduce((sum, b) => sum + Number(b.amount), 0)))).toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">incl. bonus</p>
+            </div>
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">Status</p>
+              <Badge variant="default" className="mt-1">{employee.status}</Badge>
+            </div>
+          </div>
+        ) : (
               <p className="text-muted-foreground p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 You are in the organization but not yet added to payroll.
               </p>
