@@ -1,8 +1,8 @@
-import { createInstance, initFhevm, FhevmInstance } from "fhevmjs";
+import { initSDK, createInstance, SepoliaConfig, FhevmInstance, KeyPair } from "@zama-fhe/relayer-sdk/web";
 
 export interface EncryptedData {
-  handles: string[];
-  inputProof: string;
+  handles: bigint[];
+  inputProof: Uint8Array;
   type: "euint32" | "euint64" | "euint256" | "euint8";
 }
 
@@ -12,125 +12,77 @@ export interface KeyPair {
 }
 
 let fhevmInstance: FhevmInstance | null = null;
-let fhevmInitError: Error | null = null;
-
-// Zama fhEVM contract addresses
-const ZAMA_CONTRACTS = {
-  ACL_CONTRACT: "0x0000000000000000000000000000000000000000", // Will be set from env
-  KMS_CONTRACT: "0x0000000000000000000000000000000000000000", // Will be set from env
-};
+let fhevmInitialized = false;
 
 export async function initFhevmInstance(): Promise<FhevmInstance> {
-  if (fhevmInstance) return fhevmInstance;
-  if (fhevmInitError) throw fhevmInitError;
+  if (fhevmInstance && fhevmInitialized) return fhevmInstance;
 
   try {
-    await initFhevm();
-
-    const aclContractAddress = import.meta.env.VITE_ZAMA_ACL_CONTRACT || ZAMA_CONTRACTS.ACL_CONTRACT;
-    const kmsContractAddress = import.meta.env.VITE_ZAMA_KMS_CONTRACT || ZAMA_CONTRACTS.KMS_CONTRACT;
-
+    await initSDK();
+    
     fhevmInstance = await createInstance({
-      chainId: 534351, // Zama fhEVM Sepolia testnet
-      networkUrl: "https://devnet.zama.ai",
-      gatewayUrl: "https://gateway.devnet.zama.ai",
-      aclContractAddress,
-      kmsContractAddress,
+      ...SepoliaConfig,
+      network: (window as any).ethereum,
     });
 
+    fhevmInitialized = true;
     return fhevmInstance;
   } catch (error) {
-    fhevmInitError = error as Error;
     console.error("Failed to initialize FHEvm:", error);
     throw error;
   }
 }
 
 export async function generateKeyPair(): Promise<KeyPair> {
-  try {
-    const fhevm = await initFhevmInstance();
-    const keys = fhevm.generateKeypair();
-    return {
-      publicKey: keys.publicKey,
-      privateKey: keys.privateKey,
-    };
-  } catch (error) {
-    console.error("Failed to generate keypair:", error);
-    // Return mock keypair for development
-    return {
-      publicKey: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-      privateKey: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-    };
-  }
+  const fhevm = await initFhevmInstance();
+  const keys = fhevm.generateKeypair();
+  return {
+    publicKey: keys.publicKey,
+    privateKey: keys.privateKey,
+  };
 }
 
 export async function encryptSalary(amount: number, contractAddress: string, userAddress: string): Promise<EncryptedData> {
-  try {
-    const fhevm = await initFhevmInstance();
-    const encryptedInput = fhevm.createEncryptedInput(contractAddress, userAddress);
-    encryptedInput.add32(amount);
-    const encrypted = await encryptedInput.encrypt();
+  const fhevm = await initFhevmInstance();
+  
+  const encryptedInput = fhevm.createEncryptedInput(contractAddress, userAddress);
+  encryptedInput.add32(BigInt(amount));
+  const encrypted = await encryptedInput.encrypt();
 
-    return {
-      handles: encrypted.handles.map(h => "0x" + Buffer.from(h).toString("hex")),
-      inputProof: "0x" + Buffer.from(encrypted.inputProof).toString("hex"),
-      type: "euint32",
-    };
-  } catch (error) {
-    console.error("Failed to encrypt salary:", error);
-    // Return mock encrypted data for development
-    return {
-      handles: ["0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")],
-      inputProof: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-      type: "euint32",
-    };
-  }
+  return {
+    handles: encrypted.handles,
+    inputProof: encrypted.inputProof,
+    type: "euint32",
+  };
 }
 
 export async function decryptSalary(encryptedData: EncryptedData): Promise<number> {
-  // Decryption happens on-chain via the contract
-  // This is a placeholder for client-side verification
+  // Decryption happens on-chain via the contract or relayer
   return 0;
 }
 
-export async function reencryptForUser(handle: string, userPublicKey: string, contractAddress: string, userAddress: string, privateKey: string, signature: string): Promise<string> {
-  try {
-    const fhevm = await initFhevmInstance();
-    const handleBigInt = BigInt(handle);
-    const reencrypted = await fhevm.reencrypt(handleBigInt, privateKey, userPublicKey, signature, contractAddress, userAddress);
-    return reencrypted.toString();
-  } catch (error) {
-    console.error("Failed to reencrypt:", error);
-    return "0";
-  }
+export async function reencryptForUser(handle: bigint, userPublicKey: string, contractAddress: string, userAddress: string, privateKey: string, signature: string): Promise<bigint> {
+  const fhevm = await initFhevmInstance();
+  return fhevm.reencrypt(handle, privateKey, userPublicKey, signature, contractAddress, userAddress);
 }
 
-export async function decryptWithPrivateKey(reencryptedData: string, privateKey: string): Promise<number> {
-  // Decryption happens on-chain via the contract
-  // This is a placeholder for client-side verification
+export async function decryptWithPrivateKey(reencryptedData: bigint, privateKey: string): Promise<number> {
+  // Decryption happens on-chain
   return 0;
 }
 
-export async function encryptVote(employeeAddress: string, contractAddress: string, userAddress: string): Promise<EncryptedData> {
-  try {
-    const fhevm = await initFhevmInstance();
-    const encryptedInput = fhevm.createEncryptedInput(contractAddress, userAddress);
-    encryptedInput.addAddress(employeeAddress);
-    const encrypted = await encryptedInput.encrypt();
+export async function encryptVote(voteValue: number, contractAddress: string, userAddress: string): Promise<EncryptedData> {
+  const fhevm = await initFhevmInstance();
+  
+  const encryptedInput = fhevm.createEncryptedInput(contractAddress, userAddress);
+  encryptedInput.add8(BigInt(voteValue));
+  const encrypted = await encryptedInput.encrypt();
 
-    return {
-      handles: encrypted.handles.map(h => "0x" + Buffer.from(h).toString("hex")),
-      inputProof: "0x" + Buffer.from(encrypted.inputProof).toString("hex"),
-      type: "euint8",
-    };
-  } catch (error) {
-    console.error("Failed to encrypt vote:", error);
-    return {
-      handles: ["0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")],
-      inputProof: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-      type: "euint8",
-    };
-  }
+  return {
+    handles: encrypted.handles,
+    inputProof: encrypted.inputProof,
+    type: "euint8",
+  };
 }
 
 export function formatEncryptedAmount(amount: string | number): string {
@@ -155,21 +107,21 @@ export function isValidEncryptedData(data: any): data is EncryptedData {
   return (
     data &&
     Array.isArray(data.handles) &&
-    typeof data.inputProof === "string" &&
+    data.inputProof instanceof Uint8Array &&
     ["euint32", "euint64", "euint256", "euint8"].includes(data.type)
   );
 }
 
 export function placeholderSalary(): EncryptedData {
   return {
-    handles: ["0x00000000000000000000000000000000000000000000000000000000deadbeef"],
-    inputProof: "0x00000000000000000000000000000000000000000000000000000000deadbeef",
+    handles: [BigInt(0)],
+    inputProof: new Uint8Array(64),
     type: "euint32",
   };
 }
 
 export function isPlaceholder(data: EncryptedData): boolean {
-  return data.handles[0].includes("deadbeef") || data.inputProof.includes("cafebabe");
+  return data.handles[0] === BigInt(0);
 }
 
 export function maskedSalary(): string {
@@ -184,8 +136,23 @@ export function getFhevmInstance(): FhevmInstance | null {
   return fhevmInstance;
 }
 
-export function createEIP712Signature(publicKey: string, contractAddress: string, delegatedAccount?: string) {
-  const fhevm = fhevmInstance;
-  if (!fhevm) throw new Error("FHEvm not initialized");
-  return fhevm.createEIP712(publicKey, contractAddress, delegatedAccount);
+export function isFhevmReady(): boolean {
+  return fhevmInitialized;
+}
+
+export function handleToHex(handle: bigint): string {
+  return "0x" + handle.toString(16).padStart(64, "0");
+}
+
+export function hexToHandle(hex: string): bigint {
+  return BigInt(hex);
+}
+
+export function handleToString(handle: bigint | string): string {
+  if (typeof handle === "string") return handle;
+  return handleToHex(handle);
+}
+
+export function handlesToStrings(handles: bigint[]): string[] {
+  return handles.map(h => handleToString(h));
 }

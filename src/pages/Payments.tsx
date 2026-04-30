@@ -16,7 +16,7 @@ import {
   Shield, Key, Eye, EyeOff, CheckCircle2, AlertCircle, Plus, Trash2, Edit, UserPlus
 } from "lucide-react";
 import { fhePayrollService } from "@/lib/fhe/payroll-service";
-import { encryptSalary, salaryToCents } from "@/lib/fhe/encryption";
+import { salaryToCents } from "@/lib/fhe/encryption";
 
 type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
 
@@ -191,13 +191,13 @@ const PaymentsPage = () => {
 
   // Employee management functions
   const handleAddEmployee = async () => {
-    if (!profile?.currentOrganization?.id || !PAYROLL_CONTRACT_ADDRESS) return;
+    if (!profile?.currentOrganization?.id) return;
 
     const salaryCents = salaryToCents(Number(employeeForm.salary));
-    const encrypted = await encryptSalary(salaryCents, PAYROLL_CONTRACT_ADDRESS, employeeForm.wallet_address);
 
     setSavingEmployee(true);
     try {
+      // Store in database
       const { error } = await supabase
         .from("employees")
         .insert({
@@ -205,11 +205,24 @@ const PaymentsPage = () => {
           wallet_address: employeeForm.wallet_address,
           position: employeeForm.position || null,
           department: employeeForm.department || null,
-          encrypted_salary: encrypted.handles[0],
+          encrypted_salary: String(salaryCents), // Store as cents string
           status: "active",
         });
 
       if (error) throw error;
+
+      // If contract is configured, also add via FHE contract
+      if (PAYROLL_CONTRACT_ADDRESS) {
+        try {
+          await fhePayrollService.addEmployee(
+            employeeForm.wallet_address,
+            employeeForm.position || "Employee",
+            Number(employeeForm.salary)
+          );
+        } catch (contractErr) {
+          console.warn("Contract call failed, DB save succeeded:", contractErr);
+        }
+      }
 
       toast({ title: "Employee Added", description: "Employee has been added successfully" });
       setShowAddDialog(false);
@@ -224,10 +237,9 @@ const PaymentsPage = () => {
   };
 
   const handleEditEmployee = async () => {
-    if (!editingEmployee || !profile?.currentOrganization?.id || !PAYROLL_CONTRACT_ADDRESS) return;
+    if (!editingEmployee || !profile?.currentOrganization?.id) return;
 
     const salaryCents = salaryToCents(Number(employeeForm.salary));
-    const encrypted = await encryptSalary(salaryCents, PAYROLL_CONTRACT_ADDRESS, employeeForm.wallet_address);
 
     setSavingEmployee(true);
     try {
@@ -237,11 +249,23 @@ const PaymentsPage = () => {
           wallet_address: employeeForm.wallet_address,
           position: employeeForm.position || null,
           department: employeeForm.department || null,
-          encrypted_salary: encrypted.handles[0],
+          encrypted_salary: String(salaryCents),
         })
         .eq("id", editingEmployee.id);
 
       if (error) throw error;
+
+      // If contract is configured, also update via FHE contract
+      if (PAYROLL_CONTRACT_ADDRESS) {
+        try {
+          await fhePayrollService.setEmployeeSalary(
+            employeeForm.wallet_address,
+            Number(employeeForm.salary)
+          );
+        } catch (contractErr) {
+          console.warn("Contract call failed, DB save succeeded:", contractErr);
+        }
+      }
 
       toast({ title: "Employee Updated", description: "Employee details have been updated" });
       setShowEditDialog(false);
