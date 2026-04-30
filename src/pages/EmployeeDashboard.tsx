@@ -64,14 +64,12 @@ const EmployeeDashboard = () => {
         if (roleError) throw roleError;
         setMembers(roleData || []);
 
-        // Find current user's employee record
+        // Find current user's employee record - exact match like Payments page
         const currentUserEmployee = (empData || []).find(
-          e => e.wallet_address?.toLowerCase() === walletAddress?.toLowerCase()
+          e => e.wallet_address === profile?.walletAddress
         );
         
-        if (currentUserEmployee) {
-          setEmployee(currentUserEmployee);
-        }
+        setEmployee(currentUserEmployee || null);
 
         if ((isOwner || isManager) && activeEmployees.length > 0 && !selectedEmployeeId) {
           setSelectedEmployeeId(activeEmployees[0].id);
