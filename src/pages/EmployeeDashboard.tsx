@@ -1,17 +1,14 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
-type Payment = Database["public"]["Tables"]["payments"]["Row"];
 
 interface PaymentData {
   id: string;
@@ -24,7 +21,6 @@ interface PaymentData {
 const EmployeeDashboard = () => {
   const { profile } = useAuth();
   const { walletAddress } = useWalletAuth();
-  const { toast } = useToast();
   const isOwner = profile?.currentRole === "owner";
   const isManager = profile?.currentRole === "manager";
 
@@ -40,7 +36,6 @@ const EmployeeDashboard = () => {
       if (!profile?.currentOrganization?.id) return;
 
       try {
-        // Get all employees in payroll (salary > 0)
         const { data: empData, error: empError } = await supabase
           .from("employees")
           .select("*")
@@ -52,7 +47,6 @@ const EmployeeDashboard = () => {
         const activeEmployees = (empData || []).filter(e => Number(e.encrypted_salary) > 0);
         setEmployees(activeEmployees);
 
-        // Get all members for dropdown
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("*")
@@ -61,7 +55,6 @@ const EmployeeDashboard = () => {
         if (roleError) throw roleError;
         setMembers(roleData || []);
 
-        // Auto-select first employee if owner/manager
         if ((isOwner || isManager) && activeEmployees.length > 0 && !selectedEmployeeId) {
           setSelectedEmployeeId(activeEmployees[0].id);
         }
@@ -75,7 +68,6 @@ const EmployeeDashboard = () => {
     fetchData();
   }, [profile?.currentOrganization?.id, isOwner, isManager]);
 
-  // Fetch employee details and payments when selection changes
   useEffect(() => {
     const fetchEmployeeData = async () => {
       if (!selectedEmployeeId) {
@@ -89,7 +81,6 @@ const EmployeeDashboard = () => {
         if (emp) {
           setEmployee(emp);
 
-          // Get payment history
           const { data: payData, error: payError } = await supabase
             .from("payments")
             .select("*")
@@ -115,16 +106,18 @@ const EmployeeDashboard = () => {
     fetchEmployeeData();
   }, [selectedEmployeeId, employees]);
 
-  // Get member role for display
   const getMemberRole = (walletAddress: string) => {
     const member = members.find(m => m.user_id?.toLowerCase() === walletAddress?.toLowerCase());
     return member?.role || "employee";
   };
 
-  // Calculate stats
+  const getEmployeeName = (emp: Employee) => {
+    return (emp as any).name || emp.wallet_address?.slice(0, 8) + "..." + emp.wallet_address?.slice(-4);
+  };
+
   const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0);
   const monthlyCount = payments.filter(p => p.status === "completed").length;
-  const avgPayment = monthlyCount > 0 ? totalReceived / monthlyCount : 0;
+  const maxPayment = Math.max(...payments.map(p => p.amount), 1);
 
   if (loading) {
     return (
@@ -134,70 +127,71 @@ const EmployeeDashboard = () => {
     );
   }
 
-  // Show message if not owner/manager
   if (!isOwner && !isManager) {
     return (
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">My Dashboard</h1>
-          <p className="text-muted-foreground">View your salary and payment history</p>
+          <h1 className="text-3xl font-bold">My Dashboard</h1>
+          <p className="text-muted-foreground text-lg mt-1">View your salary and payment history</p>
         </div>
 
-        {employees.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Users className="h-8 w-8 text-primary" />
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Your Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                <User className="h-10 w-10 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold capitalize">{getMemberRole(walletAddress || "")}</p>
+                <p className="text-muted-foreground font-mono">
+                  {walletAddress?.slice(0, 12)}...{walletAddress?.slice(-4)}
+                </p>
+              </div>
+            </div>
+            {employee ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Position</p>
+                  <p className="text-xl font-semibold">{employee.position || "Employee"}</p>
                 </div>
-                <div>
-                  <p className="font-medium capitalize">{getMemberRole(walletAddress || "")}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {walletAddress?.slice(0, 10)}...{walletAddress?.slice(-4)}
-                  </p>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Department</p>
+                  <p className="text-xl font-semibold">{employee.department || "General"}</p>
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Monthly Salary</p>
+                  <p className="text-xl font-semibold">${Number(employee.encrypted_salary || 0).toLocaleString()}</p>
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge variant="default" className="mt-1">{employee.status}</Badge>
                 </div>
               </div>
-              {employee ? (
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Position</p>
-                    <p className="font-medium">{employee.position || "Employee"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Department</p>
-                    <p className="font-medium">{employee.department || "General"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Monthly Salary</p>
-                    <p className="font-medium">${Number(employee.encrypted_salary || 0).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge variant="default">{employee.status}</Badge>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground mt-4">You are in the organization but not yet added to payroll.</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <p className="text-muted-foreground p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                You are in the organization but not yet added to payroll.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Employee Analytics</h1>
-        <p className="text-muted-foreground">View employee details, payments and history</p>
+        <h1 className="text-3xl font-bold">Employee Analytics</h1>
+        <p className="text-muted-foreground text-lg mt-1">View employee details, payments and history</p>
       </div>
 
-      {/* Employee Selector */}
-      <Card>
+      <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -206,17 +200,17 @@ const EmployeeDashboard = () => {
         </CardHeader>
         <CardContent>
           {employees.length === 0 ? (
-            <p className="text-muted-foreground">No employees in payroll yet.</p>
+            <p className="text-muted-foreground text-lg py-4">No employees in payroll yet.</p>
           ) : (
             <select
-              className="w-full p-3 border rounded-md bg-background text-lg"
+              className="w-full p-4 border-2 rounded-lg bg-background text-lg font-medium"
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
             >
               <option value="">-- Select an employee --</option>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
-                  {emp.wallet_address?.slice(0, 10)}...{emp.wallet_address?.slice(-4)} - {emp.position || "Employee"} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                  {getEmployeeName(emp)} - {emp.position || "Employee"} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
                 </option>
               ))}
             </select>
@@ -226,88 +220,127 @@ const EmployeeDashboard = () => {
 
       {employee && (
         <>
-          {/* Employee Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
                   Monthly Salary
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">${Number(employee.encrypted_salary || 0).toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">per month</p>
+                <p className="text-xs opacity-75 mt-1">per month</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Wallet className="h-4 w-4" />
-                  Position
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{employee.position || "Employee"}</div>
-                <p className="text-sm text-muted-foreground mt-1">{employee.department || "General"}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Total Received
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">${totalReceived.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">all time</p>
+                <p className="text-xs opacity-75 mt-1">all time</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Payments Made
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{monthlyCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">completed</p>
+                <p className="text-xs opacity-75 mt-1">completed</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Avg Payment
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">${monthlyCount > 0 ? Math.round(totalReceived / monthlyCount).toLocaleString() : 0}</div>
+                <p className="text-xs opacity-75 mt-1">per transaction</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Wallet Address Card */}
-          <Card>
+          <Card className="max-w-2xl">
             <CardHeader>
               <CardTitle>Employee Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Wallet Address</p>
-                  <p className="font-mono text-lg">{employee.wallet_address}</p>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Role</p>
-                  <Badge variant="outline" className="text-lg">{getMemberRole(employee.wallet_address)}</Badge>
+                <div className="flex-1 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-semibold text-lg">{(employee as any).name || "Not set"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Role</p>
+                    <Badge variant="outline" className="text-lg">{getMemberRole(employee.wallet_address)}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    <Badge variant={employee.status === "active" ? "default" : "secondary"} className="text-lg">
+                      {employee.status}
+                    </Badge>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge variant={employee.status === "active" ? "default" : "secondary"} className="text-lg">
-                    {employee.status}
-                  </Badge>
-                </div>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Wallet Address</p>
+                <p className="font-mono text-lg">{employee.wallet_address}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Payment History */}
-          <Card>
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Payment Chart
+              </CardTitle>
+              <CardDescription>Visual representation of payment history</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No payment history</p>
+              ) : (
+                <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
+                  {payments.slice(0, 12).reverse().map((payment, index) => (
+                    <div key={payment.id} className="flex flex-col items-center gap-2 flex-1">
+                      <div 
+                        className={`w-full rounded-t-lg transition-all hover:opacity-80 ${payment.status === "completed" ? "bg-green-500" : "bg-yellow-500"}`}
+                        style={{ 
+                          height: `${Math.max((payment.amount / maxPayment) * 200, 20)}px`,
+                          minHeight: "20px"
+                        }}
+                        title={`$${payment.amount.toLocaleString()} - ${payment.status}`}
+                      />
+                      <span className="text-xs text-muted-foreground transform -rotate-45 origin-left whitespace-nowrap">
+                        {new Date(payment.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="max-w-2xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
@@ -323,28 +356,26 @@ const EmployeeDashboard = () => {
                   {payments.map((payment) => (
                     <div key={payment.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${payment.status === "completed" ? "bg-green-100" : "bg-yellow-100"}`}>
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${payment.status === "completed" ? "bg-green-100" : "bg-yellow-100"}`}>
                           {payment.status === "completed" ? (
-                            <ArrowUpRight className="h-5 w-5 text-green-600" />
+                            <ArrowUpRight className="h-6 w-6 text-green-600" />
                           ) : (
-                            <ArrowDownRight className="h-5 w-5 text-yellow-600" />
+                            <Calendar className="h-6 w-6 text-yellow-600" />
                           )}
                         </div>
                         <div>
-                          <p className="font-medium capitalize">{payment.type}</p>
+                          <p className="font-medium text-lg capitalize">{payment.type}</p>
                           <p className="text-sm text-muted-foreground">
                             {new Date(payment.created_at).toLocaleDateString("en-US", {
                               year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit"
+                              month: "long",
+                              day: "numeric"
                             })}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-lg">${payment.amount.toLocaleString()}</p>
+                        <p className="font-semibold text-2xl">${payment.amount.toLocaleString()}</p>
                         <Badge variant={payment.status === "completed" ? "default" : "secondary"}>
                           {payment.status}
                         </Badge>
@@ -359,10 +390,10 @@ const EmployeeDashboard = () => {
       )}
 
       {!selectedEmployeeId && employees.length > 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg text-muted-foreground">Select an employee to view analytics</p>
+        <Card className="max-w-2xl">
+          <CardContent className="py-16 text-center">
+            <Users className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
+            <p className="text-xl text-muted-foreground">Select an employee to view analytics</p>
           </CardContent>
         </Card>
       )}

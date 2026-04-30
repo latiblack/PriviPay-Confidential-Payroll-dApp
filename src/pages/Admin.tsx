@@ -186,29 +186,33 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              In Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{payrollEmployees.length}</div>
-          </CardContent>
-        </Card>
+<Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <UserCheck className="h-4 w-4" />
+          In Payroll (with salary)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold">
+          {payrollEmployees.filter(e => Number(e.encrypted_salary) > 0).length}
+        </div>
+      </CardContent>
+    </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{members.length - payrollEmployees.length}</div>
-          </CardContent>
-        </Card>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Building2 className="h-4 w-4" />
+          Not in Payroll
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-bold">
+          {members.length - payrollEmployees.filter(e => Number(e.encrypted_salary) > 0).length}
+        </div>
+      </CardContent>
+    </Card>
 
         <Card>
           <CardHeader className="pb-2">
