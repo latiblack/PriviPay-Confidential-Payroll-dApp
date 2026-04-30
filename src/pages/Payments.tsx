@@ -13,7 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import {
   DollarSign, Users, Send, Wallet, Loader2, ArrowDownToLine, Lock,
-  Shield, Key, Eye, EyeOff, CheckCircle2, AlertCircle, Plus, Trash2, Edit, UserPlus
+  Shield, Key, Eye, EyeOff, CheckCircle2, AlertCircle, Plus, Trash2, Edit, UserPlus,
+  Vote, FileCheck, UserCheck, Crown, Building2
 } from "lucide-react";
 import { fhePayrollService } from "@/lib/fhe/payroll-service";
 import { salaryToCents } from "@/lib/fhe/encryption";
@@ -47,6 +48,15 @@ const PaymentsPage = () => {
   const [decrypting, setDecrypting] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  
+  // Contract state
+  const [contractOwner, setContractOwner] = useState<string>("");
+  const [contractEmployeeCount, setContractEmployeeCount] = useState<number>(0);
+  const [contractTotalPayroll, setContractTotalPayroll] = useState<string>("$0");
+  const [pendingRequests, setPendingRequests] = useState<string[]>([]);
+  const [isContractEmployee, setIsContractEmployee] = useState(false);
+  const [hasRequestedJoin, setHasRequestedJoin] = useState(false);
+  const [loadingContractInfo, setLoadingContractInfo] = useState(false);
 
   // Employee management state
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -83,34 +93,65 @@ const PaymentsPage = () => {
     }
   };
 
-  const initializeFHE = async () => {
-    if (!provider || !PAYROLL_CONTRACT_ADDRESS) {
-      setFheInitialized(false);
-      return;
+const initializeFHE = async () => {
+  if (!provider || !PAYROLL_CONTRACT_ADDRESS) {
+    setFheInitialized(false);
+    return;
+  }
+
+  try {
+    await fhePayrollService.initialize(PAYROLL_CONTRACT_ADDRESS, provider as any);
+
+    const keys = await fhePayrollService.getUserKeys();
+    setHasKeys(!!keys);
+
+    setFheInitialized(true);
+  } catch (err) {
+    console.error("FHE initialization error:", err);
+    setFheInitialized(false);
+  }
+};
+
+const fetchContractInfo = async () => {
+  if (!fheInitialized || !walletAddress) return;
+  
+  setLoadingContractInfo(true);
+  try {
+    // Check if user is an employee on contract
+    const isEmp = await fhePayrollService.isEmployee(walletAddress);
+    setIsContractEmployee(isEmp);
+    
+    // Get employee count
+    const count = await fhePayrollService.getEmployeeCount();
+    setContractEmployeeCount(count);
+    
+    // Get total payroll (only meaningful for owner)
+    if (isOwner) {
+      const total = await fhePayrollService.getTotalPayroll();
+      setContractTotalPayroll(total);
     }
-
-    try {
-      await fhePayrollService.initialize(PAYROLL_CONTRACT_ADDRESS, provider as any);
-
-      const keys = await fhePayrollService.getUserKeys();
-      setHasKeys(!!keys);
-
-      setFheInitialized(true);
-    } catch (err) {
-      console.error("FHE initialization error:", err);
-      setFheInitialized(false);
-    }
-  };
+  } catch (err) {
+    console.error("Error fetching contract info:", err);
+  } finally {
+    setLoadingContractInfo(false);
+  }
+};
 
   useEffect(() => {
     fetchData();
   }, [profile?.currentOrganization?.id, profile?.walletAddress]);
 
-  useEffect(() => {
-    if (provider && PAYROLL_CONTRACT_ADDRESS) {
-      initializeFHE();
-    }
-  }, [provider, walletAddress]);
+useEffect(() => {
+  if (provider && PAYROLL_CONTRACT_ADDRESS) {
+    initializeFHE();
+  }
+}, [provider, walletAddress]);
+
+useEffect(() => {
+  if (fheInitialized && walletAddress) {
+    fetchContractInfo();
+  }
+}, [fheInitialized, isOwner]);
 
   const handleDecryptSalary = async () => {
     if (!walletAddress || !fheInitialized) {
@@ -280,24 +321,98 @@ const PaymentsPage = () => {
     }
   };
 
-  const handleDeleteEmployee = async (employeeId: string) => {
-    if (!confirm("Are you sure you want to remove this employee?")) return;
+const handleDeleteEmployee = async (employeeId: string) => {
+  if (!confirm("Are you sure you want to remove this employee?")) return;
 
-    try {
-      const { error } = await supabase
-        .from("employees")
-        .delete()
-        .eq("id", employeeId);
+  try {
+    const { error } = await supabase
+      .from("employees")
+      .delete()
+      .eq("id", employeeId);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      toast({ title: "Employee Removed", description: "Employee has been removed" });
-      fetchData();
-    } catch (err) {
-      console.error("Error deleting employee:", err);
-      toast({ title: "Error", description: "Failed to remove employee", variant: "destructive" });
-    }
-  };
+    toast({ title: "Employee Removed", description: "Employee has been removed" });
+    fetchData();
+  } catch (err) {
+    console.error("Error deleting employee:", err);
+    toast({ title: "Error", description: "Failed to remove employee", variant: "destructive" });
+  }
+};
+
+const handleRequestJoin = async () => {
+  if (!fheInitialized) {
+    toast({ title: "FHE Not Ready", description: "Please wait for encryption to initialize", variant: "destructive" });
+    return;
+  }
+  
+  setProcessing(true);
+  try {
+    const txHash = await fhePayrollService.requestJoin();
+    setHasRequestedJoin(true);
+    toast({ 
+      title: "Join Request Submitted", 
+      description: `Transaction: ${txHash.slice(0, 10)}...`
+    });
+  } catch (err) {
+    console.error("Error requesting join:", err);
+    toast({ title: "Error", description: "Failed to submit join request", variant: "destructive" });
+  } finally {
+    setProcessing(false);
+  }
+};
+
+const handleApproveJoin = async (userAddress: string) => {
+  if (!fheInitialized) return;
+  
+  setProcessing(true);
+  try {
+    const txHash = await fhePayrollService.approveJoin(userAddress);
+    toast({ 
+      title: "Employee Approved", 
+      description: "Join request approved on-chain" 
+    });
+    setPendingRequests(prev => prev.filter(a => a !== userAddress));
+  } catch (err) {
+    console.error("Error approving join:", err);
+    toast({ title: "Error", description: "Failed to approve join request", variant: "destructive" });
+  } finally {
+    setProcessing(false);
+  }
+};
+
+const handleVoteForEmployee = async (candidateAddress: string) => {
+  if (!fheInitialized) return;
+  
+  setProcessing(true);
+  try {
+    await fhePayrollService.castVoteFor(walletAddress, candidateAddress);
+    toast({ title: "Vote Cast", description: "Your vote has been recorded on-chain" });
+  } catch (err) {
+    console.error("Error casting vote:", err);
+    toast({ title: "Error", description: "Failed to cast vote", variant: "destructive" });
+  } finally {
+    setProcessing(false);
+  }
+};
+
+const handleDistributeBonuses = async (threshold: number = 100) => {
+  if (!fheInitialized) return;
+  
+  setProcessing(true);
+  try {
+    const txHash = await fhePayrollService.distributeBonuses(threshold);
+    toast({ 
+      title: "Bonuses Distributed", 
+      description: "Bonus distribution completed based on votes"
+    });
+  } catch (err) {
+    console.error("Error distributing bonuses:", err);
+    toast({ title: "Error", description: "Failed to distribute bonuses", variant: "destructive" });
+  } finally {
+    setProcessing(false);
+  }
+};
 
   const openEditDialog = (employee: EmployeeRow) => {
     setEditingEmployee(employee);
@@ -311,18 +426,89 @@ const PaymentsPage = () => {
   };
 
   const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0);
+  const isCurrentUserEmployee = employees.some(e => e.wallet_address === walletAddress);
+  const isPendingEmployee = pendingRequests.includes(walletAddress || "");
 
   if (!profile?.currentOrganization) {
     return <div className="p-6">No organization found</div>;
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Payments</h1>
-          <p className="text-muted-foreground">Manage payroll and employee compensation</p>
-        </div>
+return (
+  <div className="space-y-6">
+    {/* Request to Join Banner - For non-employees */}
+    {!isOwner && !isCurrentUserEmployee && (
+      <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-900">Join Your Organization</h3>
+                <p className="text-sm text-amber-700">Request access to view your salary and manage payments</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {hasRequestedJoin || isPendingEmployee ? (
+                <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Request Pending
+                </Badge>
+              ) : (
+                <Button 
+                  onClick={handleRequestJoin} 
+                  disabled={processing || !fheInitialized}
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCheck className="h-4 w-4 mr-2" />}
+                  Request to Join
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )}
+
+    {/* Contract Info Card - For Owner */}
+    {isOwner && fheInitialized && (
+      <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-600" />
+                <span className="text-sm text-muted-foreground">Contract Owner</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <span className="text-sm text-muted-foreground">On-Chain Employees:</span>
+                <span className="font-semibold">{contractEmployeeCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-600" />
+                <span className="text-sm text-muted-foreground">Total Payroll:</span>
+                <span className="font-semibold">{contractTotalPayroll}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1">
+                <Shield className="h-3 w-3" /> FHE Active
+              </Badge>
+              <span className="text-xs font-mono text-muted-foreground">
+                {PAYROLL_CONTRACT_ADDRESS.slice(0, 8)}...{PAYROLL_CONTRACT_ADDRESS.slice(-6)}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )}
+
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold">Payments</h1>
+        <p className="text-muted-foreground">Manage payroll and employee compensation</p>
+      </div>
         {isOwner && (
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -637,12 +823,77 @@ const PaymentsPage = () => {
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+</CardContent>
+</Card>
 
-      {!isOwner && (
+      {/* Bonus Voting Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Vote className="h-5 w-5" />
+            Bonus Distribution (FHE Voting)
+          </CardTitle>
+          <CardDescription>
+            Vote for employees to receive bonuses - votes are encrypted and counted on-chain
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {employees.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">
+              No employees to vote for. Add employees first.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Vote for employees to allocate bonus rewards. Voting is done via encrypted FHE transactions.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                {employees.slice(0, 5).map((emp) => (
+                  <div key={emp.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <Vote className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {emp.wallet_address?.slice(0, 8)}...{emp.wallet_address?.slice(-4)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{emp.position || "Employee"}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleVoteForEmployee(emp.wallet_address)}
+                      disabled={processing || !fheInitialized}
+                      className="gap-1"
+                    >
+                      <Vote className="h-3 w-3" /> Vote
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                onClick={() => handleDistributeBonuses(50)}
+                disabled={processing || !fheInitialized}
+                className="w-full gap-2"
+                variant="secondary"
+              >
+                {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck className="h-4 w-4" />}
+                Distribute Bonuses Based on Votes
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+</>
+)}
+
+{!isOwner && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
