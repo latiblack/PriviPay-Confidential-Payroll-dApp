@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { DollarSign, Users, Loader2, Plus, Gift, Calendar, Trash2 } from "lucide-react";
+import { DollarSign, Users, Loader2, Plus, Gift, Calendar, Trash2, CheckCircle, XCircle, Send } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 
@@ -21,15 +22,29 @@ interface Bonus {
   created_at: string;
 }
 
+interface BonusRequest {
+  id: string;
+  employee_id: string;
+  requested_by_wallet: string;
+  amount: number;
+  month: string;
+  status: string;
+  created_at: string;
+}
+
 const BonusPage = () => {
   const { profile } = useAuth();
+  const { walletAddress } = useWalletAuth();
   const { toast } = useToast();
-  const canAddBonus = profile?.currentRole === "owner" || profile?.currentRole === "manager";
+  const isOwner = profile?.currentRole === "owner";
+  const isManager = profile?.currentRole === "manager";
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
+  const [bonusRequests, setBonusRequests] = useState<BonusRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   const [bonusAmount, setBonusAmount] = useState("");
   const [bonusMonth, setBonusMonth] = useState("");
@@ -40,7 +55,6 @@ const BonusPage = () => {
       if (!profile?.currentOrganization?.id) return;
 
       try {
-        // Get employees in payroll (salary > 0)
         const { data: empData, error: empError } = await supabase
           .from("employees")
           .select("*")
@@ -52,7 +66,6 @@ const BonusPage = () => {
         const activeEmployees = (empData || []).filter(e => Number(e.encrypted_salary) > 0);
         setEmployees(activeEmployees);
 
-        // Get all bonuses
         const { data: bonusData, error: bonusError } = await supabase
           .from("bonuses")
           .select("*")
@@ -61,6 +74,20 @@ const BonusPage = () => {
 
         if (bonusError) throw bonusError;
         setBonuses(bonusData || []);
+
+        // Get bonus requests for owner
+        if (isOwner) {
+          const { data: requestData, error: requestError } = await supabase
+            .from("bonus_requests")
+            .select("*")
+            .eq("organization_id", profile.currentOrganization.id)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false });
+
+          if (!requestError) {
+            setBonusRequests(requestData || []);
+          }
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -69,7 +96,7 @@ const BonusPage = () => {
     };
 
     fetchData();
-  }, [profile?.currentOrganization?.id]);
+  }, [profile?.currentOrganization?.id, isOwner]);
 
   const getEmployeeName = (emp: Employee) => {
     return (emp as any).name || emp.wallet_address?.slice(0, 8) + "..." + emp.wallet_address?.slice(-4);
@@ -79,6 +106,10 @@ const BonusPage = () => {
     return bonuses
       .filter(b => b.employee_id === employeeId)
       .reduce((sum, b) => sum + b.amount, 0);
+  };
+
+  const getEmployee = (employeeId: string) => {
+    return employees.find(e => e.id === employeeId);
   };
 
   const handleAddBonus = async () => {
@@ -97,11 +128,11 @@ const BonusPage = () => {
 
       if (error) throw error;
 
-      // Get employee details for notification
+      // Get employee for notification
       const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
       const employeeName = selectedEmployee ? ((selectedEmployee as any).name || selectedEmployee.wallet_address?.slice(0, 10)) : "Employee";
 
-      // Create notification for the employee
+      // Create notification
       await supabase.from("notifications").insert({
         organization_id: profile.currentOrganization.id,
         type: "bonus",
@@ -113,7 +144,6 @@ const BonusPage = () => {
 
       toast({ title: "Bonus Added", description: `Bonus of $${Number(bonusAmount).toLocaleString()} added for ${bonusMonth}` });
       
-      // Refresh bonuses
       const { data } = await supabase
         .from("bonuses")
         .select("*")
@@ -130,6 +160,107 @@ const BonusPage = () => {
       toast({ title: "Error", description: "Failed to add bonus", variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRequestBonus = async () => {
+    if (!profile?.currentOrganization?.id || !selectedEmployeeId || !bonusAmount || !bonusMonth) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("bonus_requests")
+        .insert({
+          organization_id: profile.currentOrganization.id,
+          employee_id: selectedEmployeeId,
+          requested_by_wallet: walletAddress,
+          amount: Number(bonusAmount),
+          month: bonusMonth,
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      toast({ title: "Bonus Requested", description: `Request for $${Number(bonusAmount).toLocaleString()} bonus sent to owner` });
+      
+      setShowRequestDialog(false);
+      setSelectedEmployeeId("");
+      setBonusAmount("");
+      setBonusMonth("");
+    } catch (err) {
+      console.error("Error requesting bonus:", err);
+      toast({ title: "Error", description: "Failed to request bonus", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveRequest = async (request: BonusRequest) => {
+    try {
+      // Add the bonus
+      const { error } = await supabase
+        .from("bonuses")
+        .insert({
+          organization_id: profile?.currentOrganization?.id,
+          employee_id: request.employee_id,
+          amount: request.amount,
+          month: request.month,
+        });
+
+      if (error) throw error;
+
+      // Update request status
+      await supabase
+        .from("bonus_requests")
+        .update({ status: "approved" })
+        .eq("id", request.id);
+
+      // Create notification for the employee
+      const emp = getEmployee(request.employee_id);
+      if (emp) {
+        await supabase.from("notifications").insert({
+          organization_id: profile?.currentOrganization?.id,
+          type: "bonus",
+          title: "Bonus Approved!",
+          message: `Your bonus request of $${Number(request.amount).toLocaleString()} for ${request.month} has been approved`,
+          user_id: emp.wallet_address,
+          read: false,
+        });
+      }
+
+      toast({ title: "Bonus Approved", description: `Bonus of $${Number(request.amount).toLocaleString()} approved` });
+      
+      // Refresh
+      const { data: reqData } = await supabase
+        .from("bonus_requests")
+        .select("*")
+        .eq("organization_id", profile?.currentOrganization?.id)
+        .eq("status", "pending");
+      setBonusRequests(reqData || []);
+
+      const { data: bonusData } = await supabase
+        .from("bonuses")
+        .select("*")
+        .eq("organization_id", profile?.currentOrganization?.id)
+        .order("created_at", { ascending: false });
+      setBonuses(bonusData || []);
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to approve bonus", variant: "destructive" });
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      await supabase
+        .from("bonus_requests")
+        .update({ status: "rejected" })
+        .eq("id", requestId);
+
+      toast({ title: "Request Rejected", description: "Bonus request has been rejected" });
+      
+      setBonusRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to reject request", variant: "destructive" });
     }
   };
 
@@ -151,9 +282,7 @@ const BonusPage = () => {
     }
   };
 
-  // Get current month in YYYY-MM format
   const currentMonth = new Date().toISOString().slice(0, 7);
-
   const totalBonuses = bonuses.reduce((sum, b) => sum + b.amount, 0);
 
   if (!profile?.currentOrganization) {
@@ -167,7 +296,7 @@ const BonusPage = () => {
           <h1 className="text-3xl font-bold">Bonus Management</h1>
           <p className="text-muted-foreground text-lg mt-1">Add monthly bonuses for employees</p>
         </div>
-        {canAddBonus && (
+        {isOwner && (
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button className="gap-2 text-lg px-6 py-4 relative z-50">
@@ -218,7 +347,7 @@ const BonusPage = () => {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-<Button
+                <Button
                   onClick={handleAddBonus}
                   disabled={saving || !selectedEmployeeId || !bonusAmount}
                 >
@@ -228,7 +357,109 @@ const BonusPage = () => {
             </DialogContent>
           </Dialog>
         )}
+        {isManager && (
+          <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 text-lg px-6 py-4">
+                <Send className="h-5 w-5" />
+                Request Bonus
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="z-[100]">
+              <DialogHeader>
+                <DialogTitle>Request Bonus for Employee</DialogTitle>
+                <DialogDescription>Request owner approval for employee bonus</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Select Employee</Label>
+                  <select
+                    className="w-full p-3 border rounded-lg bg-background"
+                    value={selectedEmployeeId}
+                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                  >
+                    <option value="">-- Select employee --</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {getEmployeeName(emp)} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Month</Label>
+                  <Input
+                    type="month"
+                    value={bonusMonth || currentMonth}
+                    onChange={(e) => setBonusMonth(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Bonus Amount (USD)</Label>
+                  <Input
+                    type="number"
+                    placeholder="500"
+                    value={bonusAmount}
+                    onChange={(e) => setBonusAmount(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRequestDialog(false)}>Cancel</Button>
+                <Button
+                  onClick={handleRequestBonus}
+                  disabled={saving || !selectedEmployeeId || !bonusAmount}
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Request"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+
+      {/* Bonus Requests for Owner */}
+      {isOwner && bonusRequests.length > 0 && (
+        <Card className="border-yellow-500 border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-yellow-600">
+              <Gift className="h-5 w-5" />
+              Pending Bonus Requests
+            </CardTitle>
+            <CardDescription>Review and approve bonus requests from managers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {bonusRequests.map((request) => {
+                const emp = getEmployee(request.employee_id);
+                return (
+                  <div key={request.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold">{emp ? getEmployeeName(emp) : "Unknown"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        ${Number(request.amount).toLocaleString()} for {request.month}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Requested by: {request.requested_by_wallet?.slice(0, 10)}...
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="gap-1 bg-green-600" onClick={() => handleApproveRequest(request)}>
+                        <CheckCircle className="h-4 w-4" /> Approve
+                      </Button>
+                      <Button size="sm" variant="destructive" className="gap-1" onClick={() => handleRejectRequest(request.id)}>
+                        <XCircle className="h-4 w-4" /> Reject
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
@@ -324,7 +555,7 @@ const BonusPage = () => {
                             <Badge key={bonus.id} variant="outline" className="flex items-center gap-2 px-3 py-1">
                               <Calendar className="h-3 w-3" />
                               {bonus.month}: ${bonus.amount.toLocaleString()}
-                              {canAddBonus && (
+                              {isOwner && (
                                 <button 
                                   onClick={() => handleDeleteBonus(bonus.id)}
                                   className="ml-1 text-red-500 hover:text-red-700"
