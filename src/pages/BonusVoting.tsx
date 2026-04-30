@@ -24,7 +24,7 @@ interface Bonus {
 const BonusPage = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const canAddBonus = profile?.currentRole === "owner" || profile?.currentRole === "manager";
+  const canAddBonus = profile?.currentRole === "owner" || profile?.currentRole === "manager" || profile?.currentRole === "employee";
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
