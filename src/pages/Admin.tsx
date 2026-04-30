@@ -71,6 +71,24 @@ const AdminDashboard = () => {
     fetchData();
   }, [profile?.currentOrganization?.id]);
 
+  // Refresh data when window gains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (profile?.currentOrganization?.id) {
+        supabase
+          .from("user_roles")
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id)
+          .then(({ data }) => {
+            if (data) setMembers(data);
+          });
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [profile?.currentOrganization?.id]);
+
   // Get employee data for a member
   const getEmployeeData = (userId: string) => {
     return payrollEmployees.find(emp => emp.wallet_address === userId);
@@ -294,75 +312,59 @@ const AdminDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* All Members - Add to Payroll */}
+{/* All Members - Role Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             All Members
           </CardTitle>
-          <CardDescription>Add members to payroll so they appear in Payments page</CardDescription>
+          <CardDescription>Manage member roles in your organization</CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">No members yet. Invite employees above.</p>
           ) : (
             <div className="space-y-3">
-              {members.map((member) => {
-                const inPayroll = isInPayroll(member.user_id);
-                return (
-                  <div key={member.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Users className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Member</p>
-                        <p className="text-sm text-muted-foreground">
-                          {member.user_id?.slice(0, 10)}...{member.user_id?.slice(-4)}
-                        </p>
-                      </div>
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Users className="h-6 w-6 text-primary" />
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right min-w-[80px]">
-                        <p className="font-semibold">${getEmployeeData(member.user_id) ? Number(getEmployeeData(member.user_id)?.encrypted_salary || 0).toLocaleString() : "$0"}</p>
-                        <p className="text-xs text-muted-foreground">/month</p>
-                      </div>
-                      <Badge variant={inPayroll ? "default" : "secondary"}>
-                        {inPayroll ? "In Payroll" : "Not Added"}
-                      </Badge>
-                      <Badge variant="outline">{member.role}</Badge>
-                      
-                      {!inPayroll && (
-                        <Button size="sm" onClick={() => handleAddToPayroll(member)} className="gap-1">
-                          <Plus className="h-3 w-3" /> Add to Payroll
-                        </Button>
-                      )}
-                      
-                      {editingRole === member.id ? (
-                        <div className="flex items-center gap-2">
-                          <select 
-                            value={newRole} 
-                            onChange={(e) => setNewRole(e.target.value)}
-                            className="p-2 border rounded"
-                          >
-                            <option value="employee">Employee</option>
-                            <option value="manager">Manager</option>
-                            <option value="auditor">Auditor</option>
-                            <option value="owner">Owner</option>
-                          </select>
-                          <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
-                          <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
-                        </div>
-                      ) : (
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingRole(member.id); setNewRole(member.role); }}>
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      )}
+                    <div>
+                      <p className="font-medium text-lg">Member</p>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        {member.user_id?.slice(0, 12)}...{member.user_id?.slice(-4)}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-4">
+                    <Badge variant="outline" className="text-lg px-3 py-1">{member.role}</Badge>
+
+                    {editingRole === member.id ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={newRole}
+                          onChange={(e) => setNewRole(e.target.value)}
+                          className="p-2 border rounded"
+                        >
+                          <option value="employee">Employee</option>
+                          <option value="manager">Manager</option>
+                          <option value="auditor">Auditor</option>
+                          <option value="owner">Owner</option>
+                        </select>
+                        <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="ghost" onClick={() => { setEditingRole(member.id); setNewRole(member.role); }}>
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
