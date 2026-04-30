@@ -16,7 +16,7 @@ export const AppSidebar = () => {
   const ownerNavItems = [
     { icon: LayoutGrid, label: "Admin", path: "/admin" },
     { icon: Users, label: "Employees", path: "/employees" },
-    { icon: DollarSign, label: "Treasury", path: "/admin/payments" },
+    { icon: DollarSign, label: "Treasury", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
