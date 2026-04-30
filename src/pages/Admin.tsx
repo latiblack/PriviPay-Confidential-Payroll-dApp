@@ -6,14 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings } from "lucide-react";
+import organizationService from "@/lib/organization-service";
+import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings, Send } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 
 const AdminDashboard = () => {
   const { profile, refreshProfile } = useAuth();
+  const { walletAddress } = useWalletAuth();
   const { toast } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +24,11 @@ const AdminDashboard = () => {
   const [copied, setCopied] = useState(false);
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [newRole, setNewRole] = useState("");
+  
+  // Email invitation state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("employee");
+  const [sendingInvite, setSendingInvite] = useState(false);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -45,7 +53,11 @@ const AdminDashboard = () => {
     fetchEmployees();
   }, [profile?.currentOrganization?.id, profile?.currentOrganization?.invite_code]);
 
-  const totalSalary = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const totalSalary = employees.reduce((sum, e) => {
+    // Use salary field, fallback to encrypted_salary for old data
+    const sal = e.salary || e.encrypted_salary;
+    return sum + (Number(sal) || 0);
+  }, 0);
   const activeCount = employees.filter(e => e.status === "active").length;
 
   const handleCopyInviteCode = () => {
@@ -53,6 +65,31 @@ const AdminDashboard = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast({ title: "Copied!", description: "Invite code copied to clipboard" });
+  };
+
+  const handleSendInvitation = async () => {
+    if (!inviteEmail || !profile?.currentOrganization?.id || !walletAddress) return;
+    
+    setSendingInvite(true);
+    try {
+      await organizationService.createInvitation({
+        organizationId: profile.currentOrganization.id,
+        email: inviteEmail,
+        role: inviteRole,
+        createdBy: walletAddress,
+      });
+      
+      toast({ 
+        title: "Invitation Sent", 
+        description: `Invitation sent to ${inviteEmail}` 
+      });
+      setInviteEmail("");
+    } catch (err) {
+      console.error("Error sending invitation:", err);
+      toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" });
+    } finally {
+      setSendingInvite(false);
+    }
   };
 
   const handleUpdateRole = async (employeeId: string) => {
@@ -73,6 +110,11 @@ const AdminDashboard = () => {
     } catch (err) {
       toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
     }
+  };
+
+  const getSalary = (emp: Employee) => {
+    // Use salary field, fallback to encrypted_salary for old data
+    return emp.salary || emp.encrypted_salary || "0";
   };
 
   if (loading) {
@@ -161,25 +203,52 @@ const AdminDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Invite Employee Card */}
+      {/* Invite Employee Card with Email */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MailPlus className="h-5 w-5" />
             Invite Employee
           </CardTitle>
-          <CardDescription>Send an invite link to prospective employees</CardDescription>
+          <CardDescription>Send an invitation email to a prospective employee</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1 p-4 bg-muted rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-2">Share this link:</p>
-              <p className="font-mono text-sm">https://privipay.app/auth?invite={inviteCode || 'CODE'}</p>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Email Address</Label>
+              <Input
+                type="email"
+                placeholder="employee@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
             </div>
-            <Button variant="outline" onClick={handleCopyInviteCode}>
-              Copy Link
-            </Button>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <select 
+                className="w-full p-2 border rounded-md"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+              >
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="auditor">Auditor</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={handleSendInvitation} 
+                disabled={sendingInvite || !inviteEmail}
+                className="w-full gap-2"
+              >
+                {sendingInvite ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Send Invitation
+              </Button>
+            </div>
           </div>
+          <p className="text-sm text-muted-foreground">
+            The employee will receive an invitation and can join through the Auth page.
+          </p>
         </CardContent>
       </Card>
 
@@ -212,7 +281,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${Number(emp.salary || 0).toLocaleString()}/mo</p>
+                      <p className="font-semibold">${Number(getSalary(emp)).toLocaleString()}/mo</p>
                       <Badge variant="secondary">{emp.status}</Badge>
                     </div>
                     {editingRole === emp.id ? (

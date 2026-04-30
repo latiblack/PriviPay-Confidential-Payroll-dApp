@@ -65,7 +65,8 @@ const PaymentsPage = () => {
 
       // Get own salary
       const mySalary = data?.find(e => e.wallet_address === profile.walletAddress);
-      setOwnSalary(mySalary?.salary ? `$${Number(mySalary.salary).toLocaleString()}` : "$0");
+      const sal = mySalary?.salary || mySalary?.encrypted_salary || "0";
+      setOwnSalary(`$${Number(sal).toLocaleString()}`);
 
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -206,7 +207,10 @@ const PaymentsPage = () => {
     }
   };
 
-  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const totalPayroll = employees.reduce((sum, e) => {
+    const sal = e.salary || e.encrypted_salary;
+    return sum + (Number(sal) || 0);
+  }, 0);
 
   if (!profile?.currentOrganization) {
     return <div className="p-6">No organization found</div>;
