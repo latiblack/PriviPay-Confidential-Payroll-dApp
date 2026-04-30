@@ -32,14 +32,19 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      if (!profile?.currentOrganization?.id) return;
+      if (!profile?.currentOrganization?.id) {
+        console.log("No organization found. Profile:", profile);
+        return;
+      }
 
+      console.log("Fetching employees for org:", profile.currentOrganization.id);
       try {
         const { data, error } = await supabase
           .from("employees")
           .select("*")
           .eq("organization_id", profile.currentOrganization.id);
 
+        console.log("Employees query result:", { data, error });
         if (error) throw error;
         setEmployees(data || []);
         setInviteCode(profile.currentOrganization.invite_code || "");
@@ -127,6 +132,12 @@ const AdminDashboard = () => {
       <div>
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground">Overview of your organization</p>
+        {/* Debug info */}
+        <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
+          <p>Org ID: {profile?.currentOrganization?.id || "None"}</p>
+          <p>Org Name: {profile?.currentOrganization?.name || "None"}</p>
+          <p>Role: {profile?.currentRole}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
