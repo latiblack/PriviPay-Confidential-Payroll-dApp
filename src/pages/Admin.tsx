@@ -10,26 +10,22 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import organizationService from "@/lib/organization-service";
-import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings, Send } from "lucide-react";
+import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings, Send, Plus, UserCheck } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
-
-interface MemberWithRole {
-  id: string;
-  wallet_address: string;
-  position: string | null;
-  department: string | null;
-  encrypted_salary: string | null;
-  status: string | null;
-  role: string;
-}
 
 const AdminDashboard = () => {
   const { profile, refreshProfile } = useAuth();
   const { walletAddress } = useWalletAuth();
   const { toast } = useToast();
-  const [members, setMembers] = useState<MemberWithRole[]>([]);
+  
+  // Employees in payroll (from employees table)
+  const [payrollEmployees, setPayrollEmployees] = useState<Employee[]>([]);
+  
+  // All members (from user_roles - people who joined via invite)
+  const [members, setMembers] = useState<UserRole[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState("");
   const [copied, setCopied] = useState(false);
@@ -42,60 +38,71 @@ const AdminDashboard = () => {
   const [sendingInvite, setSendingInvite] = useState(false);
 
   useEffect(() => {
-    const fetchMembers = async () => {
-      if (!profile?.currentOrganization?.id) {
-        console.log("No organization found. Profile:", profile);
-        return;
-      }
+    const fetchData = async () => {
+      if (!profile?.currentOrganization?.id) return;
 
-      console.log("Fetching members for org:", profile.currentOrganization.id);
       try {
-        // Get employees with their roles from user_roles
-        const { data: employees, error: empError } = await supabase
+        // Get employees in payroll
+        const { data: empData, error: empError } = await supabase
           .from("employees")
           .select("*")
           .eq("organization_id", profile.currentOrganization.id);
 
         if (empError) throw empError;
+        setPayrollEmployees(empData || []);
 
-        // Get roles for these employees
-        const { data: roles, error: roleError } = await supabase
+        // Get all members from user_roles
+        const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("*")
           .eq("organization_id", profile.currentOrganization.id);
 
         if (roleError) throw roleError;
-
-        // Combine employee data with roles
-        const combined = (employees || []).map(emp => {
-          const role = roles?.find(r => r.user_id === emp.wallet_address);
-          return {
-            id: emp.id,
-            wallet_address: emp.wallet_address,
-            position: emp.position,
-            department: emp.department,
-            encrypted_salary: emp.encrypted_salary,
-            status: emp.status,
-            role: role?.role || "employee",
-            user_id: emp.wallet_address,
-          };
-        });
-
-        console.log("Members query result:", combined);
-        setMembers(combined);
+        setMembers(roleData || []);
+        
         setInviteCode(profile.currentOrganization.invite_code || "");
       } catch (err) {
-        console.error("Error fetching members:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMembers();
-  }, [profile?.currentOrganization?.id, profile?.currentOrganization?.invite_code]);
+    fetchData();
+  }, [profile?.currentOrganization?.id]);
 
-  const activeCount = members.filter(m => m.status === "active").length;
-  const totalSalary = members.reduce((sum, m) => sum + (Number(m.encrypted_salary) || 0), 0);
+  // Check if a member is already in payroll
+  const isInPayroll = (userId: string) => {
+    return payrollEmployees.some(emp => emp.wallet_address === userId);
+  };
+
+  // Add member to payroll
+  const handleAddToPayroll = async (member: UserRole) => {
+    try {
+      const { error } = await supabase
+        .from("employees")
+        .insert({
+          organization_id: profile?.currentOrganization?.id,
+          wallet_address: member.user_id,
+          position: member.role,
+          status: "active",
+          encrypted_salary: "0",
+        });
+
+      if (error) throw error;
+
+      // Refresh data
+      const { data: empData } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("organization_id", profile?.currentOrganization?.id);
+      setPayrollEmployees(empData || []);
+
+      toast({ title: "Added to Payroll", description: "Employee has been added to payroll" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to add to payroll", variant: "destructive" });
+    }
+  };
 
   const handleCopyInviteCode = () => {
     navigator.clipboard.writeText(inviteCode);
@@ -116,13 +123,9 @@ const AdminDashboard = () => {
         createdBy: walletAddress,
       });
       
-      toast({ 
-        title: "Invitation Sent", 
-        description: `Invitation sent to ${inviteEmail}` 
-      });
+      toast({ title: "Invitation Sent", description: `Invitation sent to ${inviteEmail}` });
       setInviteEmail("");
     } catch (err) {
-      console.error("Error sending invitation:", err);
       toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" });
     } finally {
       setSendingInvite(false);
@@ -131,33 +134,22 @@ const AdminDashboard = () => {
 
   const handleUpdateRole = async (memberId: string) => {
     try {
-      // Find the member to get their wallet address
       const member = members.find(m => m.id === memberId);
       if (!member) return;
 
-      // Update role in user_roles table
       const { error } = await supabase
         .from("user_roles")
         .update({ role: newRole as any })
-        .eq("user_id", member.wallet_address)
-        .eq("organization_id", profile?.currentOrganization?.id);
+        .eq("id", memberId);
 
       if (error) throw error;
       
-      setMembers(prev => prev.map(m => 
-        m.id === memberId ? { ...m, role: newRole } : m
-      ));
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: newRole as any } : m));
       setEditingRole(null);
-      setNewRole("");
       toast({ title: "Role Updated", description: "Member role has been updated" });
     } catch (err) {
       toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
     }
-  };
-
-  const handleAddEmployee = async (memberId: string) => {
-    // This would open a dialog to add employee details
-    toast({ title: "Coming Soon", description: "Add employee form coming soon" });
   };
 
   if (loading) {
@@ -172,7 +164,7 @@ const AdminDashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your organization</p>
+        <p className="text-muted-foreground">Manage your organization</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -180,7 +172,7 @@ const AdminDashboard = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Total Employees
+              Total Members
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -191,12 +183,12 @@ const AdminDashboard = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Total Monthly Payroll
+              <UserCheck className="h-4 w-4" />
+              In Payroll
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalSalary.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{payrollEmployees.length}</div>
           </CardContent>
         </Card>
 
@@ -204,11 +196,11 @@ const AdminDashboard = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              Active Employees
+              Pending
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{activeCount}</div>
+            <div className="text-3xl font-bold">{members.length - payrollEmployees.length}</div>
           </CardContent>
         </Card>
 
@@ -289,76 +281,74 @@ const AdminDashboard = () => {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            The employee will receive an invitation and can join through the Auth page.
-          </p>
         </CardContent>
       </Card>
 
-      {/* List of Employees with Role Update */}
+      {/* All Members - Add to Payroll */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            All Employees
+            All Members
           </CardTitle>
-          <CardDescription>View and manage employee roles</CardDescription>
+          <CardDescription>Add members to payroll so they appear in Payments page</CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">No employees found</p>
+            <p className="text-center py-8 text-muted-foreground">No members yet. Invite employees above.</p>
           ) : (
             <div className="space-y-3">
-              {members.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{member.position || "Employee"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.wallet_address?.slice(0, 10)}...{member.wallet_address?.slice(-4)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="font-semibold">${Number(member.encrypted_salary || 0).toLocaleString()}/mo</p>
-                      <Badge variant="secondary">{member.status || "active"}</Badge>
-                    </div>
-                    <Badge variant="outline">{member.role}</Badge>
-                    {editingRole === member.id ? (
-                      <div className="flex items-center gap-2">
-                        <select 
-                          value={newRole} 
-                          onChange={(e) => setNewRole(e.target.value)}
-                          className="p-2 border rounded"
-                        >
-                          <option value="employee">Employee</option>
-                          <option value="manager">Manager</option>
-                          <option value="auditor">Auditor</option>
-                          <option value="owner">Owner</option>
-                          <option value="pending">Pending</option>
-                        </select>
-                        <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+              {members.map((member) => {
+                const inPayroll = isInPayroll(member.user_id);
+                return (
+                  <div key={member.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
                       </div>
-                    ) : (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingRole(member.id);
-                          setNewRole(member.role);
-                        }}
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    )}
+                      <div>
+                        <p className="font-medium">Member</p>
+                        <p className="text-sm text-muted-foreground">
+                          {member.user_id?.slice(0, 10)}...{member.user_id?.slice(-4)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Badge variant={inPayroll ? "default" : "secondary"}>
+                        {inPayroll ? "In Payroll" : "Not Added"}
+                      </Badge>
+                      <Badge variant="outline">{member.role}</Badge>
+                      
+                      {!inPayroll && (
+                        <Button size="sm" onClick={() => handleAddToPayroll(member)} className="gap-1">
+                          <Plus className="h-3 w-3" /> Add to Payroll
+                        </Button>
+                      )}
+                      
+                      {editingRole === member.id ? (
+                        <div className="flex items-center gap-2">
+                          <select 
+                            value={newRole} 
+                            onChange={(e) => setNewRole(e.target.value)}
+                            className="p-2 border rounded"
+                          >
+                            <option value="employee">Employee</option>
+                            <option value="manager">Manager</option>
+                            <option value="auditor">Auditor</option>
+                            <option value="owner">Owner</option>
+                          </select>
+                          <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+                        </div>
+                      ) : (
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingRole(member.id); setNewRole(member.role); }}>
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

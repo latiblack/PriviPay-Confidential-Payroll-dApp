@@ -10,12 +10,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import {
-  DollarSign, Users, Send, Loader2, ArrowDownToLine,
-  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle
+import { 
+  DollarSign, Users, Send, Loader2, ArrowDownToLine, 
+  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle 
 } from "lucide-react";
 
 type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
+type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
 
 interface EmployeeFormData {
   wallet_address: string;
@@ -32,6 +33,7 @@ const PaymentsPage = () => {
   const isEmployee = profile?.currentRole === "employee";
 
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
+  const [availableMembers, setAvailableMembers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [recipient, setRecipient] = useState("");
@@ -49,11 +51,13 @@ const PaymentsPage = () => {
     salary: "",
   });
   const [savingEmployee, setSavingEmployee] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
 
   const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
 
     try {
+      // Get employees in payroll
       const { data, error } = await supabase
         .from("employees")
         .select("*")
@@ -63,9 +67,24 @@ const PaymentsPage = () => {
       if (error) throw error;
       setEmployees(data || []);
 
+      // Get all members from user_roles
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
+
+      if (roleError) throw roleError;
+
+      // Filter to only show members NOT in payroll
+      const inPayrollAddresses = new Set((data || []).map(e => e.wallet_address?.toLowerCase()));
+      const available = (roleData || []).filter(m => 
+        m.user_id && !inPayrollAddresses.has(m.user_id.toLowerCase())
+      );
+      setAvailableMembers(available);
+
       // Get own salary
       const mySalary = data?.find(e => e.wallet_address === profile.walletAddress);
-      const sal = mySalary?.salary || mySalary?.encrypted_salary || "0";
+      const sal = mySalary?.encrypted_salary || "0";
       setOwnSalary(`$${Number(sal).toLocaleString()}`);
 
     } catch (err) {
@@ -79,6 +98,20 @@ const PaymentsPage = () => {
     fetchData();
   }, [profile?.currentOrganization?.id, profile?.walletAddress]);
 
+  const handleMemberSelect = (memberId: string) => {
+    setSelectedMemberId(memberId);
+    const member = availableMembers.find(m => m.id === memberId);
+    if (member) {
+      setEmployeeForm({
+        ...employeeForm,
+        wallet_address: member.user_id || "",
+        position: member.role || "employee",
+        department: "",
+        salary: "",
+      });
+    }
+  };
+
   const handleAddEmployee = async () => {
     if (!profile?.currentOrganization?.id) return;
 
@@ -91,15 +124,16 @@ const PaymentsPage = () => {
           wallet_address: employeeForm.wallet_address,
           position: employeeForm.position || null,
           department: employeeForm.department || null,
-          salary: employeeForm.salary,
+          encrypted_salary: employeeForm.salary,
           status: "active",
         });
 
       if (error) throw error;
 
-      toast({ title: "Employee Added", description: "Employee has been added successfully" });
+      toast({ title: "Employee Added", description: "Employee has been added to payroll" });
       setShowAddDialog(false);
       setEmployeeForm({ wallet_address: "", position: "", department: "", salary: "" });
+      setSelectedMemberId("");
       fetchData();
     } catch (err) {
       console.error("Error adding employee:", err);
@@ -120,7 +154,7 @@ const PaymentsPage = () => {
           wallet_address: employeeForm.wallet_address,
           position: employeeForm.position || null,
           department: employeeForm.department || null,
-          salary: employeeForm.salary,
+          encrypted_salary: employeeForm.salary,
         })
         .eq("id", editingEmployee.id);
 
@@ -150,7 +184,7 @@ const PaymentsPage = () => {
 
       if (error) throw error;
 
-      toast({ title: "Employee Removed", description: "Employee has been removed" });
+      toast({ title: "Employee Removed", description: "Employee has been removed from payroll" });
       fetchData();
     } catch (err) {
       console.error("Error deleting employee:", err);
@@ -164,7 +198,7 @@ const PaymentsPage = () => {
       wallet_address: employee.wallet_address,
       position: employee.position || "",
       department: employee.department || "",
-      salary: employee.salary || "",
+      salary: employee.encrypted_salary || "",
     });
     setShowEditDialog(true);
   };
@@ -208,9 +242,15 @@ const PaymentsPage = () => {
   };
 
   const totalPayroll = employees.reduce((sum, e) => {
-    const sal = e.salary || e.encrypted_salary;
+    const sal = e.encrypted_salary;
     return sum + (Number(sal) || 0);
   }, 0);
+
+  const openAddDialog = () => {
+    setSelectedMemberId("");
+    setEmployeeForm({ wallet_address: "", position: "", department: "", salary: "" });
+    setShowAddDialog(true);
+  };
 
   if (!profile?.currentOrganization) {
     return <div className="p-6">No organization found</div>;
@@ -226,57 +266,90 @@ const PaymentsPage = () => {
         {isOwner && (
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={openAddDialog}>
                 <UserPlus className="h-4 w-4" />
                 Add Employee
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Employee</DialogTitle>
-                <DialogDescription>Add a new employee to your organization</DialogDescription>
+                <DialogTitle>Add Employee to Payroll</DialogTitle>
+                <DialogDescription>
+                  Select a member who has joined via invite code or email invitation
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Wallet Address</Label>
-                  <Input
-                    placeholder="0x..."
-                    value={employeeForm.wallet_address}
-                    onChange={(e) => setEmployeeForm({ ...employeeForm, wallet_address: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Position</Label>
-                    <Input
-                      placeholder="Software Engineer"
-                      value={employeeForm.position}
-                      onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
-                    />
+                {availableMembers.length > 0 ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Select Member</Label>
+                      <select 
+                        className="w-full p-2 border rounded-md bg-background"
+                        value={selectedMemberId}
+                        onChange={(e) => handleMemberSelect(e.target.value)}
+                      >
+                        <option value="">-- Select a member --</option>
+                        {availableMembers.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.user_id?.slice(0, 10)}...{member.user_id?.slice(-4)} ({member.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Wallet Address</Label>
+                      <Input
+                        placeholder="0x..."
+                        value={employeeForm.wallet_address}
+                        onChange={(e) => setEmployeeForm({ ...employeeForm, wallet_address: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Position</Label>
+                        <Input
+                          placeholder="Software Engineer"
+                          value={employeeForm.position}
+                          onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Department</Label>
+                        <Input
+                          placeholder="Engineering"
+                          value={employeeForm.department}
+                          onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Monthly Salary (USD)</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={employeeForm.salary}
+                        onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No members available to add.</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Employees must join via invite code or email invitation first.
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Department</Label>
-                    <Input
-                      placeholder="Engineering"
-                      value={employeeForm.department}
-                      onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Monthly Salary (USD)</Label>
-                  <Input
-                    type="number"
-                    placeholder="5000"
-                    value={employeeForm.salary}
-                    onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
-                  />
-                </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                <Button onClick={handleAddEmployee} disabled={savingEmployee || !employeeForm.wallet_address || !employeeForm.salary}>
-                  {savingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Employee"}
+                <Button 
+                  onClick={handleAddEmployee} 
+                  disabled={savingEmployee || !employeeForm.wallet_address || !employeeForm.salary || availableMembers.length === 0}
+                >
+                  {savingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to Payroll"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -349,7 +422,7 @@ const PaymentsPage = () => {
                 <Users className="h-5 w-5" />
                 Employee Management
               </CardTitle>
-              <CardDescription>Manage employees and their salaries</CardDescription>
+              <CardDescription>Manage employees in payroll</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -359,8 +432,8 @@ const PaymentsPage = () => {
               ) : employees.length === 0 ? (
                 <div className="text-center py-8">
                   <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">No employees added yet</p>
-                  <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+                  <p className="text-muted-foreground mb-4">No employees in payroll yet</p>
+                  <Button onClick={openAddDialog} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Add First Employee
                   </Button>
@@ -385,7 +458,7 @@ const PaymentsPage = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="font-semibold">${Number(emp.salary || 0).toLocaleString()}</p>
+                          <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
                           <Badge variant="secondary" className="text-xs">Monthly</Badge>
                         </div>
                         <div className="flex gap-2">
