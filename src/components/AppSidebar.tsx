@@ -27,7 +27,7 @@ export const AppSidebar = () => {
     { icon: LayoutGrid, label: "My Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
-    { icon: BarChart3, label: "Auditor", path: "/auditor" },
+    { icon: BarChart3, label: "Audit", path: "/auditor" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
@@ -37,7 +37,7 @@ export const AppSidebar = () => {
     { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
-    { icon: BarChart3, label: "Auditor", path: "/auditor" },
+    { icon: BarChart3, label: "Audit", path: "/auditor" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 

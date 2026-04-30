@@ -114,11 +114,7 @@ const AppLayout = () => {
               <Suspense fallback={<PageLoader />}><Admin /></Suspense>
             </ProtectedRoute>
           } />
-<Route path="/payments" element={
-  <ProtectedRoute requiredRole="owner">
-    <Suspense fallback={<PageLoader />}><Payments /></Suspense>
-  </ProtectedRoute>
-} />
+
           <Route path="/admin/settings" element={
             <ProtectedRoute requiredRole="owner">
               <Suspense fallback={<PageLoader />}><Settings /></Suspense>
