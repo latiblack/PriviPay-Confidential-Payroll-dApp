@@ -37,7 +37,7 @@ const AuditorDashboard = () => {
     fetchEmployees();
   }, [profile?.currentOrganization?.id]);
 
-  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0);
   const totalBonus = employees.reduce((sum, e) => sum + (Number(e.bonus) || 0), 0);
   const avgSalary = employees.length > 0 ? Math.round(totalPayroll / employees.length) : 0;
 
@@ -129,7 +129,7 @@ const AuditorDashboard = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${Number(emp.salary || 0).toLocaleString()}</p>
+                      <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">salary</p>
                     </div>
                     <Badge variant="outline">{emp.status}</Badge>

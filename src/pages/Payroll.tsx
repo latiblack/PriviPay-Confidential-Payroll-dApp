@@ -42,7 +42,7 @@ const PayrollPage = () => {
     fetchEmployees();
   }, [profile?.currentOrganization?.id]);
 
-  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0);
 
   const handlePayEmployee = async (employeeId: string) => {
     setProcessing(true);
@@ -75,7 +75,7 @@ const PayrollPage = () => {
       for (const emp of employees) {
         await supabase.from("payments").insert({
           employee_id: emp.id,
-          amount: emp.salary || "0",
+          amount: emp.encrypted_salary || "0",
           payment_type: "salary",
           status: "completed",
         });
@@ -169,7 +169,7 @@ const PayrollPage = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${Number(emp.salary || 0).toLocaleString()}</p>
+                      <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">per month</p>
                     </div>
                     <Button 

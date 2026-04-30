@@ -170,7 +170,7 @@ const BonusVoting = () => {
                           {emp.position || "Employee"} - {emp.wallet_address?.slice(0, 8)}...{emp.wallet_address?.slice(-4)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          ${Number(emp.salary || 0).toLocaleString()}/mo salary
+                          ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo salary
                         </p>
                       </div>
                     </div>

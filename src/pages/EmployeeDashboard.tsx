@@ -106,7 +106,7 @@ const EmployeeDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold flex items-center gap-2">
-              {formatCurrency(Number(employee.salary) || 0)}
+              {formatCurrency(Number(employee.encrypted_salary) || 0)}
               <Button
                 variant="ghost"
                 size="sm"

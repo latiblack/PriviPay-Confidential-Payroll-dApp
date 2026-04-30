@@ -54,9 +54,7 @@ const AdminDashboard = () => {
   }, [profile?.currentOrganization?.id, profile?.currentOrganization?.invite_code]);
 
   const totalSalary = employees.reduce((sum, e) => {
-    // Use salary field, fallback to encrypted_salary for old data
-    const sal = e.salary || e.encrypted_salary;
-    return sum + (Number(sal) || 0);
+    return sum + (Number(e.encrypted_salary) || 0);
   }, 0);
   const activeCount = employees.filter(e => e.status === "active").length;
 
@@ -113,8 +111,7 @@ const AdminDashboard = () => {
   };
 
   const getSalary = (emp: Employee) => {
-    // Use salary field, fallback to encrypted_salary for old data
-    return emp.salary || emp.encrypted_salary || "0";
+    return emp.encrypted_salary || "0";
   };
 
   if (loading) {

@@ -41,7 +41,7 @@ const EmployerDashboard = () => {
     fetchEmployees();
   }, [profile?.currentOrganization?.id]);
 
-  const totalSalary = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const totalSalary = employees.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0);
   const avgSalary = employees.length > 0 ? Math.round(totalSalary / employees.length) : 0;
 
   const handleProcessPayroll = async () => {
@@ -135,7 +135,7 @@ const EmployerDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">${Number(emp.salary || 0).toLocaleString()}</p>
+                    <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
                     <Badge variant="secondary">{emp.status}</Badge>
                   </div>
                 </div>
