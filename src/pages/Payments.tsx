@@ -31,7 +31,7 @@ const PaymentsPage = () => {
   const { walletAddress } = useWalletAuth();
   const { toast } = useToast();
   const isOwner = profile?.currentRole === "owner";
-  const isEmployee = profile?.currentRole === "employee";
+  const isStaff = profile?.currentRole === "staff";
 
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
   const [availableMembers, setAvailableMembers] = useState<UserRole[]>([]);
@@ -140,7 +140,7 @@ const fetchData = async () => {
       setEmployeeForm({
         name: "",
         wallet_address: member.user_id || "",
-        position: member.role || "employee",
+        position: member.role || "staff",
         department: "",
         salary: "",
       });

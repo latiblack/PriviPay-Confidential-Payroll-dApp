@@ -124,7 +124,7 @@ const EmployeeDashboard = () => {
 
   const getMemberRole = (walletAddress: string) => {
     const member = members.find(m => m.user_id?.toLowerCase() === walletAddress?.toLowerCase());
-    return member?.role || "employee";
+    return member?.role || "staff";
   };
 
   const getEmployeeName = (emp: Employee) => {

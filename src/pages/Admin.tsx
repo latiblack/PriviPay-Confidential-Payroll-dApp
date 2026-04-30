@@ -34,7 +34,7 @@ const AdminDashboard = () => {
   
   // Email invitation state
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("employee");
+  const [inviteRole, setInviteRole] = useState("staff");
   const [sendingInvite, setSendingInvite] = useState(false);
 
   useEffect(() => {
@@ -296,7 +296,7 @@ return (
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
               >
-                <option value="employee">Employee</option>
+                <option value="staff">Staff</option>
                 <option value="manager">Manager</option>
                 <option value="auditor">Auditor</option>
               </select>
@@ -352,7 +352,7 @@ return (
                           onChange={(e) => setNewRole(e.target.value)}
                           className="p-2 border rounded"
                         >
-                          <option value="employee">Employee</option>
+                          <option value="staff">Staff</option>
                           <option value="manager">Manager</option>
                           <option value="auditor">Auditor</option>
                           <option value="owner">Owner</option>

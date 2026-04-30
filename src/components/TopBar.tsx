@@ -110,7 +110,7 @@ export const TopBar = ({ title }: TopBarProps) => {
     if (!profile) return "";
     switch (profile.currentRole) {
       case "owner": return "Owner";
-      case "employee": return "Employee";
+      case "staff": return "Staff";
       case "manager": return "Manager";
       case "auditor": return "Auditor";
       default: return "";

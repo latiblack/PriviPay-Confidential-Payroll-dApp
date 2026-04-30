@@ -113,7 +113,7 @@ if (role === "owner") {
       n.user_id === null ||
       n.type === "bonus"
     );
-  } else if (role === "employee" || role === "auditor") {
+  } else if (role === "staff" || role === "auditor") {
     // Employees see: their own notifications + org-wide
     filtered = (data || []).filter((n: any) =>
       n.user_id === wallet ||
