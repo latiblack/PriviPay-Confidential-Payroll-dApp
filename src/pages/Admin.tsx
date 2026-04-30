@@ -137,6 +137,7 @@ const AdminDashboard = () => {
           <p>Org ID: {profile?.currentOrganization?.id || "None"}</p>
           <p>Org Name: {profile?.currentOrganization?.name || "None"}</p>
           <p>Role: {profile?.currentRole}</p>
+          <p>All orgs count: {profile?.organizations?.length || 0}</p>
         </div>
       </div>
 
