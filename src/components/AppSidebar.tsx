@@ -41,12 +41,23 @@ export const AppSidebar = () => {
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
+  // Auditors see dashboard, payments, bonus, audit, notifications
+  const auditorNavItems = [
+    { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
+    { icon: DollarSign, label: "Payments", path: "/payments" },
+    { icon: Gift, label: "Bonus", path: "/voting" },
+    { icon: BarChart3, label: "Audit", path: "/auditor" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
+  ];
+
   // Select nav based on role
   let navItems = employeeNavItems;
   if (profile?.currentRole === "owner") {
     navItems = ownerNavItems;
   } else if (profile?.currentRole === "manager") {
     navItems = managerNavItems;
+  } else if (profile?.currentRole === "auditor") {
+    navItems = auditorNavItems;
   }
 
   const handleLogout = () => {
