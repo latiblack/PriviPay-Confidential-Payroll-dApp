@@ -13,12 +13,23 @@ import organizationService from "@/lib/organization-service";
 import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings, Send } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
+type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
+
+interface MemberWithRole {
+  id: string;
+  wallet_address: string;
+  position: string | null;
+  department: string | null;
+  encrypted_salary: string | null;
+  status: string | null;
+  role: string;
+}
 
 const AdminDashboard = () => {
   const { profile, refreshProfile } = useAuth();
   const { walletAddress } = useWalletAuth();
   const { toast } = useToast();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [members, setMembers] = useState<MemberWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState("");
   const [copied, setCopied] = useState(false);
@@ -31,37 +42,60 @@ const AdminDashboard = () => {
   const [sendingInvite, setSendingInvite] = useState(false);
 
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchMembers = async () => {
       if (!profile?.currentOrganization?.id) {
         console.log("No organization found. Profile:", profile);
         return;
       }
 
-      console.log("Fetching employees for org:", profile.currentOrganization.id);
+      console.log("Fetching members for org:", profile.currentOrganization.id);
       try {
-        const { data, error } = await supabase
+        // Get employees with their roles from user_roles
+        const { data: employees, error: empError } = await supabase
           .from("employees")
           .select("*")
           .eq("organization_id", profile.currentOrganization.id);
 
-        console.log("Employees query result:", { data, error });
-        if (error) throw error;
-        setEmployees(data || []);
+        if (empError) throw empError;
+
+        // Get roles for these employees
+        const { data: roles, error: roleError } = await supabase
+          .from("user_roles")
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id);
+
+        if (roleError) throw roleError;
+
+        // Combine employee data with roles
+        const combined = (employees || []).map(emp => {
+          const role = roles?.find(r => r.user_id === emp.wallet_address);
+          return {
+            id: emp.id,
+            wallet_address: emp.wallet_address,
+            position: emp.position,
+            department: emp.department,
+            encrypted_salary: emp.encrypted_salary,
+            status: emp.status,
+            role: role?.role || "employee",
+            user_id: emp.wallet_address,
+          };
+        });
+
+        console.log("Members query result:", combined);
+        setMembers(combined);
         setInviteCode(profile.currentOrganization.invite_code || "");
       } catch (err) {
-        console.error("Error fetching employees:", err);
+        console.error("Error fetching members:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEmployees();
+    fetchMembers();
   }, [profile?.currentOrganization?.id, profile?.currentOrganization?.invite_code]);
 
-  const totalSalary = employees.reduce((sum, e) => {
-    return sum + (Number(e.encrypted_salary) || 0);
-  }, 0);
-  const activeCount = employees.filter(e => e.status === "active").length;
+  const activeCount = members.filter(m => m.status === "active").length;
+  const totalSalary = members.reduce((sum, m) => sum + (Number(m.encrypted_salary) || 0), 0);
 
   const handleCopyInviteCode = () => {
     navigator.clipboard.writeText(inviteCode);
@@ -95,28 +129,35 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUpdateRole = async (employeeId: string) => {
+  const handleUpdateRole = async (memberId: string) => {
     try {
+      // Find the member to get their wallet address
+      const member = members.find(m => m.id === memberId);
+      if (!member) return;
+
+      // Update role in user_roles table
       const { error } = await supabase
-        .from("employees")
-        .update({ role: newRole })
-        .eq("id", employeeId);
+        .from("user_roles")
+        .update({ role: newRole as any })
+        .eq("user_id", member.wallet_address)
+        .eq("organization_id", profile?.currentOrganization?.id);
 
       if (error) throw error;
       
-      setEmployees(prev => prev.map(e => 
-        e.id === employeeId ? { ...e, role: newRole } : e
+      setMembers(prev => prev.map(m => 
+        m.id === memberId ? { ...m, role: newRole } : m
       ));
       setEditingRole(null);
       setNewRole("");
-      toast({ title: "Role Updated", description: "Employee role has been updated" });
+      toast({ title: "Role Updated", description: "Member role has been updated" });
     } catch (err) {
       toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
     }
   };
 
-  const getSalary = (emp: Employee) => {
-    return emp.encrypted_salary || "0";
+  const handleAddEmployee = async (memberId: string) => {
+    // This would open a dialog to add employee details
+    toast({ title: "Coming Soon", description: "Add employee form coming soon" });
   };
 
   if (loading) {
@@ -132,13 +173,6 @@ const AdminDashboard = () => {
       <div>
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground">Overview of your organization</p>
-        {/* Debug info */}
-        <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
-          <p>Org ID: {profile?.currentOrganization?.id || "None"}</p>
-          <p>Org Name: {profile?.currentOrganization?.name || "None"}</p>
-          <p>Role: {profile?.currentRole}</p>
-          <p>All orgs count: {profile?.organizations?.length || 0}</p>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -150,7 +184,7 @@ const AdminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{employees.length}</div>
+            <div className="text-3xl font-bold">{members.length}</div>
           </CardContent>
         </Card>
 
@@ -271,29 +305,30 @@ const AdminDashboard = () => {
           <CardDescription>View and manage employee roles</CardDescription>
         </CardHeader>
         <CardContent>
-          {employees.length === 0 ? (
+          {members.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">No employees found</p>
           ) : (
             <div className="space-y-3">
-              {employees.map((emp) => (
-                <div key={emp.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                       <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium">{emp.position || "Employee"}</p>
+                      <p className="font-medium">{member.position || "Employee"}</p>
                       <p className="text-sm text-muted-foreground">
-                        {emp.wallet_address?.slice(0, 10)}...{emp.wallet_address?.slice(-4)}
+                        {member.wallet_address?.slice(0, 10)}...{member.wallet_address?.slice(-4)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${Number(getSalary(emp)).toLocaleString()}/mo</p>
-                      <Badge variant="secondary">{emp.status}</Badge>
+                      <p className="font-semibold">${Number(member.encrypted_salary || 0).toLocaleString()}/mo</p>
+                      <Badge variant="secondary">{member.status || "active"}</Badge>
                     </div>
-                    {editingRole === emp.id ? (
+                    <Badge variant="outline">{member.role}</Badge>
+                    {editingRole === member.id ? (
                       <div className="flex items-center gap-2">
                         <select 
                           value={newRole} 
@@ -303,24 +338,23 @@ const AdminDashboard = () => {
                           <option value="employee">Employee</option>
                           <option value="manager">Manager</option>
                           <option value="auditor">Auditor</option>
+                          <option value="owner">Owner</option>
+                          <option value="pending">Pending</option>
                         </select>
-                        <Button size="sm" onClick={() => handleUpdateRole(emp.id)}>Save</Button>
+                        <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
                         <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{emp.role || "employee"}</Badge>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingRole(emp.id);
-                            setNewRole(emp.role || "employee");
-                          }}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingRole(member.id);
+                          setNewRole(member.role);
+                        }}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
