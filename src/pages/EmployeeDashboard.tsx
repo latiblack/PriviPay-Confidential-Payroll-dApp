@@ -143,63 +143,110 @@ const EmployeeDashboard = () => {
     );
   }
 
-  if (!isOwner) {
-    return (
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">My Dashboard</h1>
-          <p className="text-muted-foreground text-lg mt-1">View your salary and payment history</p>
-        </div>
+if (!isOwner) {
+  const employeeName = employee ? ((employee as any).name || employee.wallet_address?.slice(0, 10) + "..." + employee.wallet_address?.slice(-4)) : walletAddress?.slice(0, 10) + "..." + walletAddress?.slice(-4);
+  const employeeBonus = employee ? bonuses.filter(b => b.employee_id === employee.id).reduce((sum, b) => sum + Number(b.amount), 0) : 0;
+  const totalSalary = employee ? Number(employee.encrypted_salary || 0) + employeeBonus : 0;
+  
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
+        <p className="text-muted-foreground text-lg mt-1">View your salary and payment history</p>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Your Information
+      {/* Gradient Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Monthly Salary
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
-              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
-                <User className="h-10 w-10 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold capitalize">{getMemberRole(walletAddress || "")}</p>
-                <p className="text-muted-foreground font-mono">
-                  {walletAddress?.slice(0, 12)}...{walletAddress?.slice(-4)}
-                </p>
-              </div>
-            </div>
-{employee ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Position</p>
-              <p className="text-xl font-semibold">{employee.position || "Employee"}</p>
-            </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Department</p>
-              <p className="text-xl font-semibold">{employee.department || "General"}</p>
-            </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Monthly Salary</p>
-              <p className="text-xl font-semibold">${(Number(employee.encrypted_salary || 0) + ((bonuses.filter(b => b.employee_id === employee.id).reduce((sum, b) => sum + Number(b.amount), 0)))).toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">incl. bonus</p>
-            </div>
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">Status</p>
-              <Badge variant="default" className="mt-1">{employee.status}</Badge>
-            </div>
-          </div>
-        ) : (
-              <p className="text-muted-foreground p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                You are in the organization but not yet added to payroll.
-              </p>
-            )}
+          <CardContent>
+            <div className="text-3xl font-bold">${totalSalary.toLocaleString()}</div>
+            <p className="text-xs opacity-75 mt-1">incl. bonus</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Position
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold capitalize">{employee?.position || getMemberRole(walletAddress || "")}</div>
+            <p className="text-xs opacity-75 mt-1">{employee?.department || "General"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Total Received
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">${totalReceived.toLocaleString()}</div>
+            <p className="text-xs opacity-75 mt-1">{monthlyCount} payments</p>
           </CardContent>
         </Card>
       </div>
-    );
-  }
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Your Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+              <User className="h-10 w-10 text-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold capitalize">{getMemberRole(walletAddress || "")}</p>
+              <p className="text-muted-foreground font-mono">
+                {walletAddress?.slice(0, 12)}...{walletAddress?.slice(-4)}
+              </p>
+            </div>
+          </div>
+
+          {employee ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Position</p>
+                <p className="text-xl font-semibold">{employee.position || "Staff"}</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Department</p>
+                <p className="text-xl font-semibold">{employee.department || "General"}</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Monthly Salary</p>
+                <p className="text-xl font-semibold">${(Number(employee.encrypted_salary || 0) + employeeBonus).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">incl. bonus</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Status</p>
+                <Badge variant="default" className="mt-1">{employee.status}</Badge>
+              </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              You are in the organization but not yet added to payroll.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
   return (
     <div className="p-6 space-y-6">
