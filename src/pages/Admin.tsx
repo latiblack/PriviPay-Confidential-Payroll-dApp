@@ -184,63 +184,66 @@ const AdminDashboard = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
+return (
+    <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage your organization</p>
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <p className="text-muted-foreground text-lg mt-1">Manage your organization</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
               <Users className="h-4 w-4" />
               Total Members
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{members.length}</div>
+            <p className="text-xs opacity-75 mt-1">in organization</p>
           </CardContent>
         </Card>
 
-<Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <UserCheck className="h-4 w-4" />
-          In Payroll (with salary)
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold">
-          {payrollEmployees.filter(e => Number(e.encrypted_salary) > 0).length}
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Building2 className="h-4 w-4" />
-          Not in Payroll
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold">
-          {members.length - payrollEmployees.filter(e => Number(e.encrypted_salary) > 0).length}
-        </div>
-      </CardContent>
-    </Card>
-
-        <Card>
+        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              In Payroll
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {payrollEmployees.filter(e => Number(e.encrypted_salary) > 0).length}
+            </div>
+            <p className="text-xs opacity-75 mt-1">with salary</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Not in Payroll
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {members.length - payrollEmployees.filter(e => Number(e.encrypted_salary) > 0).length}
+            </div>
+            <p className="text-xs opacity-75 mt-1">pending</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium opacity-90">
               Organization
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-semibold">{profile?.currentOrganization?.name}</div>
-            <Badge variant="outline" className="mt-1">{profile?.currentRole}</Badge>
+            <div className="text-xl font-bold">{profile?.currentOrganization?.name}</div>
+            <Badge variant="secondary" className="mt-1 bg-white/20 text-white border-0">{profile?.currentRole}</Badge>
           </CardContent>
         </Card>
       </div>

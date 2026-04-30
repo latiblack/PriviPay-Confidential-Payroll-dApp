@@ -405,9 +405,9 @@ const { error } = await supabase
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
+        <Card className={isOwner ? "bg-gradient-to-br from-green-500 to-green-600 text-white" : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               {isOwner ? "Total Payroll" : "Your Salary"}
             </CardTitle>
@@ -416,22 +416,22 @@ const { error } = await supabase
             {isOwner ? (
               <>
                 <div className="text-3xl font-bold">${totalPayroll.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs opacity-75 mt-1">
                   {employees.length} employee{employees.length !== 1 ? "s" : ""}
                 </p>
               </>
             ) : (
               <>
                 <div className="text-3xl font-bold">{ownSalary}</div>
-                <p className="text-xs text-muted-foreground mt-1">USDC/month</p>
+                <p className="text-xs opacity-75 mt-1">USDC/month</p>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
               <Users className="h-4 w-4" />
               {isOwner ? "Organization Wallet" : "My Wallet"}
             </CardTitle>
@@ -440,14 +440,14 @@ const { error } = await supabase
             <div className="text-lg font-mono truncate">
               {profile.walletAddress?.slice(0, 10)}...{profile.walletAddress?.slice(-4)}
             </div>
-            <Badge variant="secondary" className="mt-2">
+            <Badge variant="secondary" className="mt-2 bg-white/20 text-white border-0">
               {profile.currentRole}
             </Badge>
           </CardContent>
         </Card>
 
         {isOwner && (
-          <Card className="bg-primary text-primary-foreground">
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium opacity-90">
                 Employee Count
