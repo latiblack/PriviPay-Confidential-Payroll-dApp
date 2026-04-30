@@ -71,9 +71,15 @@ const AdminDashboard = () => {
     fetchData();
   }, [profile?.currentOrganization?.id]);
 
-  // Check if a member is already in payroll
+  // Get employee data for a member
+  const getEmployeeData = (userId: string) => {
+    return payrollEmployees.find(emp => emp.wallet_address === userId);
+  };
+
+  // Check if member is in payroll (has salary > 0)
   const isInPayroll = (userId: string) => {
-    return payrollEmployees.some(emp => emp.wallet_address === userId);
+    const emp = getEmployeeData(userId);
+    return emp && Number(emp.encrypted_salary) > 0;
   };
 
   // Add member to payroll
@@ -314,6 +320,10 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
+                      <div className="text-right min-w-[80px]">
+                        <p className="font-semibold">${getEmployeeData(member.user_id) ? Number(getEmployeeData(member.user_id)?.encrypted_salary || 0).toLocaleString() : "$0"}</p>
+                        <p className="text-xs text-muted-foreground">/month</p>
+                      </div>
                       <Badge variant={inPayroll ? "default" : "secondary"}>
                         {inPayroll ? "In Payroll" : "Not Added"}
                       </Badge>

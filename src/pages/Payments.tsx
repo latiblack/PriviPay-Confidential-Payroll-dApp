@@ -65,7 +65,6 @@ const PaymentsPage = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setEmployees(data || []);
 
       // Get all members from user_roles
       const { data: roleData, error: roleError } = await supabase
@@ -75,12 +74,24 @@ const PaymentsPage = () => {
 
       if (roleError) throw roleError;
 
-      // Filter to only show members NOT in payroll
-      const inPayrollAddresses = new Set((data || []).map(e => e.wallet_address?.toLowerCase()));
-      const available = (roleData || []).filter(m => 
-        m.user_id && !inPayrollAddresses.has(m.user_id.toLowerCase())
-      );
-      setAvailableMembers(available);
+// Filter to show employees in payroll (salary > 0)
+    const payrollEmployees = (data || []).filter(e => Number(e.encrypted_salary) > 0);
+    setEmployees(payrollEmployees);
+
+    // Get all addresses in employees table (including those with $0)
+    const employeeAddresses = new Set((data || []).map(e => e.wallet_address?.toLowerCase()));
+    
+    // Available = members NOT in employees table OR in employees with $0 salary
+    const employeesWithZero = new Set(
+      (data || [])
+        .filter(e => Number(e.encrypted_salary) === 0)
+        .map(e => e.wallet_address?.toLowerCase())
+    );
+    
+    const available = (roleData || []).filter(m => 
+      m.user_id && (!employeeAddresses.has(m.user_id.toLowerCase()) || employeesWithZero.has(m.user_id.toLowerCase()))
+    );
+    setAvailableMembers(available);
 
       // Get own salary
       const mySalary = data?.find(e => e.wallet_address === profile.walletAddress);
@@ -174,17 +185,18 @@ const PaymentsPage = () => {
   };
 
   const handleDeleteEmployee = async (employeeId: string) => {
-    if (!confirm("Are you sure you want to remove this employee?")) return;
+    if (!confirm("Remove from payroll? Employee will stay in organization but with $0 salary.")) return;
 
     try {
+      // Set salary to 0 instead of deleting - keeps them in org
       const { error } = await supabase
         .from("employees")
-        .delete()
+        .update({ encrypted_salary: "0" })
         .eq("id", employeeId);
 
       if (error) throw error;
 
-      toast({ title: "Employee Removed", description: "Employee has been removed from payroll" });
+      toast({ title: "Removed from Payroll", description: "Employee kept in organization with $0 salary" });
       fetchData();
     } catch (err) {
       console.error("Error deleting employee:", err);
