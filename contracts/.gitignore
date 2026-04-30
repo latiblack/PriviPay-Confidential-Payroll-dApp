@@ -24,4 +24,9 @@ tenderly.yaml
 
 # Coverage
 coverage/
-lcov.info
+lcov.infonode_modules/
+cache/
+broadcast/
+out/
+.env
+*.env.local

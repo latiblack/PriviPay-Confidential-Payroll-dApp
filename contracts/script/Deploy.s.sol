@@ -1,4 +1,8 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
 import "forge-std/Script.sol";
+import "forge-std/console.sol";
 import "../src/ConfidentialPayroll.sol";
 
 contract DeployConfidentialPayroll is Script {
@@ -11,7 +15,7 @@ contract DeployConfidentialPayroll is Script {
         ConfidentialPayroll payroll = new ConfidentialPayroll(orgId);
 
         console.log("ConfidentialPayroll deployed at:", address(payroll));
-        console.log("Organization ID:", orgId);
+        console.logBytes32(orgId);
 
         vm.stopBroadcast();
     }

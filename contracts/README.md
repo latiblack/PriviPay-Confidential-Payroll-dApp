@@ -2,20 +2,29 @@
 
 Confidential payroll contracts using Zama's fhEVM (Fully Homomorphic Encryption on Ethereum)
 
+## Deployment Details
+
+| Network | Contract Address | Organization ID |
+|---------|------------------|-----------------|
+| Ethereum Sepolia | `0x24b659223f912bf3Ea273974E2966bde1B11ef02` | `0xd9583fc286b8ab0381eadcf747c20176d893cc3234d976919f16500979da8174` |
+
+**Deployer Wallet**: `0xa21eE72d07D7f8B3A57a12323703cefAE6000D2c`
+
 ## Architecture
 
 ```
 contracts/
 ├── src/
-│   ├── ConfidentialPayroll.sol    # Main FHE payroll contract
+│   ├── ConfidentialPayroll.sol # Main FHE payroll contract
 │   └── interfaces/
-│       └── IFHE.sol               # TFHE interface
+│       └── IFHE.sol # TFHE interface
 ├── script/
-│   └── Deploy.s.sol               # Deployment script
+│   └── Deploy.s.sol # Deployment script
 ├── lib/
-│   └── (Zama fhEVM libraries)     # Pulled via forge install zama-fhe/fhevm
+│   ├── forge-std/ # Foundry standard library
+│   └── (Zama fhEVM libraries)
 └── test/
-    └── ConfidentialPayroll.t.sol  # Test contract
+    └── ConfidentialPayroll.t.sol # Test contract
 ```
 
 ## Prerequisites
@@ -26,23 +35,22 @@ contracts/
    foundryup
    ```
 
-2. **Install Zama's fhEVM**
+2. **Install dependencies**
    ```bash
-   forge install zama-fhe/fhevm --no-commit
+   npm install
+   forge install foundry-rs/forge-std
    ```
 
 3. **Set up environment variables**
    ```bash
    cp .env.example .env
-   # Edit .env with your values:
-   # DEPLOYER_PRIVATE_KEY=your_key
-   # ZAMA_FHEVM_RPC_URL=https://devnet.fheoma.zama.xyz
-   # ZAMA_FHEVM_API_KEY=your_api_key
+   # Edit .env with your values
    ```
 
 ## Compile Contracts
 
 ```bash
+cd contracts
 forge build
 ```
 
@@ -52,27 +60,37 @@ forge build
 forge test
 ```
 
-## Deploy to Zama Testnet
+## Deploy
+
+### Deploy to Ethereum Sepolia
 
 ```bash
-# Option 1: Using Make
-make deploy-testnet
-
-# Option 2: Manual
-forge script script/Deploy.s.sol \
-  --rpc-url zama_fhevm_sepolia \
-  --broadcast \
-  --verify
+cd contracts
+forge script script/Deploy.s.sol --rpc-url https://ethereum-sepolia-rpc.publicnode.com --broadcast --legacy
 ```
 
-## Deploy to Mainnet
+### Deploy to Zama Testnet
+
+When Zama's RPC is available:
 
 ```bash
-forge script script/Deploy.s.sol \
-  --rpc-url zama_fhevm \
-  --broadcast \
-  --verify
+forge script script/Deploy.s.sol --rpc-url https://sepolia.fheoma.zama.xyz --broadcast
 ```
+
+### Deploy to Mainnet
+
+```bash
+forge script script/Deploy.s.sol --rpc-url https://mainnet.fheoma.zama.xyz --broadcast --verify
+```
+
+## Networks
+
+| Network | RPC URL | Explorer |
+|---------|---------|----------|
+| Ethereum Sepolia | https://ethereum-sepolia-rpc.publicnode.com | sepolia.etherscan.io |
+| Zama Devnet | https://devnet.fheoma.zama.xyz | devnet.fheoma.zama.xyz |
+| Zama Testnet (Sepolia) | https://sepolia.fheoma.zama.xyz | sepolia.fheoma.zama.xyz |
+| Zama Mainnet | https://mainnet.fheoma.zama.xyz | mainnet.fheoma.zama.xyz |
 
 ## Key FHE Concepts
 
@@ -115,14 +133,6 @@ payroll.castVoteFor(voterAddress, candidateAddress);
 // After voting ends, distribute bonuses
 payroll.distributeBonuses(encryptedVoteThreshold);
 ```
-
-## Networks
-
-| Network | RPC URL | Explorer |
-|---------|---------|----------|
-| Zama Devnet | https://devnet.fheoma.zama.xyz | devnet.fheoma.zama.xyz |
-| Zama Testnet (Sepolia) | https://sepolia.fheoma.zama.xyz | sepolia.fheoma.zama.xyz |
-| Zama Mainnet | https://mainnet.fheoma.zama.xyz | mainnet.fheoma.zama.xyz |
 
 ## Security Considerations
 
