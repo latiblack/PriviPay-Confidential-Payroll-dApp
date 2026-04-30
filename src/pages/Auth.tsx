@@ -175,7 +175,7 @@ export const AuthPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
-              Please wait while we create your secure wallet. This will enable FHE-encrypted salary payments.
+              Please wait while we create your secure wallet.
             </p>
           </CardContent>
         </Card>

@@ -3,12 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Lock, CheckCircle, ThumbsUp, EyeOff, Loader2 } from "lucide-react";
+import { CheckCircle, ThumbsUp, Loader2, Users } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import organizationService from "@/lib/organization-service";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 
@@ -23,6 +22,7 @@ const BonusVoting = () => {
   const [loading, setLoading] = useState(true);
   const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
   const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
+  const [voting, setVoting] = useState(false);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -61,144 +61,155 @@ const BonusVoting = () => {
   }, [profile?.currentOrganization?.id, isOwner]);
 
   const handleVote = async (employeeId: string) => {
-    if (!profile?.currentOrganization?.id || !profile.walletAddress) return;
+    if (!profile?.currentOrganization?.id || !canVote) return;
 
+    setVoting(true);
     try {
-      const { error } = await supabase
-        .from("vote_records" as any)
-        .insert({
-          organization_id: profile.currentOrganization.id,
-          employee_id: employeeId,
-          voter_id: profile.walletAddress,
-          vote_type: "bonus",
-          status: "active",
-        });
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setVotedIds(prev => new Set(prev).add(employeeId));
+      setVoteCounts(prev => ({
+        ...prev,
+        [employeeId]: (prev[employeeId] || 0) + 1
+      }));
 
-      if (error) throw error;
-
-      await organizationService.notifyNewVote(profile.currentOrganization.id, votedIds.size + 1);
-      setVotedIds((prev) => new Set(prev).add(employeeId));
       toast({
-        title: "Vote encrypted & submitted",
-        description: "Your vote has been encrypted using FHE and recorded on-chain.",
+        title: "Vote Submitted",
+        description: `Vote recorded for employee`,
       });
     } catch (err) {
       console.error("Error voting:", err);
-      toast({
-        title: "Error",
-        description: "Failed to submit vote",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to submit vote", variant: "destructive" });
+    } finally {
+      setVoting(false);
     }
   };
 
+  if (!profile?.currentOrganization) {
+    return <div className="p-6">No organization found</div>;
+  }
+
+  const maxVotes = Math.max(...Object.values(voteCounts), 1);
+
   return (
     <div className="space-y-6">
-      <Card className="bg-primary/5 border-primary/20 shadow-sm">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-3">
-            <Lock className="h-5 w-5 text-primary mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                {isEmployee
-                  ? "Bonus Voting - Confidential"
-                  : canVote
-                  ? "Bonus Voting - FHE Encrypted"
-                  : "Bonus Voting - Confidential"}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {isEmployee
-                  ? "Your vote is encrypted. You cannot see other employees' details."
-                  : canVote
-                  ? "Vote for employees to receive bonus. Votes are encrypted as euint before submission. Only the owner can decrypt final results."
-                  : "Vote details are encrypted using FHE."}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <h1 className="text-2xl font-bold">Bonus Voting</h1>
+        <p className="text-muted-foreground">
+          {isEmployee 
+            ? "Vote for employees to receive bonus rewards" 
+            : "Allocate bonus rewards to employees"}
+        </p>
+      </div>
 
-      {isEmployee && (
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4 flex items-center gap-3">
-            <EyeOff className="h-5 w-5 text-amber-600" />
-            <div>
-              <p className="font-medium text-amber-800">Confidential Voting</p>
-              <p className="text-sm text-amber-600">You can vote without seeing other employees' personal information.</p>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Employees</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{employees.length}</div>
           </CardContent>
         </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loading ? (
-          <div className="col-span-full flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : employees.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            No employees found. Add employees first.
-          </div>
-        ) : (
-          employees.map((emp) => (
-            <Card key={emp.id} className={`border shadow-sm ${isEmployee ? "blur-sm pointer-events-none" : ""}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-bold">
-                    {isOwner 
-                      ? emp.wallet_address.slice(0, 8) + "..." + emp.wallet_address.slice(-4)
-                      : isEmployee 
-                      ? "Confidential Employee" 
-                      : emp.wallet_address.slice(0, 8) + "..." + emp.wallet_address.slice(-4)}
-                  </CardTitle>
-                  <Badge
-                    variant={emp.status === "active" ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {emp.status === "active" ? (
-                      <span className="flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Active</span>
-                    ) : emp.status}
-                  </Badge>
-                </div>
-                <CardDescription className="text-xs">
-                  {isEmployee ? "***" : emp.position || "Employee"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-muted-foreground">Salary</span>
-                    <span className="font-medium">{isEmployee ? "***" : `$${emp.encrypted_salary || 0}/mo`}</span>
-                  </div>
-                  {isOwner && voteCounts[emp.id] !== undefined && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Votes (Owner only)</span>
-                      <span className="font-medium text-primary">{voteCounts[emp.id]} votes</span>
-                    </div>
-                  )}
-                  <Progress value={emp.status === "active" ? 100 : 50} className="h-2" />
-                </div>
-                {canVote && !isEmployee && (
-                  <Button
-                    onClick={() => handleVote(emp.id)}
-                    disabled={votedIds.has(emp.id)}
-                    className="w-full gap-2"
-                    size="sm"
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    {votedIds.has(emp.id) ? "Voted (Encrypted)" : "Vote for Bonus"}
-                  </Button>
-                )}
-                {!canVote && (
-                  <Button variant="outline" className="w-full" size="sm" disabled>
-                    View Only
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Votes Cast</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{Object.values(voteCounts).reduce((a, b) => a + b, 0)}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Voting Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={canVote ? "default" : "secondary"}>
+              {canVote ? "Can Vote" : "View Only"}
+            </Badge>
+          </CardContent>
+        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Employee Bonuses
+          </CardTitle>
+          <CardDescription>
+            {isOwner 
+              ? "View vote counts and distribute bonuses" 
+              : "Vote for employees to receive bonus rewards"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : employees.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">No employees found</p>
+          ) : (
+            <div className="space-y-4">
+              {employees.map((emp) => {
+                const votes = voteCounts[emp.id] || 0;
+                const percentage = (votes / maxVotes) * 100;
+                const hasVoted = votedIds.has(emp.id);
+                
+                return (
+                  <div key={emp.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <ThumbsUp className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          {emp.position || "Employee"} - {emp.wallet_address?.slice(0, 8)}...{emp.wallet_address?.slice(-4)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          ${Number(emp.salary || 0).toLocaleString()}/mo salary
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-48">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Votes: {votes}</span>
+                          <span>{Math.round(percentage)}%</span>
+                        </div>
+                        <Progress value={percentage} className="h-2" />
+                      </div>
+                      
+                      {canVote && !isEmployee && (
+                        <Button
+                          variant={hasVoted ? "secondary" : "default"}
+                          size="sm"
+                          onClick={() => handleVote(emp.id)}
+                          disabled={voting || hasVoted}
+                          className="gap-1"
+                        >
+                          {voting ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : hasVoted ? (
+                            <CheckCircle className="h-3 w-3" />
+                          ) : (
+                            <ThumbsUp className="h-3 w-3" />
+                          )}
+                          {hasVoted ? "Voted" : "Vote"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

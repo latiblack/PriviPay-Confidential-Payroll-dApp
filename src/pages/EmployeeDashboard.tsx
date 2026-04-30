@@ -1,277 +1,185 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff, DollarSign, Calendar, TrendingUp, ArrowRight, User, Loader2, Lock } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { DollarSign, Wallet, History, Loader2, Eye, EyeOff } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
-type PayrollRecord = Database["public"]["Tables"]["payroll_records"]["Row"];
+type Payment = Database["public"]["Tables"]["payments"]["Row"];
+
+interface PaymentData {
+  id: string;
+  amount: number;
+  type: string;
+  status: string;
+  created_at: string;
+}
 
 const EmployeeDashboard = () => {
   const { profile } = useAuth();
+  const { walletAddress } = useWalletAuth();
+  const { toast } = useToast();
+  const isEmployee = profile?.currentRole === "employee";
   const isOwnerView = profile?.currentRole === "owner";
-  const isConfidentialView = profile?.currentRole === "employee";
-
-  const [decrypted, setDecrypted] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [payments, setPayments] = useState<PaymentData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<PayrollRecord[]>([]);
-
-  const fetchEmployees = async () => {
-    if (!profile?.currentOrganization?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("employees")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id);
-
-      if (error) throw error;
-      setEmployees(data || []);
-      if (data && data.length > 0) {
-        setSelectedEmployeeId(data[0].id);
-      }
-    } catch (err) {
-      console.error("Error fetching employees:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMyData = async () => {
-    if (!profile?.currentOrganization?.id || !profile.walletAddress) return;
-
-    try {
-      const { data: empData, error: empError } = await supabase
-        .from("employees")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id)
-        .eq("wallet_address", profile.walletAddress)
-        .single();
-
-      if (empError && empError.code !== "PGRST116") throw empError;
-      setMyEmployee(empData || null);
-
-      if (empData) {
-        const { data: history, error: histError } = await supabase
-          .from("payroll_records")
-          .select("*")
-          .eq("employee_id", empData.id)
-          .order("created_at", { ascending: false });
-
-        if (!histError) {
-          setPaymentHistory(history || []);
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching my data:", err);
-    }
-  };
+  const [showAmount, setShowAmount] = useState(false);
 
   useEffect(() => {
-    if (isOwnerView) {
-      fetchEmployees();
-    } else {
-      fetchMyData();
-    }
-  }, [profile?.currentOrganization?.id, isOwnerView, profile?.walletAddress]);
+    const fetchData = async () => {
+      if (!profile?.currentOrganization?.id || !walletAddress) return;
 
-  const currentEmployee = selectedEmployeeId
-    ? employees.find(e => e.id === selectedEmployeeId)
-    : null;
+      try {
+        const { data: empData, error: empError } = await supabase
+          .from("employees")
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id)
+          .eq("wallet_address", walletAddress)
+          .single();
 
-  const myData = {
-    name: myEmployee?.wallet_address ? `${myEmployee.wallet_address.slice(0, 6)}...${myEmployee.wallet_address.slice(-4)}` : "Unknown",
-    address: myEmployee?.wallet_address || "",
-    role: myEmployee?.position || "Employee",
-    encryptedSalary: myEmployee?.encrypted_salary || "***",
-    salary: Number(myEmployee?.encrypted_salary) || 0,
-    encryptedBonus: myEmployee?.encrypted_bonus || "***",
-    bonus: Number(myEmployee?.encrypted_bonus) || 0,
+        if (empError) throw empError;
+        setEmployee(empData);
+
+        const { data: payData, error: payError } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("employee_id", empData.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (!payError && payData) {
+          setPayments(payData.map(p => ({
+            id: p.id,
+            amount: Number(p.amount),
+            type: p.payment_type || "salary",
+            status: p.status || "pending",
+            created_at: p.created_at
+          })));
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [profile?.currentOrganization?.id, walletAddress]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!employee) {
+    return <div className="p-6">No employee record found</div>;
+  }
+
+  const formatCurrency = (amount: number) => {
+    return showAmount ? `$${amount.toLocaleString()}` : "***";
   };
-
-  const statCards = [
-    {
-      label: isOwnerView ? "Employee Salary (Encrypted)" : "My Salary (Encrypted)",
-      value: decrypted && !isConfidentialView ? `$${myData.salary.toLocaleString()}/mo` : myData.encryptedSalary,
-      change: isConfidentialView ? "Confidential" : "3.5%", up: !isConfidentialView, highlighted: true,
-    },
-    {
-      label: isOwnerView ? "Employee Bonus (Encrypted)" : "My Bonus (Encrypted)",
-      value: decrypted && !isConfidentialView ? `$${myData.bonus.toLocaleString()}` : myData.encryptedBonus,
-      change: isConfidentialView ? "Confidential" : "20%", up: !isConfidentialView, highlighted: false,
-    },
-  ];
 
   return (
     <div className="space-y-6">
-      {/* Owner: Employee Selector */}
-      {isOwnerView && (
-        <Card className="border shadow-sm">
-          <CardContent className="p-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-sm font-medium">Select Employee:</span>
-                </div>
-                <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                  <SelectTrigger className="w-[250px]">
-                    <SelectValue placeholder="Select an employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.wallet_address.slice(0, 8)}...{emp.wallet_address.slice(-4)} - {emp.position || "Employee"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Confidential View Notice */}
-      {isConfidentialView && (
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4 flex items-center gap-3">
-            <Lock className="h-5 w-5 text-amber-600" />
-            <div>
-              <p className="font-medium text-amber-800">Your Data is Confidential</p>
-              <p className="text-sm text-amber-600">Your salary and bonus are encrypted. Only you can view them when decrypted.</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {statCards.map((stat) => (
-          <Card
-            key={stat.label}
-            className={stat.highlighted ? "bg-primary text-primary-foreground border-0 shadow-lg" : "border shadow-sm"}
-          >
-            <CardContent className="p-5">
-              <p className={`text-sm font-medium ${stat.highlighted ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                {stat.label}
-              </p>
-              <p className={`text-2xl font-bold mt-1 ${stat.highlighted ? "text-primary-foreground" : "text-foreground"}`}>
-                {stat.value}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-xs">
-                {isConfidentialView ? (
-                  <span className="flex items-center gap-0.5 text-amber-500">
-                    <Lock className="h-3 w-3" /> {stat.change}
-                  </span>
-                ) : (
-                  <>
-                    <span className="flex items-center gap-0.5 text-accent">
-                      {stat.change} <TrendingUp className="h-3 w-3" />
-                    </span>
-                    <span className={stat.highlighted ? "text-primary-foreground/60" : "text-muted-foreground"}>
-                      vs last month
-                    </span>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div>
+        <h1 className="text-2xl font-bold">My Dashboard</h1>
+        <p className="text-muted-foreground">View your salary and payment history</p>
       </div>
 
-      {/* Toggle - Only for owners/managers, not employees */}
-      {!isConfidentialView && (
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setDecrypted(!decrypted)} className="gap-2 rounded-xl" size="sm">
-            {decrypted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {decrypted ? "Re-encrypt View" : "Decrypt Data"}
-          </Button>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-bold">
-              {isOwnerView ? `Earnings Report - Encrypted` : "My Earnings Report"}
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Monthly Salary
             </CardTitle>
-            <CardDescription className="text-xs">
-              {isConfidentialView ? "Your earnings are encrypted using FHE" : "View encrypted salary data"}
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={[
-                { month: "Jan", value: isConfidentialView ? 0 : 8200 },
-                { month: "Feb", value: isConfidentialView ? 0 : 8200 },
-                { month: "Mar", value: isConfidentialView ? 0 : 8500 },
-                { month: "Apr", value: isConfidentialView ? 0 : 8500 },
-                { month: "May", value: isConfidentialView ? 0 : 8500 },
-                { month: "Jun", value: isConfidentialView ? 0 : 9000 },
-              ]}>
-                <defs>
-                  <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(231, 75%, 60%)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="hsl(231, 75%, 60%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(220, 13%, 91%)" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(220, 9%, 46%)" }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "hsl(220, 9%, 46%)" }} tickFormatter={(v) => `$${v / 1000}k`} />
-                <RechartsTooltip
-                  contentStyle={{ borderRadius: 12, border: "1px solid hsl(220, 13%, 91%)" }}
-                  formatter={(value: number) => [isConfidentialView ? "***" : `$${value.toLocaleString()}`, "Salary"]}
-                />
-                <Area type="monotone" dataKey="value" stroke="hsl(231, 75%, 60%)" strokeWidth={2.5} fill="url(#colorEarnings)" dot={false} activeDot={{ r: 6, fill: "hsl(231, 75%, 60%)", stroke: "#fff", strokeWidth: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="text-3xl font-bold flex items-center gap-2">
+              {formatCurrency(Number(employee.salary) || 0)}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAmount(!showAmount)}
+                className="ml-2"
+              >
+                {showAmount ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">per month</p>
           </CardContent>
         </Card>
 
-        {/* Payment History */}
-        <Card className="border shadow-sm">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" /> History
-              </CardTitle>
-              {isConfidentialView && <Lock className="h-4 w-4 text-muted-foreground" />}
-            </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Position
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {paymentHistory.length > 0 ? (
-              paymentHistory.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : new Date(p.created_at).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono">{p.tx_hash || p.id}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    {isConfidentialView ? "***" : decrypted ? `$${Number(p.encrypted_amount).toLocaleString()}` : "***"}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No payment history</p>
-            )}
+          <CardContent>
+            <div className="text-2xl font-bold">{employee.position || "Employee"}</div>
+            <p className="text-sm text-muted-foreground mt-1">{employee.department || "General"}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={employee.status === "active" ? "default" : "secondary"}>
+              {employee.status}
+            </Badge>
+            <p className="text-sm text-muted-foreground mt-1">
+              {walletAddress?.slice(0, 10)}...{walletAddress?.slice(-4)}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Payment History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">No payment history</p>
+          ) : (
+            <div className="space-y-3">
+              {payments.map((payment) => (
+                <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="font-medium capitalize">{payment.type}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(payment.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">${payment.amount.toLocaleString()}</p>
+                    <Badge variant={payment.status === "completed" ? "default" : "secondary"}>
+                      {payment.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -26,7 +26,7 @@ const PendingRole = () => {
             <ul className="text-muted-foreground text-left space-y-1">
               <li>• The organization admin will review your request</li>
               <li>• Once approved, you'll get access to your data</li>
-              <li>• You'll see your encrypted salary and payment history</li>
+              <li>• You'll see your salary and payment history</li>
             </ul>
           </div>
 

@@ -1,448 +1,136 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { 
-  Users, Plus, Send, Copy, DollarSign, FileText, Settings, 
-  UserPlus, Shield, TrendingUp, CheckCircle, Clock, Building, RefreshCw
-} from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { organizationService } from "@/lib/organization-service";
+import { Users, DollarSign, Building2, Loader2 } from "lucide-react";
 
-type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
-
-interface OrgStats {
-  totalEmployees: number;
-  totalPayroll: number;
-  pendingApprovals: number;
-}
+type Employee = Database["public"]["Tables"]["employees"]["Row"];
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("employee");
-  const [inviteCode, setInviteCode] = useState("");
-  const [pendingRequests, setPendingRequests] = useState<UserRole[]>([]);
-  const [orgMembers, setOrgMembers] = useState<UserRole[]>([]);
-  const [inviting, setInviting] = useState(false);
-  const [stats, setStats] = useState<OrgStats>({
-    totalEmployees: 0,
-    totalPayroll: 0,
-    pendingApprovals: 0,
-  });
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadOrgData = async () => {
-    if (!profile?.currentOrganization?.id) return;
-    
-    try {
-      const orgId = profile.currentOrganization.id;
-      
-      // Get invite code
-      let code = await organizationService.getOrganizationInviteCode(orgId);
-      if (!code) {
-        code = await organizationService.regenerateInviteCode(orgId);
-      }
-      setInviteCode(code || "");
-      
-      // Get pending join requests (role = 'pending')
-      const pending = await organizationService.getPendingJoinRequests(orgId);
-      setPendingRequests(pending);
-      
-      // Get employees count from employees table
-      const { count: empCount, data: empData } = await supabase
-        .from("employees")
-        .select("*", { count: "exact" })
-        .eq("organization_id", orgId);
-      
-      console.log("Employees table count:", empCount, "Data:", empData);
-      
-      // Get members count from user_roles (employees, managers, auditors - not pending)
-      const { data: rolesData } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .eq("organization_id", orgId)
-        .neq("role", "pending");
-      
-      console.log("User roles data:", rolesData);
-      
-      const memberCount = rolesData?.length || 0;
-      setOrgMembers(rolesData || []);
-      
-      // For total employees - count everyone who has joined (user_roles) AND employees in table
-      // Combine and deduplicate
-      const allWallets = new Set();
-      
-      // Add from employees table
-      empData?.forEach(e => allWallets.add(e.wallet_address));
-      
-      // Add from user_roles
-      rolesData?.forEach(r => allWallets.add(r.user_id));
-      
-      const totalMembers = allWallets.size;
-      
-      console.log("Total unique members:", totalMembers);
-      
-      // Get total payroll
-      const { data: employees } = await supabase
-        .from("employees")
-        .select("encrypted_salary")
-        .eq("organization_id", orgId)
-        .eq("status", "active");
-      
-      const totalSalary = employees?.reduce((sum, e) => sum + (Number(e.encrypted_salary) || 0), 0) || 0;
-      
-      // Update stats
-      setStats({
-        totalEmployees: totalMembers,
-        totalPayroll: totalSalary,
-        pendingApprovals: pending.length,
-      });
-    } catch (error) {
-      console.error("Error loading org data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
   useEffect(() => {
-    loadOrgData();
+    const fetchEmployees = async () => {
+      if (!profile?.currentOrganization?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("employees")
+          .select("*")
+          .eq("organization_id", profile.currentOrganization.id);
+
+        if (error) throw error;
+        setEmployees(data || []);
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
   }, [profile?.currentOrganization?.id]);
 
-  const handleInvite = async () => {
-    if (!inviteEmail || !profile?.currentOrganization?.id) return;
-    
-    setInviting(true);
-    try {
-      await organizationService.createInvitation({
-        organizationId: profile.currentOrganization.id,
-        role: inviteRole,
-        email: inviteEmail,
-        createdBy: profile.walletAddress,
-      });
-      
-      // Send notification to the invited user
-      await organizationService.notifyInvitationSent(profile.currentOrganization.id, inviteEmail);
-      
-      toast({ title: "Invitation sent", description: `Invite sent to ${inviteEmail}` });
-      setInviteEmail("");
-    } catch (error) {
-      console.error("Error sending invite:", error);
-      toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" });
-    } finally {
-      setInviting(false);
-    }
-  };
+  const totalSalary = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const activeCount = employees.filter(e => e.status === "active").length;
 
-  const handleApprove = async (userId: string, role: "employee" | "manager" | "auditor" = "employee") => {
-    if (!profile?.currentOrganization?.id) return;
-    
-    try {
-      console.log("Approving user:", { userId, orgId: profile.currentOrganization.id, role });
-      
-      // First check if the pending request exists
-      const { data: pendingCheck, error: checkError } = await supabase
-        .from("user_roles")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id)
-        .eq("user_id", userId)
-        .eq("role", "pending");
-      
-      console.log("Pending check result:", { pendingCheck, checkError });
-      
-      if (!pendingCheck || pendingCheck.length === 0) {
-        toast({ title: "Error", description: "No pending request found for this user", variant: "destructive" });
-        return;
-      }
-      
-      await organizationService.approveJoinRequest(userId, profile.currentOrganization.id, role);
-      await organizationService.notifyJoinApproved(profile.currentOrganization.id, userId);
-      
-      // Verify it worked
-      const { data: verify } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("organization_id", profile.currentOrganization.id)
-        .eq("user_id", userId)
-        .single();
-      
-      console.log("After approval, user role:", verify);
-      
-      toast({ title: "Approved", description: `User has been granted access. New role: ${verify?.role}` });
-      loadOrgData();
-    } catch (error: any) {
-      console.error("Error approving:", error);
-      toast({ title: "Error", description: error.message || "Failed to approve", variant: "destructive" });
-    }
-  };
-
-  const handleReject = async (userId: string) => {
-    if (!profile?.currentOrganization?.id) return;
-    
-    try {
-      console.log("Rejecting user:", { userId, orgId: profile.currentOrganization.id });
-      
-      // First check if the pending request exists
-      const { data: pendingCheck, error: checkError } = await supabase
-        .from("user_roles")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id)
-        .eq("user_id", userId)
-        .eq("role", "pending");
-      
-      console.log("Pending check result:", { pendingCheck, checkError });
-      
-      if (!pendingCheck || pendingCheck.length === 0) {
-        toast({ title: "Error", description: "No pending request found for this user", variant: "destructive" });
-        return;
-      }
-      
-      await organizationService.rejectJoinRequest(userId, profile.currentOrganization.id);
-      await organizationService.notifyJoinRejected(profile.currentOrganization.id, userId);
-      
-      toast({ title: "Rejected", description: "Access request denied" });
-      loadOrgData();
-    } catch (error: any) {
-      console.error("Error rejecting:", error);
-      toast({ title: "Error", description: error.message || "Failed to reject", variant: "destructive" });
-    }
-  };
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(inviteCode);
-    toast({ title: "Copied!", description: "Invite code copied to clipboard" });
-  };
-
-  const handleRegenerateCode = async () => {
-    if (!profile?.currentOrganization) return;
-    
-    try {
-      const newCode = await organizationService.regenerateInviteCode(profile.currentOrganization.id);
-      setInviteCode(newCode);
-      toast({ title: "Code Regenerated", description: "New invite code generated successfully" });
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to regenerate code", variant: "destructive" });
-    }
-  };
-
-  if (!profile?.currentOrganization) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>No organization found</p>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  const quickActions = [
-    { icon: UserPlus, label: "Invite User", action: () => {}, color: "bg-blue-500" },
-    { icon: DollarSign, label: "Process Payroll", action: () => navigate("/admin/payroll"), color: "bg-green-500" },
-    { icon: FileText, label: "Add Employee", action: () => navigate("/admin/payroll?add=true"), color: "bg-purple-500" },
-    { icon: Settings, label: "Settings", action: () => navigate("/admin/settings"), color: "bg-gray-500" },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* Welcome */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">{profile.currentOrganization.name}</p>
-        </div>
-        <Badge variant="outline" className="text-sm">
-          <Building className="h-4 w-4 mr-1" />
-          {profile.currentOrganization.name}
-        </Badge>
+      <div>
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your organization</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border shadow-sm">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Employees</p>
-              <p className="text-2xl font-bold">{stats.totalEmployees}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border shadow-sm">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Payroll</p>
-              <p className="text-2xl font-bold">${stats.totalPayroll.toLocaleString()}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border shadow-sm">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Clock className="h-6 w-6 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Pending Approvals</p>
-              <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {quickActions.map((action) => (
-          <Card key={action.label} className="border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-4 flex flex-col items-center gap-2" onClick={action.action}>
-              <div className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center`}>
-                <action.icon className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-sm font-medium">{action.label}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Invite Section */}
-        <Card className="border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Send className="h-5 w-5" /> Invite New Members
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Total Employees
             </CardTitle>
-            <CardDescription>Invite employees or managers to your organization</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input 
-                placeholder="Email address" 
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1"
-              />
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="employee">Employee</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleInvite} className="w-full" disabled={!inviteEmail || inviting}>
-              {inviting ? "Sending..." : "Send Invite"}
-            </Button>
-
-            {inviteCode && (
-              <div className="border-t pt-4">
-                <Label className="text-sm text-muted-foreground">Organization Invite Code:</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  <code className="flex-1 font-mono bg-muted px-3 py-2 rounded">{inviteCode}</code>
-                  <Button variant="outline" size="icon" onClick={handleCopyCode}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={handleRegenerateCode} title="Regenerate code">
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pending Join Requests */}
-        <Card className="border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5" /> Pending Access Requests
-            </CardTitle>
-            <CardDescription>Users waiting for approval to join your organization</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingRequests.length > 0 ? (
-              pendingRequests.map((req) => (
-                <div key={req.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{req.user_id.slice(0, 8)}...{req.user_id.slice(-4)}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(req.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => handleApprove(req.user_id)}>Approve</Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleReject(req.user_id)}>Reject</Button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No pending access requests</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5" /> Organization Members
-            </CardTitle>
-            <CardDescription>Manage roles for organization members</CardDescription>
           </CardHeader>
           <CardContent>
-            {orgMembers && orgMembers.length > 0 ? (
-              <div className="space-y-2">
-                {orgMembers.map((member) => (
-                  <div key={member.user_id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{member.user_id.slice(0, 8)}...{member.user_id.slice(-4)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Joined {new Date(member.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Select
-                      value={member.role}
-                      onValueChange={async (newRole) => {
-                        try {
-                          await supabase
-                            .from("user_roles")
-                            .update({ role: newRole as "manager" | "employee" | "auditor" })
-                            .eq("organization_id", profile.currentOrganization.id)
-                            .eq("user_id", member.user_id);
-                          toast({ title: "Role Updated", description: `Role changed to ${newRole}` });
-                          loadOrgData();
-                        } catch (err) {
-                          toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="employee">Employee</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="auditor">Auditor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No organization members yet</p>
-            )}
+            <div className="text-3xl font-bold">{employees.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Total Monthly Payroll
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">${totalSalary.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Active Employees
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{activeCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Organization
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-semibold">{profile?.currentOrganization?.name}</div>
+            <Badge variant="outline" className="mt-1">{profile?.currentRole}</Badge>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Stats</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold">{employees.length}</div>
+              <div className="text-sm text-muted-foreground">Total Staff</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold">${Math.round(totalSalary / employees.length || 0).toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">Avg Salary</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold">{activeCount}</div>
+              <div className="text-sm text-muted-foreground">Active</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold">{employees.length - activeCount}</div>
+              <div className="text-sm text-muted-foreground">Inactive</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
