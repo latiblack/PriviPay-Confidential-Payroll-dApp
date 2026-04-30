@@ -24,7 +24,7 @@ interface Bonus {
 const BonusPage = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const isOwner = profile?.currentRole === "owner";
+  const canAddBonus = profile?.currentRole === "owner" || profile?.currentRole === "manager";
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
@@ -153,7 +153,7 @@ const BonusPage = () => {
           <h1 className="text-3xl font-bold">Bonus Management</h1>
           <p className="text-muted-foreground text-lg mt-1">Add monthly bonuses for employees</p>
         </div>
-        {isOwner && (
+        {canAddBonus && (
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button className="gap-2 text-lg px-6 py-4">
@@ -310,7 +310,7 @@ const BonusPage = () => {
                             <Badge key={bonus.id} variant="outline" className="flex items-center gap-2 px-3 py-1">
                               <Calendar className="h-3 w-3" />
                               {bonus.month}: ${bonus.amount.toLocaleString()}
-                              {isOwner && (
+                              {canAddBonus && (
                                 <button 
                                   onClick={() => handleDeleteBonus(bonus.id)}
                                   className="ml-1 text-red-500 hover:text-red-700"
