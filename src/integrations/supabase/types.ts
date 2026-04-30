@@ -54,15 +54,22 @@ export type Database = {
           user_id?: string | null
           wallet_address?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "employees_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+Relationships: [
+      {
+        foreignKeyName: "employees_organization_id_fkey"
+        columns: ["organization_id"]
+        isOneToOne: false
+        referencedRelation: "organizations"
+        referencedColumns: ["id"]
+      },
+      {
+        foreignKeyName: "employees_user_id_fkey"
+        columns: ["user_id"]
+        isOneToOne: false
+        referencedRelation: "profiles"
+        referencedColumns: ["wallet_address"]
+      },
+    ]
       }
       invitations: {
         Row: {
