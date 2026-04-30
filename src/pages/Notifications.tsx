@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Notification {
   id: string;
-  type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected" | "invitation_sent" | "vote_started" | "vote_ended" | "new_vote";
+  type: "announcement" | "payment" | "document" | "alert" | "join_request" | "join_approved" | "join_rejected" | "invitation_sent" | "vote_started" | "vote_ended" | "new_vote" | "bonus";
   title: string;
   message: string;
   date: string;
@@ -34,8 +34,10 @@ const getIcon = (type: Notification["type"]) => {
       return <Mail className="h-5 w-5" />;
     case "vote_started":
     case "vote_ended":
-    case "new_vote":
-      return <ThumbsUp className="h-5 w-5" />;
+case "new_vote":
+    return <ThumbsUp className="h-5 w-5" />;
+    case "bonus":
+    return <DollarSign className="h-5 w-5" />;
   }
 };
 
@@ -57,10 +59,12 @@ const getBadgeColor = (type: Notification["type"]) => {
       return "bg-red-500";
     case "invitation_sent":
       return "bg-cyan-500";
-    case "vote_started":
-    case "vote_ended":
-    case "new_vote":
-      return "bg-violet-500";
+case "vote_started":
+  case "vote_ended":
+  case "new_vote":
+    return "bg-violet-500";
+  case "bonus":
+    return "bg-yellow-500";
   }
 };
 
@@ -92,27 +96,29 @@ const Notifications = () => {
         
         let filtered = data || [];
         
-        if (role === "owner") {
-          // Owners see: join_request notifications + org-wide notifications
-          filtered = (data || []).filter((n: any) => 
-            n.type === "join_request" || 
-            n.type === "vote_started" || 
-            n.type === "vote_ended" || 
-            n.type === "new_vote" ||
-            n.user_id === null
-          );
-        } else if (role === "manager") {
-          // Managers see: their own notifications + org-wide
-          filtered = (data || []).filter((n: any) => 
-            n.user_id === wallet ||
-            n.user_id === null
-          );
-        } else if (role === "employee" || role === "auditor") {
-          // Employees see: their own notifications + org-wide
-          filtered = (data || []).filter((n: any) => 
-            n.user_id === wallet ||
-            n.user_id === null
-          );
+if (role === "owner") {
+    // Owners see: join_request notifications + org-wide notifications
+    filtered = (data || []).filter((n: any) =>
+      n.type === "join_request" ||
+      n.type === "vote_started" ||
+      n.type === "vote_ended" ||
+      n.type === "new_vote" ||
+      n.type === "bonus" ||
+      n.user_id === null
+    );
+  } else if (role === "manager") {
+    // Managers see: their own notifications + org-wide
+    filtered = (data || []).filter((n: any) =>
+      n.user_id === wallet ||
+      n.user_id === null ||
+      n.type === "bonus"
+    );
+  } else if (role === "employee" || role === "auditor") {
+    // Employees see: their own notifications + org-wide
+    filtered = (data || []).filter((n: any) =>
+      n.user_id === wallet ||
+      n.user_id === null
+    );
         }
         
         const formatted: Notification[] = filtered.map((n: any) => ({

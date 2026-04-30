@@ -97,6 +97,20 @@ const BonusPage = () => {
 
       if (error) throw error;
 
+      // Get employee details for notification
+      const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
+      const employeeName = selectedEmployee ? ((selectedEmployee as any).name || selectedEmployee.wallet_address?.slice(0, 10)) : "Employee";
+
+      // Create notification for the employee
+      await supabase.from("notifications").insert({
+        organization_id: profile.currentOrganization.id,
+        type: "bonus",
+        title: "Bonus Received!",
+        message: `You have received a bonus of $${Number(bonusAmount).toLocaleString()} for ${bonusMonth}`,
+        user_id: selectedEmployee?.wallet_address,
+        read: false,
+      });
+
       toast({ title: "Bonus Added", description: `Bonus of $${Number(bonusAmount).toLocaleString()} added for ${bonusMonth}` });
       
       // Refresh bonuses
