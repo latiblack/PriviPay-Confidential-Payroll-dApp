@@ -55,7 +55,7 @@ const PaymentsPage = () => {
   const [savingEmployee, setSavingEmployee] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState("");
 
-  const fetchData = async () => {
+const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
 
     try {
@@ -76,29 +76,51 @@ const PaymentsPage = () => {
 
       if (roleError) throw roleError;
 
-// Filter to show employees in payroll (salary > 0)
-    const payrollEmployees = (data || []).filter(e => Number(e.encrypted_salary) > 0);
-    setEmployees(payrollEmployees);
+      // Get bonuses
+      const { data: bonusData, error: bonusError } = await supabase
+        .from("bonuses")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
 
-    // Get all addresses in employees table (including those with $0)
-    const employeeAddresses = new Set((data || []).map(e => e.wallet_address?.toLowerCase()));
-    
-    // Available = members NOT in employees table OR in employees with $0 salary
-    const employeesWithZero = new Set(
-      (data || [])
-        .filter(e => Number(e.encrypted_salary) === 0)
-        .map(e => e.wallet_address?.toLowerCase())
-    );
-    
-    const available = (roleData || []).filter(m => 
-      m.user_id && (!employeeAddresses.has(m.user_id.toLowerCase()) || employeesWithZero.has(m.user_id.toLowerCase()))
-    );
-    setAvailableMembers(available);
+      if (bonusError) throw bonusError;
 
-      // Get own salary
+      // Filter to show employees in payroll (salary > 0)
+      const payrollEmployees = (data || []).filter(e => Number(e.encrypted_salary) > 0);
+      
+      // Add bonus to each employee
+      const employeesWithBonus = payrollEmployees.map(emp => {
+        const empBonuses = (bonusData || []).filter(b => b.employee_id === emp.id);
+        const totalBonus = empBonuses.reduce((sum, b) => sum + b.amount, 0);
+        return { ...emp, bonus: totalBonus };
+      });
+      
+      setEmployees(employeesWithBonus);
+
+      // Get all addresses in employees table (including those with $0)
+      const employeeAddresses = new Set((data || []).map(e => e.wallet_address?.toLowerCase()));
+
+      // Available = members NOT in employees table OR in employees with $0 salary
+      const employeesWithZero = new Set(
+        (data || [])
+          .filter(e => Number(e.encrypted_salary) === 0)
+          .map(e => e.wallet_address?.toLowerCase())
+      );
+
+      const available = (roleData || []).filter(m => 
+        m.user_id && (!employeeAddresses.has(m.user_id.toLowerCase()) || employeesWithZero.has(m.user_id.toLowerCase()))
+      );
+      setAvailableMembers(available);
+
+      // Get own salary with bonus
       const mySalary = data?.find(e => e.wallet_address === profile.walletAddress);
-      const sal = mySalary?.encrypted_salary || "0";
-      setOwnSalary(`$${Number(sal).toLocaleString()}`);
+      const myBonus = (bonusData || [])
+        .filter(b => {
+          const emp = data?.find(e => e.wallet_address === profile.walletAddress);
+          return emp && b.employee_id === emp.id;
+        })
+        .reduce((sum, b) => sum + b.amount, 0);
+      const sal = Number(mySalary?.encrypted_salary || 0) + myBonus;
+      setOwnSalary(`$${sal.toLocaleString()}`);
 
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -259,7 +281,8 @@ const { error } = await supabase
 
   const totalPayroll = employees.reduce((sum, e) => {
     const sal = e.encrypted_salary;
-    return sum + (Number(sal) || 0);
+    const bonus = (e as any).bonus || 0;
+    return sum + (Number(sal) || 0) + bonus;
   }, 0);
 
   const openAddDialog = () => {
@@ -480,11 +503,14 @@ const { error } = await supabase
               </p>
             </div>
           </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
-                          <Badge variant="secondary" className="text-xs">Monthly</Badge>
-                        </div>
+<div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="font-semibold">${(Number(emp.encrypted_salary || 0) + ((emp as any).bonus || 0)).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ${Number(emp.encrypted_salary || 0).toLocaleString()} salary
+                          {((emp as any).bonus || 0) > 0 && <span className="text-green-600"> + ${((emp as any).bonus || 0).toLocaleString()} bonus</span>}
+                        </p>
+                      </div>
                         <div className="flex gap-2">
                           <Button variant="ghost" size="icon" onClick={() => openEditDialog(emp)}>
                             <Edit className="h-4 w-4" />

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign } from "lucide-react";
+import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign, Gift } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,31 +12,31 @@ export const AppSidebar = () => {
   const { isAuthenticated, disconnectWallet } = useWalletAuth();
   const { profile } = useAuth();
 
-  // Owner sees everything - Admin, Employees, Payments, Voting, Notifications
+  // Owner sees everything - Admin, Employees, Payments, Bonus, Notifications
   const ownerNavItems = [
     { icon: LayoutGrid, label: "Admin", path: "/admin" },
     { icon: Users, label: "Employees", path: "/employees" },
     { icon: DollarSign, label: "Treasury", path: "/admin/payments" },
-    { icon: Vote, label: "Voting", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
-  // Employees see only their own dashboard, payments (withdraw), voting, auditor, notifications
+  // Employees see only their own dashboard, payments (withdraw), bonus, auditor, notifications
   // They CANNOT see: Admin, Employees list (others' details), Treasury
   const employeeNavItems = [
     { icon: LayoutGrid, label: "My Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
-    { icon: Vote, label: "Voting", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: BarChart3, label: "Auditor", path: "/auditor" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
-  // Managers see dashboard, payments, voting, auditor, notifications
+  // Managers see dashboard, payments, bonus, auditor, notifications
   // They CANNOT see: Admin, Employees list (others' details), Treasury
   const managerNavItems = [
     { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
-    { icon: Vote, label: "Voting", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: BarChart3, label: "Auditor", path: "/auditor" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];

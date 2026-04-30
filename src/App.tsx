@@ -37,7 +37,7 @@ const pageTitles: Record<string, string> = {
   "/employees": "Employees",
   "/employee": "My Dashboard",
   "/auditor": "Auditor",
-  "/voting": "Bonus Voting",
+  "/voting": "Bonus",
   "/notifications": "Notifications",
 };
 
