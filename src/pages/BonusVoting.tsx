@@ -204,9 +204,9 @@ const BonusPage = () => {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                <Button 
-                  onClick={handleAddBonus} 
-                  disabled={saving || !selectedEmployeeId || !bonusAmount || !bonusMonth}
+<Button
+                  onClick={handleAddBonus}
+                  disabled={saving || !selectedEmployeeId || !bonusAmount}
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Bonus"}
                 </Button>
