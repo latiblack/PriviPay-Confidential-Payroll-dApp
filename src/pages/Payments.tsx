@@ -19,6 +19,7 @@ type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
 
 interface EmployeeFormData {
+  name: string;
   wallet_address: string;
   position: string;
   department: string;
@@ -45,6 +46,7 @@ const PaymentsPage = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<EmployeeRow | null>(null);
   const [employeeForm, setEmployeeForm] = useState<EmployeeFormData>({
+    name: "",
     wallet_address: "",
     position: "",
     department: "",
@@ -114,7 +116,7 @@ const PaymentsPage = () => {
     const member = availableMembers.find(m => m.id === memberId);
     if (member) {
       setEmployeeForm({
-        ...employeeForm,
+        name: "",
         wallet_address: member.user_id || "",
         position: member.role || "employee",
         department: "",
@@ -128,22 +130,23 @@ const PaymentsPage = () => {
 
     setSavingEmployee(true);
     try {
-      const { error } = await supabase
-        .from("employees")
-        .insert({
-          organization_id: profile.currentOrganization.id,
-          wallet_address: employeeForm.wallet_address,
-          position: employeeForm.position || null,
-          department: employeeForm.department || null,
-          encrypted_salary: employeeForm.salary,
-          status: "active",
-        });
+const { error } = await supabase
+      .from("employees")
+      .insert({
+        organization_id: profile.currentOrganization.id,
+        wallet_address: employeeForm.wallet_address,
+        name: employeeForm.name || null,
+        position: employeeForm.position || null,
+        department: employeeForm.department || null,
+        encrypted_salary: employeeForm.salary,
+        status: "active",
+      });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      toast({ title: "Employee Added", description: "Employee has been added to payroll" });
-      setShowAddDialog(false);
-      setEmployeeForm({ wallet_address: "", position: "", department: "", salary: "" });
+    toast({ title: "Employee Added", description: "Employee has been added to payroll" });
+    setShowAddDialog(false);
+    setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
       setSelectedMemberId("");
       fetchData();
     } catch (err) {
@@ -162,7 +165,7 @@ const PaymentsPage = () => {
       const { error } = await supabase
         .from("employees")
         .update({
-          wallet_address: employeeForm.wallet_address,
+          name: employeeForm.name || null,
           position: employeeForm.position || null,
           department: employeeForm.department || null,
           encrypted_salary: employeeForm.salary,
@@ -174,7 +177,7 @@ const PaymentsPage = () => {
       toast({ title: "Employee Updated", description: "Employee details have been updated" });
       setShowEditDialog(false);
       setEditingEmployee(null);
-      setEmployeeForm({ wallet_address: "", position: "", department: "", salary: "" });
+      setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
       fetchData();
     } catch (err) {
       console.error("Error updating employee:", err);
@@ -207,6 +210,7 @@ const PaymentsPage = () => {
   const openEditDialog = (employee: EmployeeRow) => {
     setEditingEmployee(employee);
     setEmployeeForm({
+      name: (employee as any).name || "",
       wallet_address: employee.wallet_address,
       position: employee.position || "",
       department: employee.department || "",
@@ -260,7 +264,7 @@ const PaymentsPage = () => {
 
   const openAddDialog = () => {
     setSelectedMemberId("");
-    setEmployeeForm({ wallet_address: "", position: "", department: "", salary: "" });
+    setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
     setShowAddDialog(true);
   };
 
@@ -306,17 +310,25 @@ const PaymentsPage = () => {
                             {member.user_id?.slice(0, 10)}...{member.user_id?.slice(-4)} ({member.role})
                           </option>
                         ))}
-                      </select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Wallet Address</Label>
-                      <Input
-                        placeholder="0x..."
-                        value={employeeForm.wallet_address}
-                        onChange={(e) => setEmployeeForm({ ...employeeForm, wallet_address: e.target.value })}
-                      />
-                    </div>
+</select>
+</div>
+
+<div className="space-y-2">
+  <Label>Name</Label>
+  <Input
+    placeholder="John Doe"
+    value={employeeForm.name}
+    onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
+  />
+</div>
+<div className="space-y-2">
+  <Label>Wallet Address</Label>
+  <Input
+    placeholder="0x..."
+    value={employeeForm.wallet_address}
+    onChange={(e) => setEmployeeForm({ ...employeeForm, wallet_address: e.target.value })}
+  />
+</div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Position</Label>
@@ -453,21 +465,21 @@ const PaymentsPage = () => {
               ) : (
                 <div className="space-y-2">
                   {employees.map((emp) => (
-                    <div key={emp.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Users className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium flex items-center gap-2">
-                            {emp.wallet_address?.slice(0, 8)}...{emp.wallet_address?.slice(-4)}
-                            <Badge variant="secondary" className="text-xs">{emp.status}</Badge>
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {emp.position || "Employee"} {emp.department && `• ${emp.department}`}
-                          </p>
-                        </div>
-                      </div>
+<div key={emp.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium flex items-center gap-2">
+                {(emp as any).name || emp.wallet_address?.slice(0, 8) + "..." + emp.wallet_address?.slice(-4)}
+                <Badge variant="secondary" className="text-xs">{emp.status}</Badge>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {emp.position || "Employee"} {emp.department && `• ${emp.department}`}
+              </p>
+            </div>
+          </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
@@ -604,46 +616,55 @@ const PaymentsPage = () => {
             <DialogTitle>Edit Employee</DialogTitle>
             <DialogDescription>Update employee details and salary</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+<div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Name</Label>
+            <Input
+              placeholder="John Doe"
+              value={employeeForm.name}
+              onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Wallet Address</Label>
+            <Input
+              placeholder="0x..."
+              value={employeeForm.wallet_address}
+              disabled
+              className="bg-muted"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Wallet Address</Label>
+              <Label>Position</Label>
               <Input
-                placeholder="0x..."
-                value={employeeForm.wallet_address}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, wallet_address: e.target.value })}
+                placeholder="Software Engineer"
+                value={employeeForm.position}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Position</Label>
-                <Input
-                  placeholder="Software Engineer"
-                  value={employeeForm.position}
-                  onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Input
-                  placeholder="Engineering"
-                  value={employeeForm.department}
-                  onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
-                />
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label>Monthly Salary (USD)</Label>
+              <Label>Department</Label>
               <Input
-                type="number"
-                placeholder="5000"
-                value={employeeForm.salary}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
+                placeholder="Engineering"
+                value={employeeForm.department}
+                onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
-            <Button onClick={handleEditEmployee} disabled={savingEmployee || !employeeForm.wallet_address || !employeeForm.salary}>
+          <div className="space-y-2">
+            <Label>Monthly Salary (USD)</Label>
+            <Input
+              type="number"
+              placeholder="5000"
+              value={employeeForm.salary}
+              onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+          <Button onClick={handleEditEmployee} disabled={savingEmployee || !employeeForm.salary}>
               {savingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
             </Button>
           </DialogFooter>
