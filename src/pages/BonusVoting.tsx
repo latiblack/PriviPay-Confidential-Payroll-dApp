@@ -24,7 +24,7 @@ interface Bonus {
 const BonusPage = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const canAddBonus = profile?.currentRole === "owner" || profile?.currentRole === "manager" || profile?.currentRole === "employee";
+  const canAddBonus = profile?.currentRole === "owner" || profile?.currentRole === "manager";
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
@@ -156,12 +156,12 @@ const BonusPage = () => {
         {canAddBonus && (
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button className="gap-2 text-lg px-6 py-4">
+              <Button className="gap-2 text-lg px-6 py-4 relative z-50">
                 <Plus className="h-5 w-5" />
                 Add Bonus
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="z-[100]">
               <DialogHeader>
                 <DialogTitle>Add Monthly Bonus</DialogTitle>
                 <DialogDescription>Add bonus for an employee for a specific month</DialogDescription>
