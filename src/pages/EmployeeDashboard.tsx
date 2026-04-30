@@ -135,7 +135,7 @@ const EmployeeDashboard = () => {
           <p className="text-muted-foreground text-lg mt-1">View your salary and payment history</p>
         </div>
 
-        <Card className="max-w-2xl">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -191,7 +191,7 @@ const EmployeeDashboard = () => {
         <p className="text-muted-foreground text-lg mt-1">View employee details, payments and history</p>
       </div>
 
-      <Card className="max-w-2xl">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -203,7 +203,7 @@ const EmployeeDashboard = () => {
             <p className="text-muted-foreground text-lg py-4">No employees in payroll yet.</p>
           ) : (
             <select
-              className="w-full p-4 border-2 rounded-lg bg-background text-lg font-medium"
+              className="w-full h-14 px-4 border-2 border-input rounded-lg bg-background text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary"
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
             >
@@ -274,7 +274,7 @@ const EmployeeDashboard = () => {
             </Card>
           </div>
 
-          <Card className="max-w-2xl">
+          <Card>
             <CardHeader>
               <CardTitle>Employee Details</CardTitle>
             </CardHeader>
@@ -307,7 +307,7 @@ const EmployeeDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="max-w-2xl">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -340,7 +340,7 @@ const EmployeeDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="max-w-2xl">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
@@ -390,7 +390,7 @@ const EmployeeDashboard = () => {
       )}
 
       {!selectedEmployeeId && employees.length > 0 && (
-        <Card className="max-w-2xl">
+        <Card>
           <CardContent className="py-16 text-center">
             <Users className="h-20 w-20 mx-auto text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground">Select an employee to view analytics</p>
