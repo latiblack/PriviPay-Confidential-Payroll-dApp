@@ -124,21 +124,23 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
     }
 
     try {
-      let tx;
       const txParams = {
         to,
         value: parseEther(amountInEth),
-        gasLimit: BigInt(21000),
       };
-      if (this.signer.sendTransaction) {
-        tx = await this.signer.sendTransaction(txParams);
-      } else {
-        tx = await this.signer.sendTransaction(txParams);
-      }
-      // Don't wait for confirmation - just return the hash immediately
+      // Use wallet client's sendTransaction directly (wagmi v2)
+      const tx = await this.signer.sendTransaction({
+        account: this.signer.account,
+        to: txParams.to,
+        value: txParams.value,
+      });
       return tx.hash;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Transaction failed:", err);
+      // Provide more specific error message
+      if (err.message?.includes("user rejected")) {
+        throw new Error("Transaction rejected by user");
+      }
       throw err;
     }
   }
@@ -193,7 +195,14 @@ async processPayroll(
 
   async getTransactionHistory(walletAddress: string, limit: number = 20): Promise<PayrollTransaction[]> {
     try {
-      const ethersProvider = new ethers.JsonRpcProvider(this.getSepoliaRPC());
+      // Use the wallet's provider if available, otherwise skip transaction history
+      let ethersProvider: ethers.JsonRpcProvider;
+      if (this.signer?.provider) {
+        ethersProvider = this.signer.provider;
+      } else {
+        console.warn("No provider available for transaction history, returning empty");
+        return [];
+      }
       
       // Add timeout for getBlockNumber
       const blockNumberPromise = ethersProvider.getBlockNumber();

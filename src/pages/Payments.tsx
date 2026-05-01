@@ -414,7 +414,10 @@ const handleWithdraw = async () => {
 
   setProcessing(true);
   try {
-    await ethereumService.initializeWithSigner(walletClient);
+    const initResult = await ethereumService.initializeWithSigner(walletClient);
+    if (!initResult) {
+      throw new Error("Failed to initialize wallet");
+    }
     const txHash = await ethereumService.sendTransaction(
       recipient,
       amount
@@ -426,10 +429,15 @@ const handleWithdraw = async () => {
     });
     setAmount("");
     setRecipient("");
-    await refreshBalance();
-  } catch (err) {
+    try {
+      await refreshBalance();
+    } catch (e) {
+      console.log("Balance refresh failed, but transaction succeeded");
+    }
+  } catch (err: any) {
     console.error("Error withdrawing:", err);
-    toast({ title: "Error", description: "Failed to withdraw. Make sure you're on Sepolia and have enough balance for gas.", variant: "destructive" });
+    const errorMsg = err?.message || "Failed to withdraw";
+    toast({ title: "Error", description: errorMsg, variant: "destructive" });
   } finally {
     setProcessing(false);
   }
