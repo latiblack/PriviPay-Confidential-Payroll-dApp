@@ -209,7 +209,7 @@ class FHEPayrollService {
       if (!isNaN(amount) && amount > 0) {
         try {
           const tx = await this.setEmployeeSalary(emp.address, amount / 100);
-          await tx.wait();
+          await (tx as any).wait?.();
           totalAmount += amount;
           processed++;
         } catch (e) {

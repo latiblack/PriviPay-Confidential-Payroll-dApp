@@ -71,7 +71,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   // This allows owners to access /voting, /notifications, etc.
   if (!requiredRole) {
     // Check if user has a valid role and organization
-    const hasValidAccess = profile.currentRole && profile.currentRole !== "pending" && profile.currentOrganization;
+    const hasValidAccess = profile.currentRole && profile.currentOrganization;
     
     if (!hasValidAccess) {
       // No valid access - go to auth

@@ -11,7 +11,7 @@ export interface UserProfile {
   walletAddress: string;
   displayName: string | null;
   organizations: Organization[];
-  currentRole: "owner" | "employee" | "manager" | "auditor" | "pending" | null;
+  currentRole: "owner" | "employer" | "employee" | "staff" | "manager" | "auditor" | "pending" | null;
   currentOrganization: Organization | null;
 }
 

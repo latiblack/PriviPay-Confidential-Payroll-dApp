@@ -254,8 +254,8 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
       .insert({
         organization_id: invitation.organization_id,
         user_id: userId,
-        role: "employee",
-      });
+        role: "staff",
+      } as any);
 
     if (roleError) throw new Error(roleError.message);
   },
@@ -313,7 +313,7 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
     // Update the role to employee - using ID directly
     const { error: updateError } = await supabase
       .from("user_roles")
-      .update({ role: role, created_at: new Date().toISOString() })
+      .update({ role: role as any, created_at: new Date().toISOString() })
       .eq("id", pendingRecord.id);
 
     console.log("Update result:", { updateError });

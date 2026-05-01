@@ -48,7 +48,7 @@ const PayrollPage = () => {
   const handlePayEmployee = async (employeeId: string) => {
     setProcessing(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("payments")
         .insert({
           employee_id: employeeId,
@@ -74,7 +74,7 @@ const PayrollPage = () => {
     setProcessing(true);
     try {
       for (const emp of employees) {
-        await supabase.from("payments").insert({
+        await (supabase as any).from("payments").insert({
           employee_id: emp.id,
           amount: emp.encrypted_salary || "0",
           payment_type: "salary",
