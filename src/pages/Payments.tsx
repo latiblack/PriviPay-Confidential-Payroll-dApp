@@ -10,9 +10,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { 
-  DollarSign, Users, Send, Loader2, ArrowDownToLine, 
-  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle 
+import { formatCurrency } from "@/lib/currency";
+import { useTranslation } from "@/hooks/useTranslation";
+import {
+  DollarSign, Users, Send, Loader2, ArrowDownToLine,
+  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle
 } from "lucide-react";
 
 type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
@@ -30,6 +32,7 @@ const PaymentsPage = () => {
   const { profile } = useAuth();
   const { walletAddress } = useWalletAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
   const isStaff = profile?.currentRole === "staff";
 
@@ -120,7 +123,7 @@ const fetchData = async () => {
         })
         .reduce((sum, b) => sum + b.amount, 0);
       const sal = Number(mySalary?.encrypted_salary || 0) + myBonus;
-      setOwnSalary(`$${sal.toLocaleString()}`);
+      setOwnSalary(formatCurrency(sal));
 
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -415,7 +418,7 @@ const { error } = await supabase
           <CardContent>
             {isOwner ? (
               <>
-                <div className="text-3xl font-bold">${totalPayroll.toLocaleString()}</div>
+                <div className="text-3xl font-bold">{formatCurrency(totalPayroll)}</div>
                 <p className="text-xs opacity-75 mt-1">
                   {employees.length} employee{employees.length !== 1 ? "s" : ""}
                 </p>
@@ -505,10 +508,10 @@ const { error } = await supabase
           </div>
 <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="font-semibold">${(Number(emp.encrypted_salary || 0) + ((emp as any).bonus || 0)).toLocaleString()}</p>
+                        <p className="font-semibold">{formatCurrency(Number(emp.encrypted_salary || 0) + ((emp as any).bonus || 0))}</p>
                         <p className="text-xs text-muted-foreground">
-                          ${Number(emp.encrypted_salary || 0).toLocaleString()} salary
-                          {((emp as any).bonus || 0) > 0 && <span className="text-green-600"> + ${((emp as any).bonus || 0).toLocaleString()} bonus</span>}
+{formatCurrency(Number(emp.encrypted_salary || 0))} salary
+                  {((emp as any).bonus || 0) > 0 && <span className="text-green-600"> + {formatCurrency((emp as any).bonus || 0)} bonus</span>}
                         </p>
                       </div>
                         <div className="flex gap-2">
@@ -551,7 +554,7 @@ const { error } = await supabase
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Total amount</span>
-                      <span className="text-xl font-bold">${totalPayroll.toLocaleString()}</span>
+                      <span className="text-xl font-bold">{formatCurrency(totalPayroll)}</span>
                     </div>
                   </div>
 

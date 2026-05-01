@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/lib/currency";
 import { DollarSign, Users, Loader2, Plus, Gift, Calendar, Trash2, CheckCircle, XCircle, Send } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -137,12 +138,12 @@ const BonusPage = () => {
         organization_id: profile.currentOrganization.id,
         type: "bonus",
         title: "Bonus Received!",
-        message: `You have received a bonus of $${Number(bonusAmount).toLocaleString()} for ${bonusMonth}`,
+        message: `You have received a bonus of ${formatCurrency(Number(bonusAmount))} for ${bonusMonth}`,
         user_id: selectedEmployee?.wallet_address,
         read: false,
       });
 
-      toast({ title: "Bonus Added", description: `Bonus of $${Number(bonusAmount).toLocaleString()} added for ${bonusMonth}` });
+      toast({ title: "Bonus Added", description: `Bonus of ${formatCurrency(Number(bonusAmount))} added for ${bonusMonth}` });
       
       const { data } = await supabase
         .from("bonuses")
@@ -181,7 +182,7 @@ const BonusPage = () => {
 
       if (error) throw error;
 
-      toast({ title: "Bonus Requested", description: `Request for $${Number(bonusAmount).toLocaleString()} bonus sent to owner` });
+      toast({ title: "Bonus Requested", description: `Request for ${formatCurrency(Number(bonusAmount))} bonus sent to owner` });
       
       setShowRequestDialog(false);
       setSelectedEmployeeId("");
@@ -222,13 +223,13 @@ const BonusPage = () => {
           organization_id: profile?.currentOrganization?.id,
           type: "bonus",
           title: "Bonus Approved!",
-          message: `Your bonus request of $${Number(request.amount).toLocaleString()} for ${request.month} has been approved`,
+          message: `Your bonus request of ${formatCurrency(Number(request.amount))} for ${request.month} has been approved`,
           user_id: emp.wallet_address,
           read: false,
         });
       }
 
-      toast({ title: "Bonus Approved", description: `Bonus of $${Number(request.amount).toLocaleString()} approved` });
+      toast({ title: "Bonus Approved", description: `Bonus of ${formatCurrency(Number(request.amount))} approved` });
       
       // Refresh
       const { data: reqData } = await supabase
@@ -320,7 +321,7 @@ const BonusPage = () => {
                     <option value="">-- Select employee --</option>
                     {employees.map((emp) => (
                       <option key={emp.id} value={emp.id}>
-                        {getEmployeeName(emp)} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                        {getEmployeeName(emp)} - {formatCurrency(Number(emp.encrypted_salary || 0))}/mo
                       </option>
                     ))}
                   </select>
@@ -381,7 +382,7 @@ const BonusPage = () => {
                     <option value="">-- Select employee --</option>
                     {employees.map((emp) => (
                       <option key={emp.id} value={emp.id}>
-                        {getEmployeeName(emp)} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                        {getEmployeeName(emp)} - {formatCurrency(Number(emp.encrypted_salary || 0))}/mo
                       </option>
                     ))}
                   </select>
@@ -439,7 +440,7 @@ const BonusPage = () => {
                     <div>
                       <p className="font-semibold">{emp ? getEmployeeName(emp) : "Unknown"}</p>
                       <p className="text-sm text-muted-foreground">
-                        ${Number(request.amount).toLocaleString()} for {request.month}
+                        {formatCurrency(Number(request.amount))} for {request.month}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Requested by: {request.requested_by_wallet?.slice(0, 10)}...
@@ -470,7 +471,7 @@ const BonusPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalBonuses.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{formatCurrency(totalBonuses)}</div>
             <p className="text-xs opacity-75 mt-1">all time</p>
           </CardContent>
         </Card>
@@ -484,7 +485,7 @@ const BonusPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              ${bonuses.filter(b => b.month === currentMonth).reduce((sum, b) => sum + b.amount, 0).toLocaleString()}
+              {formatCurrency(bonuses.filter(b => b.month === currentMonth).reduce((sum, b) => sum + b.amount, 0))}
             </div>
             <p className="text-xs opacity-75 mt-1">{currentMonth}</p>
           </CardContent>
@@ -537,12 +538,12 @@ const BonusPage = () => {
                         <div>
                           <p className="font-semibold text-lg">{getEmployeeName(emp)}</p>
                           <p className="text-sm text-muted-foreground">
-                            {emp.position || "Staff"} • ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                            {emp.position || "Staff"} • {formatCurrency(Number(emp.encrypted_salary || 0))}/mo
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-green-600">${empBonus.toLocaleString()}</p>
+                        <p className="text-2xl font-bold text-green-600">{formatCurrency(empBonus)}</p>
                         <p className="text-xs text-muted-foreground">total bonus</p>
                       </div>
                     </div>
@@ -554,7 +555,7 @@ const BonusPage = () => {
                           {empBonuses.map((bonus) => (
                             <Badge key={bonus.id} variant="outline" className="flex items-center gap-2 px-3 py-1">
                               <Calendar className="h-3 w-3" />
-                              {bonus.month}: ${bonus.amount.toLocaleString()}
+                              {bonus.month}: {formatCurrency(bonus.amount)}
                               {isOwner && (
                                 <button 
                                   onClick={() => handleDeleteBonus(bonus.id)}

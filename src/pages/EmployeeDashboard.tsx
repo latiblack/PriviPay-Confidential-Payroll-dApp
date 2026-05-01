@@ -5,6 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/lib/currency";
+import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -21,6 +23,7 @@ interface PaymentData {
 const EmployeeDashboard = () => {
   const { profile } = useAuth();
   const { walletAddress } = useWalletAuth();
+  const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
   const isManager = profile?.currentRole === "manager";
 
@@ -189,7 +192,7 @@ if (!isOwner) {
               </div>
               <div className="p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg">
                 <p className="text-sm opacity-90">Monthly Salary</p>
-                <p className="text-xl font-semibold">${(Number(employee.encrypted_salary || 0) + employeeBonus).toLocaleString()}</p>
+                <p className="text-xl font-semibold">{formatCurrency(Number(employee.encrypted_salary || 0) + employeeBonus)}</p>
                 <p className="text-xs opacity-75">incl. bonus</p>
               </div>
               <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg">
@@ -234,7 +237,7 @@ if (!isOwner) {
               <option value="">-- Select an employee --</option>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
-                  {getEmployeeName(emp)} - {emp.position || "Staff"} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                  {getEmployeeName(emp)} - {emp.position || "Staff"} - {formatCurrency(Number(emp.encrypted_salary || 0))}/mo
                 </option>
               ))}
             </select>
@@ -253,7 +256,7 @@ if (!isOwner) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${Number(employee.encrypted_salary || 0).toLocaleString()}</div>
+                <div className="text-3xl font-bold">{formatCurrency(Number(employee.encrypted_salary || 0))}</div>
                 <p className="text-xs opacity-75 mt-1">per month</p>
               </CardContent>
             </Card>
@@ -266,7 +269,7 @@ if (!isOwner) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${totalReceived.toLocaleString()}</div>
+                <div className="text-3xl font-bold">{formatCurrency(totalReceived)}</div>
                 <p className="text-xs opacity-75 mt-1">all time</p>
               </CardContent>
             </Card>
@@ -292,7 +295,7 @@ if (!isOwner) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">${monthlyCount > 0 ? Math.round(totalReceived / monthlyCount).toLocaleString() : 0}</div>
+                <div className="text-3xl font-bold">{formatCurrency(monthlyCount > 0 ? Math.round(totalReceived / monthlyCount) : 0)}</div>
                 <p className="text-xs opacity-75 mt-1">per transaction</p>
               </CardContent>
             </Card>
@@ -352,7 +355,7 @@ if (!isOwner) {
                           height: `${Math.max((payment.amount / maxPayment) * 200, 20)}px`,
                           minHeight: "20px"
                         }}
-                        title={`$${payment.amount.toLocaleString()} - ${payment.status}`}
+                        title={`${formatCurrency(payment.amount)} - ${payment.status}`}
                       />
                       <span className="text-xs text-muted-foreground transform -rotate-45 origin-left whitespace-nowrap">
                         {new Date(payment.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -399,7 +402,7 @@ if (!isOwner) {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-2xl">${payment.amount.toLocaleString()}</p>
+                        <p className="font-semibold text-2xl">{formatCurrency(payment.amount)}</p>
                         <Badge variant={payment.status === "completed" ? "default" : "secondary"}>
                           {payment.status}
                         </Badge>

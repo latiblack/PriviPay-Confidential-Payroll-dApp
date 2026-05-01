@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/lib/currency";
 import { Users, DollarSign, Loader2, CheckCircle } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -128,7 +129,7 @@ const PayrollPage = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalPayroll.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{formatCurrency(totalPayroll)}</div>
           </CardContent>
         </Card>
 
@@ -169,7 +170,7 @@ const PayrollPage = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
+                      <p className="font-semibold">{formatCurrency(Number(emp.encrypted_salary || 0))}</p>
                       <p className="text-xs text-muted-foreground">per month</p>
                     </div>
                     <Button 
@@ -195,7 +196,7 @@ const PayrollPage = () => {
                 </div>
                 <Button onClick={handlePayAll} disabled={processing} size="lg">
                   {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                  Pay All (${totalPayroll.toLocaleString()})
+                  Pay All ({formatCurrency(totalPayroll)})
                 </Button>
               </div>
             </div>

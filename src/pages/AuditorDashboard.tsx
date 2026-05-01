@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/lib/currency";
 import { Users, DollarSign, TrendingUp, Shield, Loader2 } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -81,7 +82,7 @@ const AuditorDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalPayroll.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{formatCurrency(totalPayroll)}</div>
             <p className="text-xs opacity-75 mt-1">total</p>
           </CardContent>
         </Card>
@@ -94,7 +95,7 @@ const AuditorDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${avgSalary.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{formatCurrency(avgSalary)}</div>
             <p className="text-xs opacity-75 mt-1">per employee</p>
           </CardContent>
         </Card>
@@ -132,7 +133,7 @@ const AuditorDashboard = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
+                      <p className="font-semibold">{formatCurrency(Number(emp.encrypted_salary || 0))}</p>
                       <p className="text-xs text-muted-foreground">salary</p>
                     </div>
                     <Badge variant="outline">{emp.status}</Badge>

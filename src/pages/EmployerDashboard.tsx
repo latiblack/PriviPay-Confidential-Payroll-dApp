@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/lib/currency";
 import { Users, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -96,7 +97,7 @@ const EmployerDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalSalary.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{formatCurrency(totalSalary)}</div>
             <p className="text-xs opacity-75 mt-1">total</p>
           </CardContent>
         </Card>
@@ -109,7 +110,7 @@ const EmployerDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${avgSalary.toLocaleString()}</div>
+            <div className="text-3xl font-bold">{formatCurrency(avgSalary)}</div>
             <p className="text-xs opacity-75 mt-1">per employee</p>
           </CardContent>
         </Card>
@@ -138,7 +139,7 @@ const EmployerDashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">${Number(emp.encrypted_salary || 0).toLocaleString()}</p>
+                    <p className="font-semibold">{formatCurrency(Number(emp.encrypted_salary || 0))}</p>
                     <Badge variant="secondary">{emp.status}</Badge>
                   </div>
                 </div>
@@ -158,7 +159,7 @@ const EmployerDashboard = () => {
               <div>
                 <p className="font-medium">Process Monthly Payroll</p>
                 <p className="text-sm text-muted-foreground">
-                  ${totalSalary.toLocaleString()} to {employees.length} employees
+                  {formatCurrency(totalSalary)} to {employees.length} employees
                 </p>
               </div>
               <Button onClick={handleProcessPayroll} disabled={processing}>
