@@ -61,6 +61,8 @@ const PaymentsPage = () => {
   const [ethBalance, setEthBalance] = useState("0");
   const [ethConnected, setEthConnected] = useState(false);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [currentChain, setCurrentChain] = useState<string | null>(null);
+  const SEPOLIA_CHAIN_ID = "0x" + (11155111).toString(16);
 
 const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
@@ -138,16 +140,36 @@ setLoading(false);
 
 const connectToEth = async () => {
   if (!provider) return;
-  
+
   try {
     const initialized = await ethereumService.initialize(provider);
     if (!initialized) return;
-    
-    const switched = await ethereumService.switchToSepolia(provider);
-    if (!switched) {
-      toast({ title: "Error", description: "Please switch to Sepolia in your wallet", variant: "destructive" });
+
+    const chainId = await ethereumService.getCurrentChainId(provider);
+    setCurrentChain(chainId);
+
+    if (chainId !== SEPOLIA_CHAIN_ID) {
+      toast({
+        title: "Wrong Network",
+        description: "Please switch to Sepolia in your wallet to use payroll",
+        variant: "destructive",
+        duration: 5000,
+      });
+      setEthConnected(false);
       return;
     }
+
+    const result = await ethereumService.switchToSepolia(provider);
+    if (!result.success && result.needsManualSwitch) {
+      toast({
+        title: "Switch Network",
+        description: "Please manually switch to Sepolia in your wallet, then refresh",
+        variant: "destructive",
+        duration: 5000,
+      });
+      return;
+    }
+
     setEthConnected(true);
     await refreshBalance();
   } catch (err) {
@@ -159,6 +181,19 @@ const refreshBalance = async () => {
   if (!provider) return;
   setLoadingBalance(true);
   try {
+    const chainId = await ethereumService.getCurrentChainId(provider);
+    setCurrentChain(chainId);
+
+    if (chainId !== SEPOLIA_CHAIN_ID) {
+      toast({
+        title: "Wrong Network",
+        description: "Please switch to Sepolia to see your balance",
+        duration: 3000,
+      });
+      setLoadingBalance(false);
+      return;
+    }
+
     const balance = await ethereumService.getBalance(walletAddress || undefined, provider);
     setEthBalance(balance);
     setEthConnected(true);
@@ -369,6 +404,24 @@ const handleWithdraw = async () => {
 
   return (
     <div className="space-y-6">
+      {currentChain !== SEPOLIA_CHAIN_ID && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Wrong Network Detected</p>
+            <p className="text-sm">Please switch to Sepolia network in your wallet to use payroll features.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto border-yellow-400 text-yellow-800 hover:bg-yellow-200"
+            onClick={connectToEth}
+          >
+            Retry Connection
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Payments</h1>

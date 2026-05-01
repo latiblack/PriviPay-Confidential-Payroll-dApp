@@ -39,16 +39,16 @@ class EthereumService {
     }
   }
 
-  async switchToSepolia(dynamicProvider?: any): Promise<boolean> {
+  async switchToSepolia(dynamicProvider?: any): Promise<{ success: boolean; needsManualSwitch: boolean }> {
     const eth = dynamicProvider;
-    if (!eth) return false;
+    if (!eth) return { success: false, needsManualSwitch: true };
 
     try {
       await eth.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: "0x" + SEPOLIA_CHAIN_ID.toString(16) }],
       });
-      return true;
+      return { success: true, needsManualSwitch: false };
     } catch (switchError: any) {
       if (switchError.code === 4902) {
         try {
@@ -66,13 +66,27 @@ class EthereumService {
               blockExplorerUrls: ["https://sepolia.etherscan.io"],
             }],
           });
-          return true;
+          return { success: true, needsManualSwitch: false };
         } catch (addError) {
           console.error("Failed to add Sepolia network:", addError);
-          return false;
+          return { success: false, needsManualSwitch: true };
         }
       }
-      return false;
+      if (switchError.code === 4001) {
+        return { success: false, needsManualSwitch: true };
+      }
+      return { success: false, needsManualSwitch: true };
+    }
+  }
+
+  async getCurrentChainId(dynamicProvider?: any): Promise<string | null> {
+    try {
+      const eth = dynamicProvider || this.provider;
+      if (!eth) return null;
+      const chainId = await eth.request({ method: "eth_chainId" });
+      return chainId;
+    } catch {
+      return null;
     }
   }
 
