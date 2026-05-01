@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User } from "lucide-react";
+import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, RefreshCw } from "lucide-react";
 import ethereumService from "@/lib/ethereum";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -374,10 +374,56 @@ if (!isOwner) {
                 <BarChart3 className="h-5 w-5" />
                 Payment Chart
               </CardTitle>
-              <CardDescription>Visual representation of payment history</CardDescription>
+              <CardDescription>Real blockchain transactions from Sepolia</CardDescription>
             </CardHeader>
-            <CardContent>
-              {payments.length === 0 ? (
+            <CardContent className="space-y-4">
+              {isOwner && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    try {
+                      const { data: orgRecord } = await supabase
+                        .from("organizations")
+                        .select("wallet_address")
+                        .eq("id", profile.currentOrganization.id)
+                        .single();
+                      
+                      if (orgRecord?.wallet_address) {
+                        const txHistory = await ethereumService.getTransactionHistory(orgRecord.wallet_address, 20);
+                        const blockchainPayments = txHistory.map((tx, index) => ({
+                          id: `tx-${index}-${tx.hash.slice(0, 8)}`,
+                          amount: Number(tx.amount),
+                          type: tx.recipient.toLowerCase() === orgRecord.wallet_address.toLowerCase() ? "received" : "sent",
+                          status: tx.status,
+                          created_at: tx.timestamp.toISOString()
+                        }));
+                        setPayments(blockchainPayments);
+                      }
+                    } catch (err) {
+                      console.error("Error refreshing transactions:", err);
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Blockchain Data
+                </Button>
+              )}
+              {isOwner && payments.length === 0 ? (
+                <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2 flex-1">
+                      <div 
+                        className="w-full rounded-t-lg bg-gray-200"
+                        style={{ height: "20px" }}
+                        title="No transactions"
+                      />
+                      <span className="text-xs text-muted-foreground">--</span>
+                    </div>
+                  ))}
+                </div>
+              ) : payments.length === 0 ? (
                 <p className="text-center py-8 text-muted-foreground">No payment history</p>
               ) : (
                 <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
