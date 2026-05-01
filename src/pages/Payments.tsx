@@ -151,8 +151,24 @@ const handleSwitchToSepolia = async () => {
   try {
     await switchNetwork({ wallet: primaryWallet, network: SEPOLIA_CHAIN_ID_NUM });
     toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
-    // Re-init after switch
-    setTimeout(() => connectToEth(), 1000);
+
+    // Poll until provider reports Sepolia (Dynamic may not refresh provider ref immediately)
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        const freshProvider = (primaryWallet as any)?.connector?.getProvider?.();
+        const prov = freshProvider || provider;
+        if (!prov) continue;
+        const chainId = await prov.request({ method: "eth_chainId" });
+        if (chainId === SEPOLIA_CHAIN_ID) {
+          setCurrentChain(chainId);
+          await connectToEth();
+          break;
+        }
+      } catch (e) {
+        console.warn("Chain check attempt failed:", e);
+      }
+    }
   } catch (err: any) {
     console.error("Failed to switch network:", err);
     toast({
