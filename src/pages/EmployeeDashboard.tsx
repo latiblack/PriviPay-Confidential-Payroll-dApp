@@ -198,29 +198,11 @@ if (!isOwner) {
       
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Your Information
           </CardTitle>
-          {!isOwner && (
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              onClick={() => {
-                console.log("Edit clicked, isOwner:", isOwner, "employee:", employee);
-                setEditNameForm({
-                  name: employee ? (employee as any).name || "" : "",
-                  position: employee?.position || ""
-                });
-                setEditingName(true);
-              }}
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              <span className="text-xs">Edit</span>
-            </Button>
-          )}
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-6">

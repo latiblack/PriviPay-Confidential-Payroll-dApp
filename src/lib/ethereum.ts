@@ -125,16 +125,15 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
 
     try {
       let tx;
+      const txParams = {
+        to,
+        value: parseEther(amountInEth),
+        gasLimit: BigInt(21000),
+      };
       if (this.signer.sendTransaction) {
-        tx = await this.signer.sendTransaction({
-          to,
-          value: parseEther(amountInEth),
-        });
+        tx = await this.signer.sendTransaction(txParams);
       } else {
-        tx = await this.signer.sendTransaction({
-          to,
-          value: parseEther(amountInEth),
-        });
+        tx = await this.signer.sendTransaction(txParams);
       }
       // Don't wait for confirmation - just return the hash immediately
       return tx.hash;

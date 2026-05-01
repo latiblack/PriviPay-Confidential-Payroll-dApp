@@ -406,7 +406,7 @@ const handleProcessPayroll = async () => {
 };
 
 const handleWithdraw = async () => {
-  if (!amount) return;
+  if (!amount || !recipient) return;
   if (!walletClient) {
     toast({ title: "Error", description: "Please connect your wallet to withdraw", variant: "destructive" });
     return;
@@ -415,21 +415,21 @@ const handleWithdraw = async () => {
   setProcessing(true);
   try {
     await ethereumService.initializeWithSigner(walletClient);
-    const amountEth = (Number(amount) / 100).toString();
     const txHash = await ethereumService.sendTransaction(
-      profile.walletAddress || "",
-      amountEth
+      recipient,
+      amount
     );
 
     toast({
       title: "Withdrawal Complete",
-      description: `Sent ${formatCurrency(Number(amount))} to your wallet. Tx: ${txHash.slice(0, 10)}...`,
+      description: `Sent ${amount} ETH to ${recipient.slice(0, 6)}...${recipient.slice(-4)}. Tx: ${txHash.slice(0, 10)}...`,
     });
     setAmount("");
+    setRecipient("");
     await refreshBalance();
   } catch (err) {
     console.error("Error withdrawing:", err);
-    toast({ title: "Error", description: "Failed to withdraw. Make sure you're on Sepolia.", variant: "destructive" });
+    toast({ title: "Error", description: "Failed to withdraw. Make sure you're on Sepolia and have enough balance for gas.", variant: "destructive" });
   } finally {
     setProcessing(false);
   }
@@ -831,7 +831,7 @@ const handleWithdraw = async () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Amount (USDC)</Label>
+                <Label>Amount (ETH)</Label>
                 <Input
                   type="number"
                   placeholder="0.00"
