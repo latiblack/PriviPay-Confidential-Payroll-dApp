@@ -133,11 +133,11 @@ const fetchData = async () => {
       );
       setAvailableMembers(available);
 
-      // Get own salary with bonus
-      const mySalary = data?.find(e => e.wallet_address === profile.walletAddress);
+      // Get own salary with bonus - lowercase comparison
+      const mySalary = data?.find(e => e.wallet_address?.toLowerCase() === profile.walletAddress?.toLowerCase());
       const myBonus = (bonusData || [])
         .filter(b => {
-          const emp = data?.find(e => e.wallet_address === profile.walletAddress);
+          const emp = data?.find(e => e.wallet_address?.toLowerCase() === profile.walletAddress?.toLowerCase());
           return emp && b.employee_id === emp.id;
         })
         .reduce((sum, b) => sum + b.amount, 0);

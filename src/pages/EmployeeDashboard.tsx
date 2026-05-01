@@ -78,9 +78,9 @@ const EmployeeDashboard = () => {
         if (roleError) throw roleError;
         setMembers(roleData || []);
 
-        // Find current user's employee record - exact match like Payments page
+        // Find current user's employee record - lowercase comparison
         const currentUserEmployee = (empData || []).find(
-          e => e.wallet_address === profile?.walletAddress
+          e => e.wallet_address?.toLowerCase() === profile?.walletAddress?.toLowerCase()
         );
         
         setEmployee(currentUserEmployee || null);
