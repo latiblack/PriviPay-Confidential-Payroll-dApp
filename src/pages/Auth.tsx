@@ -37,6 +37,7 @@ export const AuthPage = () => {
   useEffect(() => {
     const checkPendingInvitations = async () => {
       if (isAuthenticated && walletAddress) {
+        console.log("Checking pending invitations for:", walletAddress);
         setCheckingInvites(true);
         try {
           const allInvitations: any[] = [];
@@ -52,23 +53,26 @@ export const AuthPage = () => {
               .eq("email", userEmail.toLowerCase())
               .eq("status", "pending");
 
+            console.log("Email invitations:", emailInvitations, error);
             if (!error && emailInvitations) {
               allInvitations.push(...emailInvitations);
             }
           }
 
           // Check for wallet-based invitations
-          if (walletAddress) {
-            const { data: walletInvitations, error: walletError } = await supabase
-              .from("invitations")
-              .select("*")
-              .eq("wallet_address", walletAddress.toLowerCase())
-              .eq("status", "pending");
+          console.log("Checking wallet invitations for:", walletAddress.toLowerCase());
+          const { data: walletInvitations, error: walletError } = await supabase
+            .from("invitations")
+            .select("*")
+            .eq("wallet_address", walletAddress.toLowerCase())
+            .eq("status", "pending");
 
-            if (!walletError && walletInvitations) {
-              allInvitations.push(...walletInvitations);
-            }
+          console.log("Wallet invitations:", walletInvitations, walletError);
+          if (!walletError && walletInvitations) {
+            allInvitations.push(...walletInvitations);
           }
+
+          console.log("Total invitations found:", allInvitations.length);
 
           if (allInvitations.length > 0) {
             // Get organization names
@@ -86,10 +90,13 @@ export const AuthPage = () => {
               organization_description: orgMap.get(inv.organization_id)?.description || ""
             }));
 
+            console.log("Setting pending invitations:", formatted);
             setPendingInvitations(formatted);
+          } else {
+            setPendingInvitations([]);
           }
         } catch (e) {
-          console.log("No pending invitations");
+          console.log("Error checking invitations:", e);
         }
       }
       setCheckingInvites(false);

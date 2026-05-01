@@ -236,27 +236,30 @@ export const organizationService = {
   },
 
 async acceptInvitation(code: string, userId: string, walletAddress: string): Promise<void> {
-    const { error: updateError } = await supabase
+    // First, find the invitation by code (case-insensitive)
+    const { data: invitation, error: findError } = await supabase
       .from("invitations")
-      .update({ status: "accepted", updated_at: new Date().toISOString() })
-      .eq("code", code.toUpperCase());
-
-    if (updateError) throw new Error(updateError.message);
-
-    const { data: invitation } = await supabase
-      .from("invitations")
-      .select("organization_id")
+      .select("*")
       .eq("code", code.toUpperCase())
       .single();
 
-    if (!invitation) throw new Error("Invitation not found");
+    if (findError || !invitation) throw new Error("Invitation not found");
 
+    // Update invitation status
+    const { error: updateError } = await supabase
+      .from("invitations")
+      .update({ status: "accepted", updated_at: new Date().toISOString() })
+      .eq("id", invitation.id);
+
+    if (updateError) throw new Error(updateError.message);
+
+    // Add user to organization with the role from the invitation
     const { error: roleError } = await supabase
       .from("user_roles")
       .insert({
         organization_id: invitation.organization_id,
-        user_id: userId,
-        role: "staff",
+        user_id: userId.toLowerCase(),
+        role: invitation.role || "staff",
       } as any);
 
     if (roleError) throw new Error(roleError.message);
