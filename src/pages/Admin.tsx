@@ -245,15 +245,29 @@ const handleSendInvitation = async () => {
 
 // Fetch join requests (users who want to join via org invite code)
   const fetchJoinRequests = async () => {
-    if (!profile?.currentOrganization?.id) return;
+    if (!profile?.currentOrganization?.id) {
+      console.log("No org ID found:", profile?.currentOrganization);
+      return;
+    }
 
-    const { data } = await supabase
+    console.log("Fetching for org ID:", profile.currentOrganization.id);
+
+    // First, let's get ALL user_roles for this org to debug
+    const { data: allRoles, error: allRolesError } = await supabase
       .from("user_roles")
-      .select("*, profiles:user_id(display_name, avatar_url)")
+      .select("*")
+      .eq("organization_id", profile.currentOrganization.id);
+
+    console.log("All user_roles for org:", allRoles, "error:", allRolesError);
+
+    // Then filter for pending
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("*")
       .eq("organization_id", profile.currentOrganization.id)
       .eq("role", "pending");
 
-    console.log("Join requests:", data);
+    console.log("Pending join requests:", data, "error:", error);
     if (data) setJoinRequests(data);
   };
 
