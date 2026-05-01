@@ -266,18 +266,21 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
     const org = await this.findOrgByInviteCode(code);
     if (!org) throw new Error("Invalid invite code");
 
+    // Store wallet address in lowercase for consistency
+    const lowerUserId = userId.toLowerCase();
+
     const { error } = await supabase
       .from("user_roles")
       .insert({
         organization_id: org.id,
-        user_id: userId,
+        user_id: lowerUserId,
         role: "pending",
       } as UserRoleInsert);
 
     if (error) throw new Error(error.message);
 
     // Notify admin about new join request
-    await this.notifyJoinRequest(org.id, userId);
+    await this.notifyJoinRequest(org.id, lowerUserId);
   },
 
   async getPendingJoinRequests(orgId: string): Promise<UserRole[]> {

@@ -243,21 +243,23 @@ const handleSendInvitation = async () => {
     if (data) setPendingInvitations(data);
   };
 
-  // Fetch join requests (users who want to join via org invite code)
+// Fetch join requests (users who want to join via org invite code)
   const fetchJoinRequests = async () => {
     if (!profile?.currentOrganization?.id) return;
-    
+
     const { data } = await supabase
       .from("user_roles")
       .select("*, profiles:user_id(display_name, avatar_url)")
       .eq("organization_id", profile.currentOrganization.id)
       .eq("role", "pending");
-    
+
+    console.log("Join requests:", data);
     if (data) setJoinRequests(data);
   };
 
   // Handle join request (accept/reject)
   const handleJoinRequest = async (userId: string, action: "accept" | "reject") => {
+    const lowerUserId = userId.toLowerCase();
     setProcessingRequest(userId);
     try {
       if (action === "accept") {
@@ -265,13 +267,13 @@ const handleSendInvitation = async () => {
         await supabase
           .from("user_roles")
           .update({ role: "staff" as any })
-          .eq("user_id", userId)
+          .eq("user_id", lowerUserId)
           .eq("organization_id", profile?.currentOrganization?.id);
 
         // Send notification to user
         await supabase.from("notifications").insert({
           organization_id: profile?.currentOrganization?.id,
-          user_id: userId,
+          user_id: lowerUserId,
           title: "Join Request Approved",
           message: `Your request to join ${profile?.currentOrganization?.name} has been approved!`,
           type: "join_approved",
@@ -284,13 +286,13 @@ const handleSendInvitation = async () => {
         await supabase
           .from("user_roles")
           .delete()
-          .eq("user_id", userId)
+          .eq("user_id", lowerUserId)
           .eq("organization_id", profile?.currentOrganization?.id);
 
         // Send notification to user
         await supabase.from("notifications").insert({
           organization_id: profile?.currentOrganization?.id,
-          user_id: userId,
+          user_id: lowerUserId,
           title: "Join Request Rejected",
           message: `Your request to join ${profile?.currentOrganization?.name} has been rejected.`,
           type: "join_rejected",
