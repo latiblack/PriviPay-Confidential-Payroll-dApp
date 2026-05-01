@@ -84,24 +84,44 @@ const EmployeeDashboard = () => {
           // Don't block UI - fetch in background
           setTimeout(async () => {
             try {
+              // Get organization record
               const { data: orgRecord } = await supabase
                 .from("organizations")
-                .select("wallet_address")
+                .select("wallet_address, owner_id")
                 .eq("id", profile.currentOrganization.id)
                 .single();
               
               if (orgRecord?.wallet_address) {
-                const txHistory = await ethereumService.getTransactionHistory(orgRecord.wallet_address, 20);
+                // Fetch transactions for both org wallet and owner's wallet (they might differ)
+                const walletsToCheck = [
+                  orgRecord.wallet_address.toLowerCase(),
+                  profile.walletAddress?.toLowerCase()
+                ].filter(Boolean);
                 
-                const blockchainPayments = txHistory.map((tx, index) => ({
-                  id: `tx-${index}-${tx.hash.slice(0, 8)}`,
-                  amount: Number(tx.amount),
-                  type: tx.recipient.toLowerCase() === orgRecord.wallet_address.toLowerCase() ? "received" : "sent",
-                  status: tx.status,
-                  created_at: tx.timestamp.toISOString()
-                }));
+                const allTransactions: any[] = [];
                 
-                setPayments(blockchainPayments);
+                for (const wallet of [...new Set(walletsToCheck)]) {
+                  const txHistory = await ethereumService.getTransactionHistory(wallet, 10);
+                  
+                  for (const tx of txHistory) {
+                    // Check if this transaction already exists
+                    const exists = allTransactions.some(t => t.hash === tx.hash);
+                    if (!exists) {
+                      allTransactions.push({
+                        id: `tx-${tx.hash.slice(0, 8)}`,
+                        hash: tx.hash,
+                        amount: Number(tx.amount),
+                        type: tx.recipient.toLowerCase() === wallet ? "received" : "sent",
+                        status: tx.status,
+                        created_at: tx.timestamp.toISOString()
+                      });
+                    }
+                  }
+                }
+                
+                // Sort by date descending
+                allTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                setPayments(allTransactions.slice(0, 20));
               }
             } catch (err) {
               console.error("Error fetching blockchain transactions:", err);
@@ -385,20 +405,38 @@ if (!isOwner) {
                     try {
                       const { data: orgRecord } = await supabase
                         .from("organizations")
-                        .select("wallet_address")
+                        .select("wallet_address, owner_id")
                         .eq("id", profile.currentOrganization.id)
                         .single();
                       
                       if (orgRecord?.wallet_address) {
-                        const txHistory = await ethereumService.getTransactionHistory(orgRecord.wallet_address, 20);
-                        const blockchainPayments = txHistory.map((tx, index) => ({
-                          id: `tx-${index}-${tx.hash.slice(0, 8)}`,
-                          amount: Number(tx.amount),
-                          type: tx.recipient.toLowerCase() === orgRecord.wallet_address.toLowerCase() ? "received" : "sent",
-                          status: tx.status,
-                          created_at: tx.timestamp.toISOString()
-                        }));
-                        setPayments(blockchainPayments);
+                        const walletsToCheck = [
+                          orgRecord.wallet_address.toLowerCase(),
+                          profile.walletAddress?.toLowerCase()
+                        ].filter(Boolean);
+                        
+                        const allTransactions: any[] = [];
+                        
+                        for (const wallet of [...new Set(walletsToCheck)]) {
+                          const txHistory = await ethereumService.getTransactionHistory(wallet, 10);
+                          
+                          for (const tx of txHistory) {
+                            const exists = allTransactions.some(t => t.hash === tx.hash);
+                            if (!exists) {
+                              allTransactions.push({
+                                id: `tx-${tx.hash.slice(0, 8)}`,
+                                hash: tx.hash,
+                                amount: Number(tx.amount),
+                                type: tx.recipient.toLowerCase() === wallet ? "received" : "sent",
+                                status: tx.status,
+                                created_at: tx.timestamp.toISOString()
+                              });
+                            }
+                          }
+                        }
+                        
+                        allTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                        setPayments(allTransactions.slice(0, 20));
                       }
                     } catch (err) {
                       console.error("Error refreshing transactions:", err);
