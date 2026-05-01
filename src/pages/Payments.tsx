@@ -235,7 +235,7 @@ useEffect(() => {
         setLoadingTotalReceived(true);
         try {
           const txHistory = await ethereumService.getTransactionHistory(profile.walletAddress.toLowerCase(), 50);
-          const total = txHistory.reduce((sum, tx) => sum + tx.value, 0);
+          const total = txHistory.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
           setTotalReceived(formatCurrency(total * 100));
         } catch (err) {
           console.error("Failed to fetch transaction history:", err);
