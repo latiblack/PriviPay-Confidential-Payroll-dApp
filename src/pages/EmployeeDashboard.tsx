@@ -179,22 +179,22 @@ if (!isOwner) {
 
           {employee ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-600">Position</p>
-                <p className="text-xl font-semibold text-blue-900">{employee.position || "Staff"}</p>
+              <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg">
+                <p className="text-sm opacity-90">Position</p>
+                <p className="text-xl font-semibold">{employee.position || "Staff"}</p>
               </div>
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <p className="text-sm text-purple-600">Department</p>
-                <p className="text-xl font-semibold text-purple-900">{employee.department || "General"}</p>
+              <div className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg">
+                <p className="text-sm opacity-90">Department</p>
+                <p className="text-xl font-semibold">{employee.department || "General"}</p>
               </div>
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm text-green-600">Monthly Salary</p>
-                <p className="text-xl font-semibold text-green-900">${(Number(employee.encrypted_salary || 0) + employeeBonus).toLocaleString()}</p>
-                <p className="text-xs text-green-600">incl. bonus</p>
+              <div className="p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg">
+                <p className="text-sm opacity-90">Monthly Salary</p>
+                <p className="text-xl font-semibold">${(Number(employee.encrypted_salary || 0) + employeeBonus).toLocaleString()}</p>
+                <p className="text-xs opacity-75">incl. bonus</p>
               </div>
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-sm text-orange-600">Status</p>
-                <Badge variant="default" className="mt-1 bg-orange-500">{employee.status}</Badge>
+              <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg">
+                <p className="text-sm opacity-90">Status</p>
+                <Badge variant="secondary" className="mt-1 bg-white/20 text-white border-0">{employee.status}</Badge>
               </div>
             </div>
           ) : (
