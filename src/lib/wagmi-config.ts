@@ -1,19 +1,9 @@
-import { http, createConfig } from 'wagmi';
+import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { mainnet, sepolia } from 'wagmi/chains';
-import { injected } from 'wagmi/connectors';
 
-export const config = createConfig({
+export const config = getDefaultConfig({
+  appName: 'PriviPay',
+  projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '',
   chains: [mainnet, sepolia],
-  transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-  },
-  connectors: [
-    injected({
-      target: 'metaMask',
-    }),
-    injected(),
-  ],
+  ssr: false,
 });
-
-export const connectors = config.connectors;
