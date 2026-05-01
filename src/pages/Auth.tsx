@@ -9,7 +9,7 @@ import { Building2, Users, ArrowRight, CheckCircle2, Copy, Loader2, Wallet, Mail
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
-import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { supabase } from "@/integrations/supabase/client";
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
@@ -260,28 +260,26 @@ export const AuthPage = () => {
     navigator.clipboard.writeText(code);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Welcome to PriviPay</CardTitle>
-            <CardDescription>Sign in to manage your confidential payroll</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-sm text-muted-foreground text-center">
-              Sign in with email to get a secure wallet automatically, or connect your existing wallet
-            </p>
-            
-            <Button onClick={connectWallet} className="w-full h-12 text-lg gap-2" size="lg">
-              <Wallet className="h-5 w-5" /> Sign In / Get Started
-            </Button>
-            
-</CardContent>
-        </Card>
-      </div>
-    );
-  }
+if (!isAuthenticated) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Welcome to PriviPay</CardTitle>
+          <CardDescription>Sign in to manage your confidential payroll</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-muted-foreground text-center">
+            Connect your wallet to get started
+          </p>
+          
+          <ConnectButton />
+          
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
   if (step === "success" && createdOrg) {
     return (

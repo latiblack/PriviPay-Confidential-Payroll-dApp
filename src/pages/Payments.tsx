@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { useDynamicContext, useSwitchNetwork } from "@dynamic-labs/sdk-react-core";
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import ethereumService from "@/lib/ethereum";
@@ -33,8 +33,8 @@ interface EmployeeFormData {
 const PaymentsPage = () => {
   const { profile } = useAuth();
   const { walletAddress, provider } = useWalletAuth();
-  const { primaryWallet } = useDynamicContext();
-  const switchNetwork = useSwitchNetwork();
+  const { chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
   const { toast } = useToast();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
@@ -75,7 +75,7 @@ const PaymentsPage = () => {
     }
     return `0x${Number(chainId).toString(16)}`.toLowerCase();
   };
-  const getActiveProvider = () => (primaryWallet as any)?.connector?.getProvider?.() || provider || null;
+  const getActiveProvider = () => provider;
 
   const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
@@ -154,12 +154,12 @@ setLoading(false);
 const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
 const handleSwitchToSepolia = async () => {
-  if (!primaryWallet) {
+  if (!walletAddress) {
     toast({ title: "No wallet connected", variant: "destructive" });
     return;
   }
   try {
-    await switchNetwork({ wallet: primaryWallet, network: SEPOLIA_CHAIN_ID_NUM });
+    switchChain({ chainId: SEPOLIA_CHAIN_ID_NUM });
     toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
 
     // Poll until the active provider reports Sepolia (Dynamic may swap provider instances after switching)
@@ -246,10 +246,10 @@ const refreshBalance = async () => {
 
 useEffect(() => {
   fetchData();
-  if (getActiveProvider()) {
+  if (provider) {
     connectToEth();
   }
-}, [profile?.currentOrganization?.id, profile?.walletAddress, provider, primaryWallet]);
+}, [profile?.currentOrganization?.id, profile?.walletAddress, provider, chainId]);
 
 // Listen for chain changes from the wallet so the UI updates immediately after a network switch.
 useEffect(() => {
@@ -277,7 +277,7 @@ useEffect(() => {
       activeProvider.off("chainChanged", handleChainChanged);
     }
   };
-}, [provider, primaryWallet]);
+}, [provider, chainId]);
 
 // Poll chainId as a safety net in case the provider doesn't emit chainChanged (some wallet connectors)
 useEffect(() => {
@@ -299,7 +299,7 @@ useEffect(() => {
     } catch {}
   }, 2000);
   return () => clearInterval(interval);
-}, [provider, primaryWallet, currentChain]);
+}, [provider, chainId, currentChain]);
 
   const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);

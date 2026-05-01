@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/components/ui/theme-provider";
 import { authService } from "@/lib/auth-service";
 import { supabase } from "@/integrations/supabase/client";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface TopBarProps {
   title: string;
@@ -153,21 +154,54 @@ export const TopBar = ({ title }: TopBarProps) => {
           )}
         </Button>
 
-        <Button
-          onClick={isAuthenticated ? handleLogout : connectWallet}
-          variant={isAuthenticated ? "outline" : "default"}
-          size="sm"
-          className="gap-2 rounded-xl"
-        >
-          {isAuthenticated ? (
-            <LogOut className="h-4 w-4" />
-          ) : (
-            <Wallet className="h-4 w-4" />
-          )}
-          <span className="hidden sm:inline">
-            {isAuthenticated ? formatAddress(walletAddress) : "Connect"}
-          </span>
-        </Button>
+<ConnectButton.Custom>
+        {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+          const ready = mounted;
+          const connected = ready && account && chain;
+          
+          return (
+            <div
+              {...(!ready && {
+                'aria-hidden': true,
+                'style': {
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                },
+              })}
+            >
+              {(() => {
+                if (!connected) {
+                  return (
+                    <Button
+                      onClick={openConnectModal}
+                      variant="default"
+                      size="sm"
+                      className="gap-2 rounded-xl"
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Connect Wallet
+                    </Button>
+                  );
+                }
+                
+                return (
+                  <Button
+                    onClick={openAccountModal}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-xl"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {account.displayName}
+                    {account.displayBalance ? ` (${account.displayBalance})` : ''}
+                  </Button>
+                );
+              })()}
+            </div>
+          );
+        }}
+      </ConnectButton.Custom>
 
         <Avatar className="h-9 w-9 border-2 border-primary/20">
           <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">

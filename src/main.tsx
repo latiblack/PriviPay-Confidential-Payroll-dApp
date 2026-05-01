@@ -1,40 +1,11 @@
 import { createRoot } from "react-dom/client";
 import { StrictMode, ReactNode, Component, useState, useEffect } from "react";
-import {
-  DynamicContextProvider,
-  DynamicWidget,
-} from "@dynamic-labs/sdk-react-core";
-import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
-import { ThemeProvider } from "@/components/ui/theme-provider";
+import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider, darkTheme, ConnectButton } from "@rainbow-me/rainbowkit";
+import { config } from "./lib/wagmi-config";
+import "@rainbow-me/rainbowkit/styles.css";
 import App from "./App.tsx";
 import "./index.css";
-
-const sdkOptions = {
-  environmentId: "c9d199bd-fddd-4e61-97a5-1573e7f1e2e1",
-  walletConnectors: [EthereumWalletConnectors],
-  enableEmbeddedWallet: true,
-  showDynamicWidget: true,
-  allowMultiWalletConnections: true,
-  overrides: {
-    evmNetworks: [
-      {
-        blockExplorerUrls: ["https://sepolia.etherscan.io"],
-        chainId: 11155111,
-        chainName: "Ethereum Sepolia",
-        iconUrls: ["https://app.dynamic.xyz/assets/networks/eth.svg"],
-        name: "Sepolia",
-        nativeCurrency: {
-          decimals: 18,
-          name: "Sepolia ETH",
-          symbol: "ETH",
-        },
-        networkId: 11155111,
-        rpcUrls: ["https://rpc.sepolia.org", "https://ethereum-sepolia-rpc.publicnode.com"],
-        vanityName: "Sepolia",
-      },
-    ],
-  },
-};
 
 const LoadingFallback = () => (
   <div style={{
@@ -74,7 +45,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 
   componentDidCatch(error: unknown) {
-    console.error("Dynamic wallet provider failed to initialize", error);
+    console.error("App initialization error:", error);
     this.setState({ error: error as Error });
   }
 
@@ -106,52 +77,41 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-const SafeDynamicProvider = ({ children }: { children: ReactNode }) => {
+const SafeWagmiProvider = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      try {
-        setReady(true);
-      } catch (e) {
-        console.error("Dynamic init error:", e);
-        setError((e as Error).message);
-      }
+      setReady(true);
     }, 500);
     return () => clearTimeout(timer);
   }, []);
-
-  if (error) {
-    return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h2>Authentication Error</h2>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()}>Reload</button>
-      </div>
-    );
-  }
 
   if (!ready) {
     return <LoadingFallback />;
   }
 
   return (
-    <DynamicContextProvider settings={sdkOptions as any}>
-      {children}
-    </DynamicContextProvider>
+    <WagmiProvider config={config}>
+      <RainbowKitProvider 
+        theme={darkTheme({
+          accentColor: '#3498db',
+          accentColorForeground: 'white',
+          borderRadius: 'medium',
+        })}
+      >
+        {children}
+      </RainbowKitProvider>
+    </WagmiProvider>
   );
 };
 
 const AppWithProviders = () => {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" storageKey="privipay-theme">
-        <SafeDynamicProvider>
-          <App />
-          <DynamicWidget />
-        </SafeDynamicProvider>
-      </ThemeProvider>
+      <SafeWagmiProvider>
+        <App />
+      </SafeWagmiProvider>
     </ErrorBoundary>
   );
 };

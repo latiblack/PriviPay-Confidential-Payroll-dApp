@@ -1,86 +1,60 @@
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import { useCallback, useState, useEffect } from "react";
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useCallback, useState, useEffect } from 'react';
 
-const fallbackAuth = {
- user: null,
- isAuthenticated: false,
- walletAddress: null,
- provider: null,
- connectWallet: async () => {
-  console.warn("Dynamic auth context is unavailable.");
- },
- disconnectWallet: async () => {
-  // no-op
- },
-};
-
-// Fixed: preserve wallet auth state during chain switches
-export const useWalletAuth = () => {
- const [lastKnownWallet, setLastKnownWallet] = useState<{
-  user: any;
+interface WalletAuthState {
+  user: { userId: string } | null;
+  isAuthenticated: boolean;
   walletAddress: string | null;
   provider: any;
- } | null>(null);
+  connectWallet: () => void;
+  disconnectWallet: () => void;
+}
 
- let dynamicContext: ReturnType<typeof useDynamicContext>;
- let user: any = null;
- let primaryWallet: any = null;
- let isAvailable = false;
+export const useWalletAuth = (): WalletAuthState => {
+  const { address, isConnected, chain } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  
+  const [lastKnownAddress, setLastKnownAddress] = useState<string | null>(null);
+  
+  // Preserve last known wallet address during chain switches
+  useEffect(() => {
+    if (isConnected && address) {
+      setLastKnownAddress(address);
+    }
+  }, [isConnected, address]);
 
- try {
-  dynamicContext = useDynamicContext();
-  user = dynamicContext.user;
-  primaryWallet = dynamicContext.primaryWallet;
-  isAvailable = true;
- } catch (error) {
-  console.warn("Dynamic auth context temporarily unavailable:", error);
-  // Don't return fallback - keep last known state
- }
+  const isAuthenticated = isConnected || !!lastKnownAddress;
+  const walletAddress = address || lastKnownAddress;
+  
+  // Get provider from window.ethereum (injected by wallet)
+  const provider = typeof window !== 'undefined' ? window.ethereum : null;
 
- // Preserve last known wallet state during chain switches
- useEffect(() => {
-  if (isAvailable && user) {
-   const walletAddress = primaryWallet?.address || user?.userId;
-   const provider = primaryWallet?.connector?.getProvider?.() || null;
-   setLastKnownWallet({ user, walletAddress, provider });
-  }
- }, [isAvailable, user, primaryWallet]);
+  const connectWallet = useCallback(() => {
+    // Prefer Injected connector (MetaMask, etc.)
+    const injectedConnector = connectors.find(c => c.type === 'injected');
+    const fallbackConnector = connectors[0];
 
- const isAuthenticated = !!user;
- const walletAddress = primaryWallet?.address || user?.userId || lastKnownWallet?.walletAddress || null;
- const provider = (primaryWallet as any)?.connector?.getProvider?.() || lastKnownWallet?.provider || null;
+    if (injectedConnector) {
+      connect({ connector: injectedConnector });
+    } else if (fallbackConnector) {
+      connect({ connector: fallbackConnector });
+    }
+  }, [connect, connectors]);
 
- // Only show as not authenticated if we never had a wallet OR explicitly logged out
- const isActuallyAuthenticated = isAuthenticated || !!lastKnownWallet?.walletAddress;
+  const disconnectWallet = useCallback(() => {
+    disconnect();
+    setLastKnownAddress(null);
+  }, [disconnect]);
 
- const connectWallet = useCallback(async () => {
-  if (dynamicContext) {
-   dynamicContext.setShowAuthFlow?.(true);
-  } else {
-   console.warn("Dynamic auth context not available");
-  }
- }, [dynamicContext]);
-
- const disconnectWallet = useCallback(async () => {
-  if (!isActuallyAuthenticated) return;
-  try {
-   if (dynamicContext?.handleLogOut) {
-    await dynamicContext.handleLogOut();
-   }
-   setLastKnownWallet(null);
-  } catch (e) {
-   window.location.reload();
-  }
- }, [dynamicContext, isActuallyAuthenticated]);
-
- return {
-  user: user || lastKnownWallet?.user,
-  isAuthenticated: isActuallyAuthenticated,
-  walletAddress,
-  provider,
-  connectWallet,
-  disconnectWallet,
- };
+  return {
+    user: isAuthenticated ? { userId: walletAddress || '' } : null,
+    isAuthenticated,
+    walletAddress,
+    provider,
+    connectWallet,
+    disconnectWallet,
+  };
 };
 
 export default useWalletAuth;

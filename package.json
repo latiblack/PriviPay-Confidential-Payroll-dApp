@@ -13,8 +13,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "^4.77.1",
-    "@dynamic-labs/sdk-react-core": "^4.77.1",
     "@fhevm/solidity": "^0.11.1",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
@@ -44,8 +42,10 @@
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@rainbow-me/rainbowkit": "^2.1.0",
     "@supabase/supabase-js": "^2.103.0",
     "@tanstack/react-query": "^5.83.0",
+    "@wagmi/core": "^2.10.0",
     "@zama-fhe/relayer-sdk": "^0.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -57,7 +57,7 @@
     "lucide-react": "^1.8.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
+    "react-day-picker": "8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
     "react-markdown": "^10.1.0",
@@ -68,6 +68,9 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
+    "viem": "^2.10.0",
+    "wagmi": "^2.9.0",
+    "zustand": "^4.5.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
