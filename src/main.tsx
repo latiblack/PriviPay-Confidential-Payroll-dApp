@@ -5,6 +5,7 @@ import {
   DynamicWidget,
 } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -126,10 +127,12 @@ const SafeDynamicProvider = ({ children }: { children: ReactNode }) => {
 const AppWithProviders = () => {
   return (
     <ErrorBoundary>
-      <SafeDynamicProvider>
-        <App />
-        <DynamicWidget />
-      </SafeDynamicProvider>
+      <ThemeProvider defaultTheme="light" storageKey="privipay-theme">
+        <SafeDynamicProvider>
+          <App />
+          <DynamicWidget />
+        </SafeDynamicProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

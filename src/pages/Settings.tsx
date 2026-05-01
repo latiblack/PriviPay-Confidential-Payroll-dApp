@@ -7,14 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/components/ui/theme-provider";
 import { supabase } from "@/integrations/supabase/client";
-import { 
+import {
   Settings, Globe, Palette, Bell, Shield, Moon, Sun, Monitor, Building2, Loader2
 } from "lucide-react";
 
 const SettingsPage = () => {
   const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const isOwner = profile?.currentRole === "owner";
   
   const [orgName, setOrgName] = useState("");
@@ -160,34 +162,34 @@ const SettingsPage = () => {
             </CardTitle>
             <CardDescription>Customize the look and feel</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Theme</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                <Button 
-                  variant={settings.theme === "light" ? "default" : "outline"}
-                  className="gap-2"
-                  onClick={() => setSettings({...settings, theme: "light"})}
-                >
-                  <Sun className="h-4 w-4" /> Light
-                </Button>
-                <Button 
-                  variant={settings.theme === "dark" ? "default" : "outline"}
-                  className="gap-2"
-                  onClick={() => setSettings({...settings, theme: "dark"})}
-                >
-                  <Moon className="h-4 w-4" /> Dark
-                </Button>
-                <Button 
-                  variant={settings.theme === "system" ? "default" : "outline"}
-                  className="gap-2"
-                  onClick={() => setSettings({...settings, theme: "system"})}
-                >
-                  <Monitor className="h-4 w-4" /> System
-                </Button>
-              </div>
+<CardContent className="space-y-4">
+          <div>
+            <Label>Theme</Label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              <Button
+                variant={theme === "light" ? "default" : "outline"}
+                className="gap-2"
+                onClick={() => setTheme("light")}
+              >
+                <Sun className="h-4 w-4" /> Light
+              </Button>
+              <Button
+                variant={theme === "dark" ? "default" : "outline"}
+                className="gap-2"
+                onClick={() => setTheme("dark")}
+              >
+                <Moon className="h-4 w-4" /> Dark
+              </Button>
+              <Button
+                variant={theme === "system" ? "default" : "outline"}
+                className="gap-2"
+                onClick={() => setTheme("system")}
+              >
+                <Monitor className="h-4 w-4" /> System
+              </Button>
             </div>
-          </CardContent>
+          </div>
+        </CardContent>
         </Card>
 
         {/* Notifications */}
