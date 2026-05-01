@@ -161,7 +161,7 @@ const PayrollPage = () => {
                       <Users className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium">{emp.position || "Employee"}</p>
+                      <p className="font-medium">{emp.position || "Staff"}</p>
                       <p className="text-sm text-muted-foreground">
                         {emp.wallet_address?.slice(0, 10)}...{emp.wallet_address?.slice(-4)}
                       </p>

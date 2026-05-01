@@ -274,7 +274,7 @@ if (!isOwner) {
               <option value="">-- Select an employee --</option>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
-                  {getEmployeeName(emp)} - {emp.position || "Employee"} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                  {getEmployeeName(emp)} - {emp.position || "Staff"} - ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
                 </option>
               ))}
             </select>

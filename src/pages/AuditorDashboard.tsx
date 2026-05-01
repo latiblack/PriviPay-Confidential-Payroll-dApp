@@ -125,7 +125,7 @@ const AuditorDashboard = () => {
               {employees.map((emp) => (
                 <div key={emp.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div>
-                    <p className="font-medium">{emp.position || "Employee"}</p>
+                    <p className="font-medium">{emp.position || "Staff"}</p>
                     <p className="text-sm text-muted-foreground">
                       {emp.wallet_address?.slice(0, 10)}...{emp.wallet_address?.slice(-4)}
                     </p>

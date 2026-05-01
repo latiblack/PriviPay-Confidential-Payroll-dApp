@@ -499,7 +499,7 @@ const { error } = await supabase
                 <Badge variant="secondary" className="text-xs">{emp.status}</Badge>
               </p>
               <p className="text-sm text-muted-foreground">
-                {emp.position || "Employee"} {emp.department && `• ${emp.department}`}
+                {emp.position || "Staff"} {emp.department && `• ${emp.department}`}
               </p>
             </div>
           </div>

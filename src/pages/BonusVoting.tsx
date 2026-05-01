@@ -537,7 +537,7 @@ const BonusPage = () => {
                         <div>
                           <p className="font-semibold text-lg">{getEmployeeName(emp)}</p>
                           <p className="text-sm text-muted-foreground">
-                            {emp.position || "Employee"} • ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
+                            {emp.position || "Staff"} • ${Number(emp.encrypted_salary || 0).toLocaleString()}/mo
                           </p>
                         </div>
                       </div>
