@@ -136,7 +136,7 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
           value: parseEther(amountInEth),
         });
       }
-      await tx.wait();
+      // Don't wait for confirmation - just return the hash immediately
       return tx.hash;
     } catch (err) {
       console.error("Transaction failed:", err);
@@ -144,7 +144,7 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
     }
   }
 
-  async processPayroll(
+async processPayroll(
     employees: { address: string; salary: number }[],
     onProgress?: (current: number, total: number, hash?: string) => void
   ): Promise<{ totalAmount: string; txHashes: string[] }> {
@@ -160,20 +160,18 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
       if (emp.salary > 0) {
         try {
           let tx;
-          // Handle walletClient from wagmi
           if (this.signer.sendTransaction) {
             tx = await this.signer.sendTransaction({
               to: emp.address,
               value: parseEther(emp.salary.toString()),
             });
           } else {
-            // Handle ethers signer
             tx = await this.signer.sendTransaction({
               to: emp.address,
               value: parseEther(emp.salary.toString()),
             });
           }
-          await tx.wait();
+          // Don't wait for confirmation - just get the hash immediately
           txHashes.push(tx.hash);
           totalAmount += emp.salary;
           onProgress?.(i + 1, employees.length, tx.hash);
@@ -183,7 +181,7 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
       }
     }
 
-return { totalAmount: totalAmount.toString(), txHashes };
+    return { totalAmount: totalAmount.toString(), txHashes };
   }
 
   isConnected(): boolean {
