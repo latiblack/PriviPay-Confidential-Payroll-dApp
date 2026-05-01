@@ -14,6 +14,7 @@ const fallbackAuth = {
  },
 };
 
+// Fixed: preserve wallet auth state during chain switches
 export const useWalletAuth = () => {
  const [lastKnownWallet, setLastKnownWallet] = useState<{
   user: any;
