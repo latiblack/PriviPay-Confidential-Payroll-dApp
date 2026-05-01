@@ -406,11 +406,17 @@ const handleProcessPayroll = async () => {
 };
 
 const handleWithdraw = async () => {
-  if (!amount || !recipient) return;
+  if (!amount || !recipient) {
+    toast({ title: "Error", description: "Please enter recipient address and amount", variant: "destructive" });
+    return;
+  }
   if (!walletClient) {
     toast({ title: "Error", description: "Please connect your wallet to withdraw", variant: "destructive" });
     return;
   }
+
+  const recipientAddress = recipient.trim();
+  const amountValue = amount.trim();
 
   setProcessing(true);
   try {
@@ -419,13 +425,13 @@ const handleWithdraw = async () => {
       throw new Error("Failed to initialize wallet");
     }
     const txHash = await ethereumService.sendTransaction(
-      recipient,
-      amount
+      recipientAddress,
+      amountValue
     );
 
     toast({
       title: "Withdrawal Complete",
-      description: `Sent ${amount} ETH to ${recipient.slice(0, 6)}...${recipient.slice(-4)}. Tx: ${txHash.slice(0, 10)}...`,
+      description: `Sent ${amountValue} ETH to ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}. Tx: ${txHash.slice(0, 10)}...`,
     });
     setAmount("");
     setRecipient("");
