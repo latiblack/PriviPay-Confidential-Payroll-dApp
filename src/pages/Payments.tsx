@@ -66,6 +66,16 @@ const PaymentsPage = () => {
   const [loadingBalance, setLoadingBalance] = useState(false);
   const [currentChain, setCurrentChain] = useState<string | null>(null);
   const SEPOLIA_CHAIN_ID = "0x" + (11155111).toString(16);
+  const normalizeChainId = (chainId: string | number | bigint | null | undefined) => {
+    if (chainId === null || chainId === undefined) return null;
+    if (typeof chainId === "string") {
+      if (chainId.startsWith("0x")) return chainId.toLowerCase();
+      const parsed = Number(chainId);
+      return Number.isNaN(parsed) ? chainId.toLowerCase() : `0x${parsed.toString(16)}`;
+    }
+    return `0x${Number(chainId).toString(16)}`.toLowerCase();
+  };
+  const getActiveProvider = () => (primaryWallet as any)?.connector?.getProvider?.() || provider || null;
 
   const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
@@ -152,14 +162,13 @@ const handleSwitchToSepolia = async () => {
     await switchNetwork({ wallet: primaryWallet, network: SEPOLIA_CHAIN_ID_NUM });
     toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
 
-    // Poll until provider reports Sepolia (Dynamic may not refresh provider ref immediately)
+    // Poll until the active provider reports Sepolia (Dynamic may swap provider instances after switching)
     for (let i = 0; i < 10; i++) {
       await new Promise((r) => setTimeout(r, 500));
       try {
-        const freshProvider = (primaryWallet as any)?.connector?.getProvider?.();
-        const prov = freshProvider || provider;
+        const prov = getActiveProvider();
         if (!prov) continue;
-        const chainId = await prov.request({ method: "eth_chainId" });
+        const chainId = normalizeChainId(await prov.request({ method: "eth_chainId" }));
         if (chainId === SEPOLIA_CHAIN_ID) {
           setCurrentChain(chainId);
           await connectToEth();
@@ -181,18 +190,20 @@ const handleSwitchToSepolia = async () => {
 };
 
 const connectToEth = async () => {
-  if (!provider) return;
+  const activeProvider = getActiveProvider();
+  if (!activeProvider) return;
 
   try {
-    const initialized = await ethereumService.initialize(provider);
+    const initialized = await ethereumService.initialize(activeProvider);
     if (!initialized) return;
 
-    const chainId = await ethereumService.getCurrentChainId(provider);
+    const chainId = normalizeChainId(await ethereumService.getCurrentChainId(activeProvider));
     setCurrentChain(chainId);
 
     if (chainId !== SEPOLIA_CHAIN_ID) {
       // Don't toast here - the banner already warns. Just mark not connected.
       setEthConnected(false);
+      setEthBalance("0");
       return;
     }
 
@@ -204,10 +215,11 @@ const connectToEth = async () => {
 };
 
 const refreshBalance = async () => {
-  if (!provider) return;
+  const activeProvider = getActiveProvider();
+  if (!activeProvider) return;
   setLoadingBalance(true);
   try {
-    const chainId = await ethereumService.getCurrentChainId(provider);
+    const chainId = normalizeChainId(await ethereumService.getCurrentChainId(activeProvider));
     setCurrentChain(chainId);
 
     if (chainId !== SEPOLIA_CHAIN_ID) {
@@ -216,11 +228,13 @@ const refreshBalance = async () => {
         description: "Please switch to Sepolia to see your balance",
         duration: 3000,
       });
+      setEthConnected(false);
+      setEthBalance("0");
       setLoadingBalance(false);
       return;
     }
 
-    const balance = await ethereumService.getBalance(walletAddress || undefined, provider);
+    const balance = await ethereumService.getBalance(walletAddress || undefined, activeProvider);
     setEthBalance(balance);
     setEthConnected(true);
   } catch (err) {
@@ -232,19 +246,21 @@ const refreshBalance = async () => {
 
 useEffect(() => {
   fetchData();
-  if (provider) {
+  if (getActiveProvider()) {
     connectToEth();
   }
-}, [profile?.currentOrganization?.id, profile?.walletAddress, provider]);
+}, [profile?.currentOrganization?.id, profile?.walletAddress, provider, primaryWallet]);
 
 // Listen for chain changes from the wallet so the UI updates immediately after a network switch.
 useEffect(() => {
-  if (!provider || typeof provider.on !== "function") return;
+  const activeProvider = getActiveProvider();
+  if (!activeProvider || typeof activeProvider.on !== "function") return;
 
   const handleChainChanged = (newChainId: string) => {
-    console.log("[Payments] chainChanged event:", newChainId);
-    setCurrentChain(newChainId);
-    if (newChainId === SEPOLIA_CHAIN_ID) {
+    const normalizedChainId = normalizeChainId(newChainId);
+    console.log("[Payments] chainChanged event:", normalizedChainId);
+    setCurrentChain(normalizedChainId);
+    if (normalizedChainId === SEPOLIA_CHAIN_ID) {
       // Re-init ethereum service with the now-correct chain and load balance
       connectToEth();
     } else {
@@ -253,22 +269,23 @@ useEffect(() => {
     }
   };
 
-  provider.on("chainChanged", handleChainChanged);
+  activeProvider.on("chainChanged", handleChainChanged);
   return () => {
-    if (typeof provider.removeListener === "function") {
-      provider.removeListener("chainChanged", handleChainChanged);
-    } else if (typeof provider.off === "function") {
-      provider.off("chainChanged", handleChainChanged);
+    if (typeof activeProvider.removeListener === "function") {
+      activeProvider.removeListener("chainChanged", handleChainChanged);
+    } else if (typeof activeProvider.off === "function") {
+      activeProvider.off("chainChanged", handleChainChanged);
     }
   };
-}, [provider]);
+}, [provider, primaryWallet]);
 
 // Poll chainId as a safety net in case the provider doesn't emit chainChanged (some wallet connectors)
 useEffect(() => {
-  if (!provider) return;
+  const activeProvider = getActiveProvider();
+  if (!activeProvider) return;
   const interval = setInterval(async () => {
     try {
-      const chainId = await provider.request({ method: "eth_chainId" });
+      const chainId = normalizeChainId(await activeProvider.request({ method: "eth_chainId" }));
       if (chainId && chainId !== currentChain) {
         console.log("[Payments] Detected chain change via poll:", chainId);
         setCurrentChain(chainId);
@@ -276,12 +293,13 @@ useEffect(() => {
           connectToEth();
         } else {
           setEthConnected(false);
+          setEthBalance("0");
         }
       }
     } catch {}
   }, 2000);
   return () => clearInterval(interval);
-}, [provider, currentChain]);
+}, [provider, primaryWallet, currentChain]);
 
   const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
