@@ -76,13 +76,15 @@ class EthereumService {
     }
   }
 
-  async getBalance(address?: string): Promise<string> {
+  async getBalance(address?: string, dynamicProvider?: any): Promise<string> {
     try {
-      if (!this.provider) return "0";
+      const prov = dynamicProvider || this.provider;
+      if (!prov) return "0";
+      
       const addr = address || this.userAddress;
       if (!addr) return "0";
 
-      const ethersProvider = new ethers.BrowserProvider(this.provider);
+      const ethersProvider = new ethers.BrowserProvider(prov);
       const balance = await ethersProvider.getBalance(addr);
       return formatEther(balance);
     } catch (err) {

@@ -156,9 +156,10 @@ const connectToEth = async () => {
 };
 
 const refreshBalance = async () => {
+  if (!provider) return;
   setLoadingBalance(true);
   try {
-    const balance = await ethereumService.getBalance();
+    const balance = await ethereumService.getBalance(walletAddress || undefined, provider);
     setEthBalance(balance);
     setEthConnected(true);
   } catch (err) {
