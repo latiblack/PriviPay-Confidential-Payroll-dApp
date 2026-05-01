@@ -1,17 +1,7 @@
-import { BrowserProvider, Contract, formatEther, parseEther, ContractTransaction } from "ethers";
+import { Contract, formatEther, parseEther, ContractTransaction, ethers } from "ethers";
 
 const SEPOLIA_CHAIN_ID = 11155111n;
 const SEPOLIA_RPC = "https://rpc.sepolia.org";
-
-const PAYROLL_CONTRACT_ABI = [
-  "function deposit() external payable",
-  "function withdraw(uint256 amount) external",
-  "function getBalance() external view returns (uint256)",
-  "function getPendingWithdrawals(address user) external view returns (uint256)",
-  "function owner() external view returns (address)",
-  "event Deposited(address user, uint256 amount)",
-  "event Withdrawn(address user, uint256 amount)",
-];
 
 export interface PayrollTransaction {
   hash: string;
@@ -22,35 +12,25 @@ export interface PayrollTransaction {
 }
 
 class EthereumService {
-  private provider: BrowserProvider | null = null;
+  private provider: any = null;
   private signer: any = null;
-  private contract: Contract | null = null;
-  private contractAddress: string = "";
   private userAddress: string = "";
 
   getSepoliaRPC(): string {
     return import.meta.env.VITE_SEPOLIA_RPC || SEPOLIA_RPC;
   }
 
-  getContractAddress(): string {
-    return import.meta.env.VITE_PAYROLL_CONTRACT || "";
-  }
-
-  async initialize(): Promise<boolean> {
+  async initialize(dynamicProvider?: any): Promise<boolean> {
     try {
-      if (!window.ethereum) {
-        console.warn("MetaMask not installed");
+      this.provider = dynamicProvider;
+      if (!this.provider) {
+        console.warn("No provider provided");
         return false;
       }
 
-      this.provider = new BrowserProvider(window.ethereum);
-      this.signer = await this.provider.getSigner();
+      const ethersProvider = new ethers.BrowserProvider(this.provider);
+      this.signer = await ethersProvider.getSigner();
       this.userAddress = await this.signer.getAddress();
-
-      this.contractAddress = this.getContractAddress();
-      if (this.contractAddress) {
-        this.contract = new Contract(this.contractAddress, PAYROLL_CONTRACT_ABI, this.signer);
-      }
 
       return true;
     } catch (err) {
@@ -59,11 +39,12 @@ class EthereumService {
     }
   }
 
-  async switchToSepolia(): Promise<boolean> {
-    if (!window.ethereum) return false;
+  async switchToSepolia(ethereum?: any): Promise<boolean> {
+    const eth = ethereum || window.ethereum;
+    if (!eth) return false;
 
     try {
-      await window.ethereum.request({
+      await eth.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: "0x" + SEPOLIA_CHAIN_ID.toString(16) }],
       });
@@ -71,7 +52,7 @@ class EthereumService {
     } catch (switchError: any) {
       if (switchError.code === 4902) {
         try {
-          await window.ethereum.request({
+          await eth.request({
             method: "wallet_addEthereumChain",
             params: [{
               chainId: "0x" + SEPOLIA_CHAIN_ID.toString(16),
@@ -97,34 +78,15 @@ class EthereumService {
 
   async getBalance(address?: string): Promise<string> {
     try {
-      if (!this.provider) await this.initialize();
+      if (!this.provider) return "0";
       const addr = address || this.userAddress;
       if (!addr) return "0";
 
-      const balance = await this.provider!.getBalance(addr);
+      const ethersProvider = new ethers.BrowserProvider(this.provider);
+      const balance = await ethersProvider.getBalance(addr);
       return formatEther(balance);
     } catch (err) {
       console.error("Error getting balance:", err);
-      return "0";
-    }
-  }
-
-  async getContractBalance(): Promise<string> {
-    try {
-      if (!this.contract) return "0";
-      const balance = await this.contract.getBalance();
-      return formatEther(balance);
-    } catch {
-      return "0";
-    }
-  }
-
-  async getPendingWithdrawal(): Promise<string> {
-    try {
-      if (!this.contract || !this.userAddress) return "0";
-      const pending = await this.contract.getPendingWithdrawals(this.userAddress);
-      return formatEther(pending);
-    } catch {
       return "0";
     }
   }
@@ -135,7 +97,7 @@ class EthereumService {
     }
 
     try {
-      const tx: ContractTransaction = await this.signer.sendTransaction({
+      const tx = await this.signer.sendTransaction({
         to,
         value: parseEther(amountInEth),
       });
@@ -144,38 +106,6 @@ class EthereumService {
       return tx.hash;
     } catch (err) {
       console.error("Transaction failed:", err);
-      throw err;
-    }
-  }
-
-  async depositToContract(amountInEth: string): Promise<string> {
-    if (!this.contract) {
-      throw new Error("Contract not initialized");
-    }
-
-    try {
-      const tx = await this.contract.deposit({
-        value: parseEther(amountInEth),
-      });
-      await tx.wait();
-      return tx.hash;
-    } catch (err) {
-      console.error("Deposit failed:", err);
-      throw err;
-    }
-  }
-
-  async withdrawFromContract(amountInEth: string): Promise<string> {
-    if (!this.contract) {
-      throw new Error("Contract not initialized");
-    }
-
-    try {
-      const tx = await this.contract.withdraw(parseEther(amountInEth));
-      await tx.wait();
-      return tx.hash;
-    } catch (err) {
-      console.error("Withdrawal failed:", err);
       throw err;
     }
   }

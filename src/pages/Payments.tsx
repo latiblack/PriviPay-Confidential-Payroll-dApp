@@ -31,7 +31,7 @@ interface EmployeeFormData {
 
 const PaymentsPage = () => {
   const { profile } = useAuth();
-  const { walletAddress } = useWalletAuth();
+  const { walletAddress, provider } = useWalletAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
@@ -138,12 +138,12 @@ setLoading(false);
 
 const connectToEth = async () => {
   try {
-    const initialized = await ethereumService.initialize();
+    const initialized = await ethereumService.initialize(provider);
     if (!initialized) {
-      toast({ title: "Error", description: "Please install MetaMask", variant: "destructive" });
+      toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
       return;
     }
-    const switched = await ethereumService.switchToSepolia();
+    const switched = await ethereumService.switchToSepolia(provider);
     if (!switched) {
       toast({ title: "Error", description: "Please switch to Sepolia network", variant: "destructive" });
       return;
@@ -171,8 +171,10 @@ const refreshBalance = async () => {
 
 useEffect(() => {
   fetchData();
-  connectToEth();
-}, [profile?.currentOrganization?.id, profile?.walletAddress]);
+  if (provider) {
+    connectToEth();
+  }
+}, [profile?.currentOrganization?.id, profile?.walletAddress, provider]);
 
   const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
