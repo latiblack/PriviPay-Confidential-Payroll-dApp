@@ -30,15 +30,15 @@ const PageLoader = () => (
 const queryClient = new QueryClient();
 
 const pageTitles: Record<string, string> = {
-  "/admin": "Admin",
-  "/payments": "Payments",
-  "/admin/settings": "Settings",
-  "/employer": "Dashboard",
-  "/employees": "Employees",
-  "/employee": "My Dashboard",
-  "/auditor": "Auditor",
-  "/voting": "Bonus",
-  "/notifications": "Notifications",
+  "/admin": "",
+  "/payments": "",
+  "/settings": "",
+  "/employer": "",
+  "/employees": "",
+  "/employee": "",
+  "/auditor": "",
+  "/voting": "",
+  "/notifications": "",
 };
 
 // Protected route component
@@ -115,7 +115,7 @@ const AppLayout = () => {
             </ProtectedRoute>
           } />
 
-<Route path="/admin/settings" element={
+<Route path="/settings" element={
   <ProtectedRoute>
     <Suspense fallback={<PageLoader />}><Settings /></Suspense>
   </ProtectedRoute>
