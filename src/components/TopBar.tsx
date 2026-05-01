@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/components/ui/theme-provider";
 import { authService } from "@/lib/auth-service";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,15 +16,12 @@ interface TopBarProps {
 
 export const TopBar = ({ title }: TopBarProps) => {
   const navigate = useNavigate();
-  const [dark, setDark] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
   const { isAuthenticated, walletAddress, connectWallet, disconnectWallet } = useWalletAuth();
   const { profile } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
 
   const fetchNotifications = async () => {
     if (!profile?.currentOrganization?.id || !walletAddress) return;
@@ -132,14 +130,14 @@ export const TopBar = ({ title }: TopBarProps) => {
           />
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setDark(!dark)}
-          className="rounded-xl"
-        >
-          {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </Button>
+<Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              className="rounded-xl"
+            >
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
 
         <Button 
           variant="ghost" 
