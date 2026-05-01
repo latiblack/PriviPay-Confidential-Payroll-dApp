@@ -102,7 +102,7 @@ export const AuthPage = () => {
       setCheckingInvites(false);
     };
     checkPendingInvitations();
-  }, [isAuthenticated, walletAddress, user]);
+  }, [isAuthenticated, walletAddress]);
 
   useEffect(() => {
     const checkExistingOrg = async () => {
