@@ -77,7 +77,7 @@ export const authService = {
     const { data: ownedOrgs, error: ownerError } = await supabase
       .from("organizations")
       .select("*")
-      .eq("owner_id", walletAddress);
+      .eq("owner_id", walletAddress.toLowerCase());
 
     if (ownerError && ownerError.code !== "PGRST116") {
       throw new Error(ownerError.message);
@@ -100,7 +100,7 @@ export const authService = {
         *,
         organizations:organization_id (*)
       `)
-      .eq("user_id", walletAddress)
+      .eq("user_id", walletAddress.toLowerCase())
       .neq("role", "pending");
 
     if (rolesError) throw new Error(rolesError.message);
