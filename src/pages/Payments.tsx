@@ -137,22 +137,21 @@ setLoading(false);
 };
 
 const connectToEth = async () => {
+  if (!provider) return;
+  
   try {
     const initialized = await ethereumService.initialize(provider);
-    if (!initialized) {
-      toast({ title: "Error", description: "Wallet not connected", variant: "destructive" });
-      return;
-    }
+    if (!initialized) return;
+    
     const switched = await ethereumService.switchToSepolia(provider);
     if (!switched) {
-      toast({ title: "Error", description: "Please switch to Sepolia network", variant: "destructive" });
+      toast({ title: "Error", description: "Please switch to Sepolia in your wallet", variant: "destructive" });
       return;
     }
     setEthConnected(true);
     await refreshBalance();
   } catch (err) {
     console.error("Failed to connect:", err);
-    toast({ title: "Error", description: "Failed to connect to wallet", variant: "destructive" });
   }
 };
 
@@ -528,21 +527,11 @@ const handleWithdraw = async () => {
                   ) : (
                     <RefreshCw className="h-4 w-4" />
                   )}
-                  <span className="ml-1 text-xs">{parseFloat(ethBalance).toFixed(4)} ETH</span>
-                </Button>
-              </div>
-              {!ethConnected && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="w-full mt-2 bg-white/20 text-white hover:bg-white/30 border-0"
-                  onClick={connectToEth}
-                >
-                  Connect Wallet
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+<span className="ml-1 text-xs">{parseFloat(ethBalance).toFixed(4)} ETH</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {isOwner && (
           <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
