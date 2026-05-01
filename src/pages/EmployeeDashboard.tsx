@@ -7,8 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, RefreshCw } from "lucide-react";
-import ethereumService from "@/lib/ethereum";
+import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
@@ -77,56 +76,6 @@ const EmployeeDashboard = () => {
 
         if ((isOwner || isManager) && activeEmployees.length > 0 && !selectedEmployeeId) {
           setSelectedEmployeeId(activeEmployees[0].id);
-        }
-
-        // Fetch real blockchain transactions for owners
-        if (isOwner && profile.currentOrganization?.id) {
-          // Don't block UI - fetch in background
-          setTimeout(async () => {
-            try {
-              // Get organization record
-              const { data: orgRecord } = await supabase
-                .from("organizations")
-                .select("wallet_address, owner_id")
-                .eq("id", profile.currentOrganization.id)
-                .single();
-              
-              if (orgRecord?.wallet_address) {
-                // Fetch transactions for both org wallet and owner's wallet (they might differ)
-                const walletsToCheck = [
-                  orgRecord.wallet_address.toLowerCase(),
-                  profile.walletAddress?.toLowerCase()
-                ].filter(Boolean);
-                
-                const allTransactions: any[] = [];
-                
-                for (const wallet of [...new Set(walletsToCheck)]) {
-                  const txHistory = await ethereumService.getTransactionHistory(wallet, 10);
-                  
-                  for (const tx of txHistory) {
-                    // Check if this transaction already exists
-                    const exists = allTransactions.some(t => t.hash === tx.hash);
-                    if (!exists) {
-                      allTransactions.push({
-                        id: `tx-${tx.hash.slice(0, 8)}`,
-                        hash: tx.hash,
-                        amount: Number(tx.amount),
-                        type: tx.recipient.toLowerCase() === wallet ? "received" : "sent",
-                        status: tx.status,
-                        created_at: tx.timestamp.toISOString()
-                      });
-                    }
-                  }
-                }
-                
-                // Sort by date descending
-                allTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                setPayments(allTransactions.slice(0, 20));
-              }
-            } catch (err) {
-              console.error("Error fetching blockchain transactions:", err);
-            }
-          }, 100);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -397,57 +346,6 @@ if (!isOwner) {
               <CardDescription>Real blockchain transactions from Sepolia</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isOwner && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={async () => {
-                    try {
-                      const { data: orgRecord } = await supabase
-                        .from("organizations")
-                        .select("wallet_address, owner_id")
-                        .eq("id", profile.currentOrganization.id)
-                        .single();
-                      
-                      if (orgRecord?.wallet_address) {
-                        const walletsToCheck = [
-                          orgRecord.wallet_address.toLowerCase(),
-                          profile.walletAddress?.toLowerCase()
-                        ].filter(Boolean);
-                        
-                        const allTransactions: any[] = [];
-                        
-                        for (const wallet of [...new Set(walletsToCheck)]) {
-                          const txHistory = await ethereumService.getTransactionHistory(wallet, 10);
-                          
-                          for (const tx of txHistory) {
-                            const exists = allTransactions.some(t => t.hash === tx.hash);
-                            if (!exists) {
-                              allTransactions.push({
-                                id: `tx-${tx.hash.slice(0, 8)}`,
-                                hash: tx.hash,
-                                amount: Number(tx.amount),
-                                type: tx.recipient.toLowerCase() === wallet ? "received" : "sent",
-                                status: tx.status,
-                                created_at: tx.timestamp.toISOString()
-                              });
-                            }
-                          }
-                        }
-                        
-                        allTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                        setPayments(allTransactions.slice(0, 20));
-                      }
-                    } catch (err) {
-                      console.error("Error refreshing transactions:", err);
-                    }
-                  }}
-                  className="w-full"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Blockchain Data
-                </Button>
-              )}
               {isOwner && payments.length === 0 ? (
                 <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
                   {[...Array(6)].map((_, i) => (
