@@ -25,14 +25,17 @@ export const organizationService = {
     ownerWalletAddress: string;
     ownerId: string;
   }): Promise<Organization> {
-    // Don't pass invite_code - let Supabase trigger auto-generate it
+    // Use lowercase for wallet addresses for consistency
+    const lowerOwnerId = data.ownerId.toLowerCase();
+    const lowerWalletAddress = data.ownerWalletAddress.toLowerCase();
+    
     const { data: org, error } = await supabase
       .from("organizations")
       .insert({
         name: data.name,
         description: data.description || null,
-        wallet_address: data.ownerWalletAddress,
-        owner_id: data.ownerId,
+        wallet_address: lowerWalletAddress,
+        owner_id: lowerOwnerId,
       } as OrganizationInsert)
       .select()
       .single();
