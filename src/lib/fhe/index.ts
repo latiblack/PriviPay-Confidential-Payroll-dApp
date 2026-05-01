@@ -4,7 +4,7 @@ export {
   reencryptForUser,
   decryptWithPrivateKey,
   encryptVote,
-  simulateTFHEOperation,
+  
   formatEncryptedAmount,
   salaryToCents,
   centsToSalary,

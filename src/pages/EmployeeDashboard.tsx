@@ -100,7 +100,7 @@ const EmployeeDashboard = () => {
         if (emp) {
           setEmployee(emp);
 
-          const { data: payData, error: payError } = await supabase
+          const { data: payData, error: payError } = await (supabase as any)
             .from("payments")
             .select("*")
             .eq("employee_id", emp.id)
@@ -108,7 +108,7 @@ const EmployeeDashboard = () => {
             .limit(20);
 
           if (!payError && payData) {
-            setPayments(payData.map(p => ({
+            setPayments(payData.map((p: any) => ({
               id: p.id,
               amount: Number(p.amount),
               type: p.payment_type || "salary",

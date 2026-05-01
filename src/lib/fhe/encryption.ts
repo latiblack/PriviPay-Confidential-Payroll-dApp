@@ -1,4 +1,4 @@
-import { initSDK, createInstance, SepoliaConfig, FhevmInstance, KeyPair } from "@zama-fhe/relayer-sdk/web";
+import { initSDK, createInstance, SepoliaConfig, FhevmInstance } from "@zama-fhe/relayer-sdk/web";
 
 export interface EncryptedData {
   handles: bigint[];
@@ -50,7 +50,7 @@ export async function encryptSalary(amount: number, contractAddress: string, use
   const encrypted = await encryptedInput.encrypt();
 
   return {
-    handles: encrypted.handles,
+    handles: encrypted.handles as unknown as bigint[],
     inputProof: encrypted.inputProof,
     type: "euint32",
   };
@@ -63,7 +63,7 @@ export async function decryptSalary(encryptedData: EncryptedData): Promise<numbe
 
 export async function reencryptForUser(handle: bigint, userPublicKey: string, contractAddress: string, userAddress: string, privateKey: string, signature: string): Promise<bigint> {
   const fhevm = await initFhevmInstance();
-  return fhevm.reencrypt(handle, privateKey, userPublicKey, signature, contractAddress, userAddress);
+  return (fhevm as any).reencrypt(handle, privateKey, userPublicKey, signature, contractAddress, userAddress);
 }
 
 export async function decryptWithPrivateKey(reencryptedData: bigint, privateKey: string): Promise<number> {
@@ -79,7 +79,7 @@ export async function encryptVote(voteValue: number, contractAddress: string, us
   const encrypted = await encryptedInput.encrypt();
 
   return {
-    handles: encrypted.handles,
+    handles: encrypted.handles as unknown as bigint[],
     inputProof: encrypted.inputProof,
     type: "euint8",
   };
