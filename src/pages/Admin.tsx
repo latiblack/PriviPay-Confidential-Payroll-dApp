@@ -10,7 +10,7 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import organizationService from "@/lib/organization-service";
-import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings, Send, Plus, UserCheck } from "lucide-react";
+import { Users, DollarSign, Building2, Loader2, Copy, CheckCircle, MailPlus, Settings, Send, Plus, UserCheck, Trash2, AlertTriangle } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
@@ -26,16 +26,64 @@ const AdminDashboard = () => {
   // All members (from user_roles - people who joined via invite)
   const [members, setMembers] = useState<UserRole[]>([]);
   
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
   const [inviteCode, setInviteCode] = useState("");
   const [copied, setCopied] = useState(false);
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [newRole, setNewRole] = useState("");
-  
+
+  // Delete member state
+  const [deletingMember, setDeletingMember] = useState<string | null>(null);
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState<{ [key: string]: number }>({});
+
   // Email invitation state
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
   const [sendingInvite, setSendingInvite] = useState(false);
+
+  const handleRemoveMember = async (memberId: string) => {
+    const currentStep = deleteConfirmStep[memberId] || 0;
+    
+    if (currentStep === 0) {
+      // First click - show warning
+      setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 1 });
+      setDeletingMember(memberId);
+      return;
+    }
+    
+    // Second click - actually delete
+    setDeletingMember(memberId);
+    try {
+      // Delete from user_roles
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", memberId);
+      
+      if (error) throw error;
+      
+      // Also remove from employees if exists
+      await supabase
+        .from("employees")
+        .delete()
+        .eq("user_id", members.find(m => m.id === memberId)?.user_id);
+      
+      toast({ title: "Member removed", description: "Member has been removed from the organization" });
+      setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 0 });
+      setDeletingMember(null);
+      fetchData();
+    } catch (err) {
+      console.error("Error removing member:", err);
+      toast({ title: "Error", description: "Failed to remove member", variant: "destructive" });
+    } finally {
+      setDeletingMember(null);
+    }
+  };
+
+  const cancelDelete = (memberId: string) => {
+    setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 0 });
+    setDeletingMember(null);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -345,25 +393,60 @@ return (
                   <div className="flex items-center gap-4">
                     <Badge variant="outline" className="text-lg px-3 py-1">{member.role}</Badge>
 
-                    {editingRole === member.id ? (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={newRole}
-                          onChange={(e) => setNewRole(e.target.value)}
-                          className="p-2 border rounded"
+                    {deleteConfirmStep[member.id] === 1 && deletingMember === member.id ? (
+                      <div className="flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        <span className="text-sm text-red-600 font-medium">Confirm?</span>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleRemoveMember(member.id)}
+                          disabled={deletingMember === member.id}
                         >
-                          <option value="staff">Staff</option>
-                          <option value="manager">Manager</option>
-                          <option value="auditor">Auditor</option>
-                          <option value="owner">Owner</option>
-                        </select>
-                        <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+                          {deletingMember === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yes, Remove"}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => cancelDelete(member.id)}
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     ) : (
-                      <Button size="sm" variant="ghost" onClick={() => { setEditingRole(member.id); setNewRole(member.role); }}>
-                        <Settings className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {editingRole === member.id ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={newRole}
+                              onChange={(e) => setNewRole(e.target.value)}
+                              className="p-2 border rounded"
+                            >
+                              <option value="staff">Staff</option>
+                              <option value="manager">Manager</option>
+                              <option value="auditor">Auditor</option>
+                              <option value="owner">Owner</option>
+                            </select>
+                            <Button size="sm" onClick={() => handleUpdateRole(member.id)}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => { setEditingRole(member.id); setNewRole(member.role); }}>
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => handleRemoveMember(member.id)}
+                              title="Remove member"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
