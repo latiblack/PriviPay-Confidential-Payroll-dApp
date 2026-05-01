@@ -155,47 +155,7 @@ if (!isOwner) {
         <p className="text-muted-foreground text-lg mt-1">View your salary and payment history</p>
       </div>
 
-      {/* Gradient Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Monthly Salary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">${totalSalary.toLocaleString()}</div>
-            <p className="text-xs opacity-75 mt-1">incl. bonus</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              Position
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold capitalize">{employee?.position || getMemberRole(walletAddress || "")}</div>
-            <p className="text-xs opacity-75 mt-1">{employee?.department || "General"}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Total Received
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">${totalReceived.toLocaleString()}</div>
-            <p className="text-xs opacity-75 mt-1">{monthlyCount} payments</p>
-          </CardContent>
-        </Card>
-      </div>
+      
 
       <Card>
         <CardHeader>
@@ -219,22 +179,22 @@ if (!isOwner) {
 
           {employee ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Position</p>
-                <p className="text-xl font-semibold">{employee.position || "Staff"}</p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-600">Position</p>
+                <p className="text-xl font-semibold text-blue-900">{employee.position || "Staff"}</p>
               </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Department</p>
-                <p className="text-xl font-semibold">{employee.department || "General"}</p>
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-sm text-purple-600">Department</p>
+                <p className="text-xl font-semibold text-purple-900">{employee.department || "General"}</p>
               </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Monthly Salary</p>
-                <p className="text-xl font-semibold">${(Number(employee.encrypted_salary || 0) + employeeBonus).toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">incl. bonus</p>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-600">Monthly Salary</p>
+                <p className="text-xl font-semibold text-green-900">${(Number(employee.encrypted_salary || 0) + employeeBonus).toLocaleString()}</p>
+                <p className="text-xs text-green-600">incl. bonus</p>
               </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Status</p>
-                <Badge variant="default" className="mt-1">{employee.status}</Badge>
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-600">Status</p>
+                <Badge variant="default" className="mt-1 bg-orange-500">{employee.status}</Badge>
               </div>
             </div>
           ) : (
