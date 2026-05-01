@@ -119,15 +119,13 @@ const EmployeeDashboard = () => {
   }, [profile?.currentOrganization?.id, isOwner, isManager, walletAddress]);
 
   useEffect(() => {
-    // Don't fetch employee payments for owners - they get blockchain transactions instead
-    if (isOwner) {
-      return;
-    }
-    
+    // For owners, still allow fetching employee-specific data when selected
     const fetchEmployeeData = async () => {
       if (!selectedEmployeeId) {
-        setEmployee(null);
-        setPayments([]);
+        if (!isOwner) {
+          setEmployee(null);
+          setPayments([]);
+        }
         return;
       }
 
