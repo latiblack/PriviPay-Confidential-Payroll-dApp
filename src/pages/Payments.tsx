@@ -10,8 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
-import { useTranslation } from "@/hooks/useTranslation";
+import { useDynamicContext, useSwitchNetwork } from "@dynamic-labs/sdk-react-core";
 import ethereumService from "@/lib/ethereum";
 import {
   DollarSign, Users, Send, Loader2, ArrowDownToLine,
@@ -32,6 +31,8 @@ interface EmployeeFormData {
 const PaymentsPage = () => {
   const { profile } = useAuth();
   const { walletAddress, provider } = useWalletAuth();
+  const { primaryWallet } = useDynamicContext();
+  const switchNetwork = useSwitchNetwork();
   const { toast } = useToast();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
@@ -135,6 +136,28 @@ const fetchData = async () => {
       console.error("Error fetching data:", err);
     } finally {
 setLoading(false);
+  }
+};
+
+const SEPOLIA_CHAIN_ID_NUM = 11155111;
+
+const handleSwitchToSepolia = async () => {
+  if (!primaryWallet) {
+    toast({ title: "No wallet connected", variant: "destructive" });
+    return;
+  }
+  try {
+    await switchNetwork({ wallet: primaryWallet, network: SEPOLIA_CHAIN_ID_NUM });
+    setEthConnected(true);
+    await refreshBalance();
+  } catch (err) {
+    console.error("Failed to switch network:", err);
+    toast({
+      title: "Switch Network",
+      description: "Please manually switch to Sepolia in your wallet",
+      variant: "destructive",
+      duration: 5000,
+    });
   }
 };
 
