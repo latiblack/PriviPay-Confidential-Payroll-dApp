@@ -81,32 +81,32 @@ const EmployeeDashboard = () => {
 
         // Fetch real blockchain transactions for owners
         if (isOwner && profile.currentOrganization?.id) {
-          try {
-            const orgData = profile.currentOrganization;
-            // Get organization's wallet address from the org record
-            const { data: orgRecord } = await supabase
-              .from("organizations")
-              .select("wallet_address")
-              .eq("id", profile.currentOrganization.id)
-              .single();
-            
-            if (orgRecord?.wallet_address) {
-              const txHistory = await ethereumService.getTransactionHistory(orgRecord.wallet_address, 20);
+          // Don't block UI - fetch in background
+          setTimeout(async () => {
+            try {
+              const { data: orgRecord } = await supabase
+                .from("organizations")
+                .select("wallet_address")
+                .eq("id", profile.currentOrganization.id)
+                .single();
               
-              // Transform blockchain transactions to payment format
-              const blockchainPayments = txHistory.map((tx, index) => ({
-                id: `tx-${index}-${tx.hash.slice(0, 8)}`,
-                amount: Number(tx.amount),
-                type: tx.recipient.toLowerCase() === orgRecord.wallet_address.toLowerCase() ? "received" : "sent",
-                status: tx.status,
-                created_at: tx.timestamp.toISOString()
-              }));
-              
-              setPayments(blockchainPayments);
+              if (orgRecord?.wallet_address) {
+                const txHistory = await ethereumService.getTransactionHistory(orgRecord.wallet_address, 20);
+                
+                const blockchainPayments = txHistory.map((tx, index) => ({
+                  id: `tx-${index}-${tx.hash.slice(0, 8)}`,
+                  amount: Number(tx.amount),
+                  type: tx.recipient.toLowerCase() === orgRecord.wallet_address.toLowerCase() ? "received" : "sent",
+                  status: tx.status,
+                  created_at: tx.timestamp.toISOString()
+                }));
+                
+                setPayments(blockchainPayments);
+              }
+            } catch (err) {
+              console.error("Error fetching blockchain transactions:", err);
             }
-          } catch (err) {
-            console.error("Error fetching blockchain transactions:", err);
-          }
+          }, 100);
         }
       } catch (err) {
         console.error("Error fetching data:", err);

@@ -195,7 +195,14 @@ async processPayroll(
   async getTransactionHistory(walletAddress: string, limit: number = 20): Promise<PayrollTransaction[]> {
     try {
       const ethersProvider = new ethers.JsonRpcProvider(this.getSepoliaRPC());
-      const currentBlock = await ethersProvider.getBlockNumber();
+      
+      // Add timeout for getBlockNumber
+      const blockNumberPromise = ethersProvider.getBlockNumber();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout fetching block number")), 10000)
+      );
+      
+      const currentBlock = await Promise.race([blockNumberPromise, timeoutPromise]) as number;
       const startBlock = Math.max(0, currentBlock - 1000); // Look back ~1000 blocks (~4 hours on Sepolia)
 
       const transactions: PayrollTransaction[] = [];
