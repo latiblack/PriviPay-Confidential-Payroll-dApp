@@ -11,6 +11,8 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useDynamicContext, useSwitchNetwork } from "@dynamic-labs/sdk-react-core";
+import { useTranslation } from "@/hooks/useTranslation";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import ethereumService from "@/lib/ethereum";
 import {
   DollarSign, Users, Send, Loader2, ArrowDownToLine,
@@ -65,7 +67,7 @@ const PaymentsPage = () => {
   const [currentChain, setCurrentChain] = useState<string | null>(null);
   const SEPOLIA_CHAIN_ID = "0x" + (11155111).toString(16);
 
-const fetchData = async () => {
+  const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
 
     try {
