@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User } from "lucide-react";
+import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
@@ -34,6 +38,9 @@ const EmployeeDashboard = () => {
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingName, setEditingName] = useState(false);
+  const [editNameForm, setEditNameForm] = useState({ name: "", position: "" });
+  const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,6 +144,29 @@ const EmployeeDashboard = () => {
     return (emp as any).name || emp.wallet_address?.slice(0, 8) + "..." + emp.wallet_address?.slice(-4);
   };
 
+  const handleSaveName = async () => {
+    if (!employee) return;
+    setSavingName(true);
+    try {
+      const { error } = await supabase
+        .from("employees")
+        .update({
+          name: editNameForm.name || null,
+          position: editNameForm.position || null
+        })
+        .eq("id", employee.id);
+      
+      if (error) throw error;
+      
+      setEmployee({ ...employee, name: editNameForm.name, position: editNameForm.position });
+      setEditingName(false);
+    } catch (err) {
+      console.error("Failed to update name:", err);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0);
   const monthlyCount = payments.filter(p => p.status === "completed").length;
   const maxPayment = Math.max(...payments.map(p => p.amount), 1);
@@ -164,11 +194,26 @@ if (!isOwner) {
       
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Your Information
           </CardTitle>
+          {!isOwner && employee && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditNameForm({
+                  name: (employee as any).name || "",
+                  position: employee.position || ""
+                });
+                setEditingName(true);
+              }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-6">
@@ -440,6 +485,39 @@ if (!isOwner) {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={editingName} onOpenChange={setEditingName}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Your Information</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={editNameForm.name}
+                onChange={(e) => setEditNameForm({ ...editNameForm, name: e.target.value })}
+                placeholder="Your name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Position</Label>
+              <Input
+                value={editNameForm.position}
+                onChange={(e) => setEditNameForm({ ...editNameForm, position: e.target.value })}
+                placeholder="Your position"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingName(false)}>Cancel</Button>
+            <Button onClick={handleSaveName} disabled={savingName}>
+              {savingName ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
