@@ -46,16 +46,15 @@ const [loading, setLoading] = useState(true);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
-  const handleRemoveMember = async (memberId: string) => {
+const handleRemoveMember = async (memberId: string) => {
     const currentStep = deleteConfirmStep[memberId] || 0;
-    
+
     if (currentStep === 0) {
-      // First click - show warning
+      // First click - show warning (don't set deletingMember yet)
       setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 1 });
-      setDeletingMember(memberId);
       return;
     }
-    
+
     // Second click - actually delete
     setDeletingMember(memberId);
     try {
@@ -64,15 +63,15 @@ const [loading, setLoading] = useState(true);
         .from("user_roles")
         .delete()
         .eq("id", memberId);
-      
+
       if (error) throw error;
-      
+
       // Also remove from employees if exists
       await supabase
         .from("employees")
         .delete()
         .eq("user_id", members.find(m => m.id === memberId)?.user_id);
-      
+
       toast({ title: "Member removed", description: "Member has been removed from the organization" });
       setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 0 });
       setDeletingMember(null);
@@ -87,7 +86,6 @@ const [loading, setLoading] = useState(true);
 
   const cancelDelete = (memberId: string) => {
     setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 0 });
-    setDeletingMember(null);
   };
 
   useEffect(() => {
@@ -589,27 +587,28 @@ return (
                   <div className="flex items-center gap-4">
                     <Badge variant="outline" className="text-lg px-3 py-1">{member.role}</Badge>
 
-                    {deleteConfirmStep[member.id] === 1 && deletingMember === member.id ? (
-                      <div className="flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                        <span className="text-sm text-red-600 font-medium">Confirm?</span>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
-                          onClick={() => handleRemoveMember(member.id)}
-                          disabled={deletingMember === member.id}
-                        >
-                          {deletingMember === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yes, Remove"}
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => cancelDelete(member.id)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
+{deleteConfirmStep[member.id] === 1 ? (
+            <div className="flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <span className="text-sm text-red-600 font-medium">Confirm?</span>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handleRemoveMember(member.id)}
+                disabled={deletingMember === member.id}
+              >
+                {deletingMember === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yes, Remove"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => cancelDelete(member.id)}
+                disabled={deletingMember === member.id}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
                       <div className="flex items-center gap-2">
                         {editingRole === member.id ? (
                           <div className="flex items-center gap-2">
