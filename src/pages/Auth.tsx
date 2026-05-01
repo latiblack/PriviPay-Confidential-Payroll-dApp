@@ -33,41 +33,60 @@ export const AuthPage = () => {
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
   const [checkingInvites, setCheckingInvites] = useState(true);
 
-  // Check for pending email invitations
+// Check for pending email invitations
   useEffect(() => {
     const checkPendingInvitations = async () => {
       if (isAuthenticated && walletAddress) {
         setCheckingInvites(true);
         try {
+          const allInvitations: any[] = [];
+
           // Get user email from Dynamic if available
           const userEmail = (user as any)?.email;
-          
+
           if (userEmail) {
             // Fetch pending invitations for this email
-            const { data: invitations, error } = await supabase
+            const { data: emailInvitations, error } = await supabase
               .from("invitations")
               .select("*")
               .eq("email", userEmail.toLowerCase())
               .eq("status", "pending");
-            
-            if (!error && invitations && invitations.length > 0) {
-              // Get organization names
-              const orgIds = [...new Set(invitations.map(i => i.organization_id))];
-              const { data: orgs } = await supabase
-                .from("organizations")
-                .select("id, name, description")
-                .in("id", orgIds);
-              
-              const orgMap = new Map(orgs?.map(o => [o.id, { name: o.name, description: o.description }]) || []);
-              
-              const formatted = invitations.map(inv => ({
-                ...inv,
-                organization_name: orgMap.get(inv.organization_id)?.name || "Organization",
-                organization_description: orgMap.get(inv.organization_id)?.description || ""
-              }));
-              
-              setPendingInvitations(formatted);
+
+            if (!error && emailInvitations) {
+              allInvitations.push(...emailInvitations);
             }
+          }
+
+          // Check for wallet-based invitations
+          if (walletAddress) {
+            const { data: walletInvitations, error: walletError } = await supabase
+              .from("invitations")
+              .select("*")
+              .eq("wallet_address", walletAddress.toLowerCase())
+              .eq("status", "pending");
+
+            if (!walletError && walletInvitations) {
+              allInvitations.push(...walletInvitations);
+            }
+          }
+
+          if (allInvitations.length > 0) {
+            // Get organization names
+            const orgIds = [...new Set(allInvitations.map(i => i.organization_id))];
+            const { data: orgs } = await supabase
+              .from("organizations")
+              .select("id, name, description")
+              .in("id", orgIds);
+
+            const orgMap = new Map(orgs?.map(o => [o.id, { name: o.name, description: o.description }]) || []);
+
+            const formatted = allInvitations.map(inv => ({
+              ...inv,
+              organization_name: orgMap.get(inv.organization_id)?.name || "Organization",
+              organization_description: orgMap.get(inv.organization_id)?.description || ""
+            }));
+
+            setPendingInvitations(formatted);
           }
         } catch (e) {
           console.log("No pending invitations");
