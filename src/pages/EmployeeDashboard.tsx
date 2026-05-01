@@ -199,14 +199,16 @@ if (!isOwner) {
             <User className="h-5 w-5" />
             Your Information
           </CardTitle>
-          {!isOwner && employee && (
+          {!isOwner && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("Edit button clicked, employee:", employee);
                 setEditNameForm({
-                  name: (employee as any).name || "",
-                  position: employee.position || ""
+                  name: employee ? (employee as any).name || "" : "",
+                  position: employee?.position || ""
                 });
                 setEditingName(true);
               }}
