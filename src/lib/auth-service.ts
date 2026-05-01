@@ -44,6 +44,7 @@ export const authService = {
   // Get or create user profile based on wallet address
   async getOrCreateProfile(walletAddress: string): Promise<Profile> {
     const lowerAddress = walletAddress.toLowerCase();
+    console.log("getOrCreateProfile for:", lowerAddress);
     
     // First try to find existing profile
     const { data: existing, error: findError } = await supabase
@@ -51,6 +52,8 @@ export const authService = {
       .select("*")
       .eq("wallet_address", lowerAddress)
       .single();
+
+    console.log("Existing profile:", existing, "error:", findError);
 
     if (existing) return existing;
 
@@ -70,20 +73,84 @@ export const authService = {
   },
 
 // Get user's organizations and role
-  async getUserOrganizationsAndRole(walletAddress: string): Promise<{
+async getUserOrganizationsAndRole(walletAddress: string): Promise<{
     organizations: Organization[];
     role: UserRole | null;
     isOwner: boolean;
   }> {
+    console.log("getUserOrganizationsAndRole for:", walletAddress);
+    
     // Check if user is owner of any organizations
     const { data: ownedOrgs, error: ownerError } = await supabase
       .from("organizations")
       .select("*")
       .eq("owner_id", walletAddress.toLowerCase());
 
+    console.log("Owned orgs:", ownedOrgs, "error:", ownerError);
+
     if (ownerError && ownerError.code !== "PGRST116") {
       throw new Error(ownerError.message);
     }
+
+    // If user owns orgs, they're an employer/owner
+    if (ownedOrgs && ownedOrgs.length > 0) {
+      // Return only the first org (most recent) for owners
+      return {
+        organizations: [ownedOrgs[0]],
+        role: null,
+        isOwner: true,
+      };
+    }
+
+    // Check user_roles for membership (all roles except pending)
+    const { data: roles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select(`
+        *,
+        organizations:organization_id (*)
+      `)
+      .eq("user_id", walletAddress.toLowerCase())
+      .neq("role", "pending");
+
+    console.log("User roles:", roles, "error:", rolesError);
+
+    if (rolesError) throw new Error(rolesError.message);
+
+    if (roles && roles.length > 0) {
+      const role = roles[0];
+      return {
+        organizations: roles.map((r: any) => r.organizations).filter(Boolean),
+        role: role,
+        isOwner: false,
+      };
+    }
+
+    // Check for pending roles
+    const { data: pendingRoles } = await supabase
+      .from("user_roles")
+      .select(`
+        *,
+        organizations:organization_id (*)
+      `)
+      .eq("user_id", walletAddress.toLowerCase())
+      .eq("role", "pending");
+
+    console.log("Pending roles:", pendingRoles);
+
+    if (pendingRoles && pendingRoles.length > 0) {
+      return {
+        organizations: [],
+        role: pendingRoles[0],
+        isOwner: false,
+      };
+    }
+
+    return {
+      organizations: [],
+      role: null,
+      isOwner: false,
+    };
+  }
 
     // If user owns orgs, they're an employer/owner
     if (ownedOrgs && ownedOrgs.length > 0) {
