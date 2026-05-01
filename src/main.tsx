@@ -15,6 +15,25 @@ const sdkOptions = {
   enableEmbeddedWallet: true,
   showDynamicWidget: true,
   allowMultiWalletConnections: true,
+  overrides: {
+    evmNetworks: [
+      {
+        blockExplorerUrls: ["https://sepolia.etherscan.io"],
+        chainId: 11155111,
+        chainName: "Ethereum Sepolia",
+        iconUrls: ["https://app.dynamic.xyz/assets/networks/eth.svg"],
+        name: "Sepolia",
+        nativeCurrency: {
+          decimals: 18,
+          name: "Sepolia ETH",
+          symbol: "ETH",
+        },
+        networkId: 11155111,
+        rpcUrls: ["https://rpc.sepolia.org", "https://ethereum-sepolia-rpc.publicnode.com"],
+        vanityName: "Sepolia",
+      },
+    ],
+  },
 };
 
 const LoadingFallback = () => (
