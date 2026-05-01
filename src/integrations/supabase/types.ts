@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      bonus_requests: {
+        Row: {
+          amount: number
+          created_at: string | null
+          employee_id: string | null
+          id: string
+          month: string
+          organization_id: string | null
+          requested_by_wallet: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          month: string
+          organization_id?: string | null
+          requested_by_wallet?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          month?: string
+          organization_id?: string | null
+          requested_by_wallet?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonus_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bonus_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bonuses: {
+        Row: {
+          amount: number
+          created_at: string | null
+          employee_id: string | null
+          id: string
+          month: string
+          organization_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          month: string
+          organization_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+          month?: string
+          organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bonuses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bonuses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           created_at: string
@@ -21,6 +111,7 @@ export type Database = {
           encrypted_bonus: string | null
           encrypted_salary: string | null
           id: string
+          name: string | null
           organization_id: string
           position: string | null
           status: string
@@ -34,6 +125,7 @@ export type Database = {
           encrypted_bonus?: string | null
           encrypted_salary?: string | null
           id?: string
+          name?: string | null
           organization_id: string
           position?: string | null
           status?: string
@@ -47,6 +139,7 @@ export type Database = {
           encrypted_bonus?: string | null
           encrypted_salary?: string | null
           id?: string
+          name?: string | null
           organization_id?: string
           position?: string | null
           status?: string
@@ -54,22 +147,15 @@ export type Database = {
           user_id?: string | null
           wallet_address?: string
         }
-Relationships: [
-      {
-        foreignKeyName: "employees_organization_id_fkey"
-        columns: ["organization_id"]
-        isOneToOne: false
-        referencedRelation: "organizations"
-        referencedColumns: ["id"]
-      },
-      {
-        foreignKeyName: "employees_user_id_fkey"
-        columns: ["user_id"]
-        isOneToOne: false
-        referencedRelation: "profiles"
-        referencedColumns: ["wallet_address"]
-      },
-    ]
+        Relationships: [
+          {
+            foreignKeyName: "employees_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invitations: {
         Row: {
@@ -111,6 +197,47 @@ Relationships: [
         Relationships: [
           {
             foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          organization_id: string
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          organization_id: string
+          read?: boolean | null
+          title: string
+          type?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          organization_id?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -202,7 +329,7 @@ Relationships: [
           },
         ]
       }
-profiles: {
+      profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
@@ -231,47 +358,6 @@ profiles: {
           wallet_address?: string | null
         }
         Relationships: []
-      }
-      notifications: {
-        Row: {
-          id: string
-          organization_id: string
-          user_id: string | null
-          type: string
-          title: string
-          message: string | null
-          read: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          user_id?: string | null
-          type: string
-          title: string
-          message?: string | null
-          read?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          user_id?: string | null
-          type?: string
-          title?: string
-          message?: string | null
-          read?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          }
-        ]
       }
       user_roles: {
         Row: {
@@ -305,6 +391,54 @@ profiles: {
           },
         ]
       }
+      vote_records: {
+        Row: {
+          created_at: string | null
+          employee_id: string
+          encrypted_vote: string | null
+          id: string
+          organization_id: string
+          status: string
+          vote_type: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id: string
+          encrypted_vote?: string | null
+          id?: string
+          organization_id: string
+          status?: string
+          vote_type?: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string
+          encrypted_vote?: string | null
+          id?: string
+          organization_id?: string
+          status?: string
+          vote_type?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vote_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vote_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -331,7 +465,7 @@ profiles: {
       }
     }
     Enums: {
-      app_role: "employer" | "employee" | "auditor" | "manager" | "pending"
+      app_role: "employer" | "staff" | "auditor" | "manager" | "pending"
       payroll_status: "pending" | "processing" | "completed" | "failed"
     }
     CompositeTypes: {
@@ -460,7 +594,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["employer", "employee", "auditor", "manager", "pending"],
+      app_role: ["employer", "staff", "auditor", "manager", "pending"],
       payroll_status: ["pending", "processing", "completed", "failed"],
     },
   },
