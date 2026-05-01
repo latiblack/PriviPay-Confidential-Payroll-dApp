@@ -15,6 +15,7 @@ import {
 const SettingsPage = () => {
   const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const isOwner = profile?.currentRole === "owner";
   
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
@@ -71,30 +72,31 @@ const SettingsPage = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">Manage your organization preferences</p>
-      </div>
+{/* Header */}
+  <div>
+    <h1 className="text-2xl font-bold">Settings</h1>
+    <p className="text-muted-foreground">{isOwner ? "Manage your organization preferences" : "Manage your personal preferences"}</p>
+  </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Organization Details */}
-        <Card className="border shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" /> Organization Details
-            </CardTitle>
-            <CardDescription>Update your organization information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Organization Name</Label>
-              <Input 
-                value={orgName} 
-                onChange={(e) => setOrgName(e.target.value)}
-                placeholder="Acme Corporation"
-              />
-            </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Organization Details - Only for owners */}
+    {isOwner && (
+    <Card className="border shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" /> Organization Details
+        </CardTitle>
+        <CardDescription>Update your organization information</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label>Organization Name</Label>
+          <Input
+            value={orgName}
+            onChange={(e) => setOrgName(e.target.value)}
+            placeholder="Acme Corporation"
+          />
+        </div>
             <div>
               <Label>Description</Label>
               <Textarea 
@@ -103,14 +105,15 @@ const SettingsPage = () => {
                 placeholder="Brief description of your organization"
                 rows={3}
               />
-            </div>
-            <Button onClick={handleSaveOrg} disabled={savingOrg} className="w-full">
-              {savingOrg ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Organization
-            </Button>
-          </CardContent>
-        </Card>
-        {/* Currency & Language */}
+</div>
+  <Button onClick={handleSaveOrg} disabled={savingOrg} className="w-full">
+    {savingOrg ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+    Save Organization
+  </Button>
+  </CardContent>
+</Card>
+)}
+{/* Currency & Language */}
         <Card className="border shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
