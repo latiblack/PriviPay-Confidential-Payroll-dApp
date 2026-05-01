@@ -8,6 +8,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User } from "lucide-react";
+import ethereumService from "@/lib/ethereum";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
@@ -77,6 +78,36 @@ const EmployeeDashboard = () => {
         if ((isOwner || isManager) && activeEmployees.length > 0 && !selectedEmployeeId) {
           setSelectedEmployeeId(activeEmployees[0].id);
         }
+
+        // Fetch real blockchain transactions for owners
+        if (isOwner && profile.currentOrganization?.id) {
+          try {
+            const orgData = profile.currentOrganization;
+            // Get organization's wallet address from the org record
+            const { data: orgRecord } = await supabase
+              .from("organizations")
+              .select("wallet_address")
+              .eq("id", profile.currentOrganization.id)
+              .single();
+            
+            if (orgRecord?.wallet_address) {
+              const txHistory = await ethereumService.getTransactionHistory(orgRecord.wallet_address, 20);
+              
+              // Transform blockchain transactions to payment format
+              const blockchainPayments = txHistory.map((tx, index) => ({
+                id: `tx-${index}-${tx.hash.slice(0, 8)}`,
+                amount: Number(tx.amount),
+                type: tx.recipient.toLowerCase() === orgRecord.wallet_address.toLowerCase() ? "received" : "sent",
+                status: tx.status,
+                created_at: tx.timestamp.toISOString()
+              }));
+              
+              setPayments(blockchainPayments);
+            }
+          } catch (err) {
+            console.error("Error fetching blockchain transactions:", err);
+          }
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -88,6 +119,11 @@ const EmployeeDashboard = () => {
   }, [profile?.currentOrganization?.id, isOwner, isManager, walletAddress]);
 
   useEffect(() => {
+    // Don't fetch employee payments for owners - they get blockchain transactions instead
+    if (isOwner) {
+      return;
+    }
+    
     const fetchEmployeeData = async () => {
       if (!selectedEmployeeId) {
         setEmployee(null);
@@ -123,7 +159,7 @@ const EmployeeDashboard = () => {
     };
 
     fetchEmployeeData();
-  }, [selectedEmployeeId, employees]);
+  }, [selectedEmployeeId, employees, isOwner]);
 
   const getMemberRole = (walletAddress: string) => {
     const member = members.find(m => m.user_id?.toLowerCase() === walletAddress?.toLowerCase());

@@ -191,6 +191,95 @@ async processPayroll(
   getUserAddress(): string {
     return this.userAddress;
   }
+
+  async getTransactionHistory(walletAddress: string, limit: number = 20): Promise<PayrollTransaction[]> {
+    try {
+      const ethersProvider = new ethers.JsonRpcProvider(this.getSepoliaRPC());
+      const currentBlock = await ethersProvider.getBlockNumber();
+      const startBlock = Math.max(0, currentBlock - 1000); // Look back ~1000 blocks (~4 hours on Sepolia)
+
+      const transactions: PayrollTransaction[] = [];
+      
+      // Get outbound transfers (sent payments)
+      const outboundFilter = {
+        fromBlock: startBlock,
+        toBlock: currentBlock,
+        topics: [
+          ethers.id("Transfer(address,address,uint256)"),
+          null,
+          ethers.zeroPadValue(walletAddress.toLowerCase(), 32)
+        ]
+      };
+
+      // Get inbound transfers (received payments)
+      const inboundFilter = {
+        fromBlock: startBlock,
+        toBlock: currentBlock,
+        topics: [
+          ethers.id("Transfer(address,address,uint256)"),
+          ethers.zeroPadValue(walletAddress.toLowerCase(), 32)
+        ]
+      };
+
+      // Fetch logs for outbound transfers
+      try {
+        const outboundLogs = await ethersProvider.getLogs(outboundFilter);
+        for (const log of outboundLogs) {
+          const block = await ethersProvider.getBlock(log.blockNumber);
+          const tx = await ethersProvider.getTransaction(log.transactionHash);
+          
+          if (tx) {
+            // Parse the transfer amount from log data
+            const amount = ethers.formatEther(log.data || "0");
+            
+            transactions.push({
+              hash: log.transactionHash,
+              amount: amount,
+              recipient: tx.to || "",
+              status: block && block.timestamp < Date.now() / 1000 - 12 ? "confirmed" : "pending",
+              timestamp: new Date((block?.timestamp || 0) * 1000)
+            });
+          }
+        }
+      } catch (e) {
+        console.log("No outbound transfers found");
+      }
+
+      // Fetch logs for inbound transfers
+      try {
+        const inboundLogs = await ethersProvider.getLogs(inboundFilter);
+        for (const log of inboundLogs) {
+          const block = await ethersProvider.getBlock(log.blockNumber);
+          const tx = await ethersProvider.getTransaction(log.transactionHash);
+          
+          if (tx) {
+            const amount = ethers.formatEther(log.data || "0");
+            
+            // Skip if it's the same as outbound (already counted)
+            const isDuplicate = transactions.some(t => t.hash === log.transactionHash);
+            if (!isDuplicate) {
+              transactions.push({
+                hash: log.transactionHash,
+                amount: amount,
+                recipient: tx.from || "",
+                status: block && block.timestamp < Date.now() / 1000 - 12 ? "confirmed" : "pending",
+                timestamp: new Date((block?.timestamp || 0) * 1000)
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.log("No inbound transfers found");
+      }
+
+      // Sort by timestamp descending and limit
+      transactions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      return transactions.slice(0, limit);
+    } catch (err) {
+      console.error("Error fetching transaction history:", err);
+      return [];
+    }
+  }
 }
 
 export const ethereumService = new EthereumService();
