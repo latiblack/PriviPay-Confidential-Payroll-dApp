@@ -69,6 +69,9 @@ const PaymentsPage = () => {
 const [ethBalance, setEthBalance] = useState("0");
   const [ethConnected, setEthConnected] = useState(false);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [ethPrice, setEthPrice] = useState<number>(0);
+  const [totalReceived, setTotalReceived] = useState<string>("$0.00");
+  const [loadingTotalReceived, setLoadingTotalReceived] = useState(false);
   const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
 const fetchData = async () => {
@@ -208,6 +211,42 @@ useEffect(() => {
       refetchBalance();
     }
   }, [profile?.currentOrganization?.id, profile?.walletAddress, chainId]);
+
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        const data = await response.json();
+        if (data.ethereum?.usd) {
+          setEthPrice(data.ethereum.usd);
+        }
+      } catch (err) {
+        console.error("Failed to fetch ETH price:", err);
+      }
+    };
+    fetchEthPrice();
+    const interval = setInterval(fetchEthPrice, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!isOwner && profile?.walletAddress) {
+      const fetchTotalReceived = async () => {
+        setLoadingTotalReceived(true);
+        try {
+          const txHistory = await ethereumService.getTransactionHistory(profile.walletAddress.toLowerCase(), 50);
+          const total = txHistory.reduce((sum, tx) => sum + tx.value, 0);
+          setTotalReceived(formatCurrency(total * 100));
+        } catch (err) {
+          console.error("Failed to fetch transaction history:", err);
+          setTotalReceived("$0.00");
+        } finally {
+          setLoadingTotalReceived(false);
+        }
+      };
+      fetchTotalReceived();
+    }
+  }, [isOwner, profile?.walletAddress]);
 
 const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
@@ -580,18 +619,46 @@ const handleWithdraw = async () => {
                   onClick={ethConnected ? refreshBalance : connectToEth}
                   disabled={loadingBalance}
                 >
-{loadingBalance ? (
+                {loadingBalance ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
                 <span className="ml-1 text-xs">
-                  {balanceData ? parseFloat(balanceData.formatted).toFixed(4) : parseFloat(ethBalance).toFixed(4)} ETH
+                  {(() => {
+                    const eth = balanceData ? parseFloat(balanceData.formatted) : parseFloat(ethBalance);
+                    const usd = eth * ethPrice;
+                    return `$${usd.toFixed(2)}`;
+                  })()}
                 </span>
               </Button>
             </div>
           </CardContent>
         </Card>
+
+        {!isOwner && (
+          <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+                <ArrowDownToLine className="h-4 w-4" />
+                Total Received
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingTotalReceived ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="text-sm">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold">{totalReceived}</div>
+                  <p className="text-xs opacity-75 mt-1">From payroll</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {isOwner && (
           <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
