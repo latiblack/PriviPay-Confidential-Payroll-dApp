@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS bonus_requests (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Disable RLS for now
+-- Disable RLS for noww
 ALTER TABLE bonus_requests DISABLE ROW LEVEL SECURITY;
