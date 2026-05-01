@@ -407,9 +407,14 @@ const handleProcessPayroll = async () => {
 
 const handleWithdraw = async () => {
   if (!amount) return;
+  if (!walletClient) {
+    toast({ title: "Error", description: "Please connect your wallet to withdraw", variant: "destructive" });
+    return;
+  }
 
   setProcessing(true);
   try {
+    await ethereumService.initializeWithSigner(walletClient);
     const amountEth = (Number(amount) / 100).toString();
     const txHash = await ethereumService.sendTransaction(
       profile.walletAddress || "",
