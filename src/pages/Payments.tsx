@@ -221,6 +221,52 @@ useEffect(() => {
   }
 }, [profile?.currentOrganization?.id, profile?.walletAddress, provider]);
 
+// Listen for chain changes from the wallet so the UI updates immediately after a network switch.
+useEffect(() => {
+  if (!provider || typeof provider.on !== "function") return;
+
+  const handleChainChanged = (newChainId: string) => {
+    console.log("[Payments] chainChanged event:", newChainId);
+    setCurrentChain(newChainId);
+    if (newChainId === SEPOLIA_CHAIN_ID) {
+      // Re-init ethereum service with the now-correct chain and load balance
+      connectToEth();
+    } else {
+      setEthConnected(false);
+      setEthBalance("0");
+    }
+  };
+
+  provider.on("chainChanged", handleChainChanged);
+  return () => {
+    if (typeof provider.removeListener === "function") {
+      provider.removeListener("chainChanged", handleChainChanged);
+    } else if (typeof provider.off === "function") {
+      provider.off("chainChanged", handleChainChanged);
+    }
+  };
+}, [provider]);
+
+// Poll chainId as a safety net in case the provider doesn't emit chainChanged (some wallet connectors)
+useEffect(() => {
+  if (!provider) return;
+  const interval = setInterval(async () => {
+    try {
+      const chainId = await provider.request({ method: "eth_chainId" });
+      if (chainId && chainId !== currentChain) {
+        console.log("[Payments] Detected chain change via poll:", chainId);
+        setCurrentChain(chainId);
+        if (chainId === SEPOLIA_CHAIN_ID) {
+          connectToEth();
+        } else {
+          setEthConnected(false);
+        }
+      }
+    } catch {}
+  }, 2000);
+  return () => clearInterval(interval);
+}, [provider, currentChain]);
+
   const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
     const member = availableMembers.find(m => m.id === memberId);
