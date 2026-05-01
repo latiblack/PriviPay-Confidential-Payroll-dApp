@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain, useBalance } from 'wagmi';
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import ethereumService from "@/lib/ethereum";
@@ -35,6 +35,10 @@ const PaymentsPage = () => {
   const { walletAddress, provider } = useWalletAuth();
   const { chainId } = useAccount();
   const { switchChain } = useSwitchChain();
+  const { data: balanceData, refetch: refetchBalance } = useBalance({
+    address: walletAddress as `0x${string}`,
+    chainId: 11155111, // Sepolia
+  });
   const { toast } = useToast();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
@@ -61,24 +65,16 @@ const PaymentsPage = () => {
   });
   const [savingEmployee, setSavingEmployee] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState("");
-  const [ethBalance, setEthBalance] = useState("0");
+const [ethBalance, setEthBalance] = useState("0");
   const [ethConnected, setEthConnected] = useState(false);
   const [loadingBalance, setLoadingBalance] = useState(false);
-  const [currentChain, setCurrentChain] = useState<string | null>(null);
-  const SEPOLIA_CHAIN_ID = "0x" + (11155111).toString(16);
-  const normalizeChainId = (chainId: string | number | bigint | null | undefined) => {
-    if (chainId === null || chainId === undefined) return null;
-    if (typeof chainId === "string") {
-      if (chainId.startsWith("0x")) return chainId.toLowerCase();
-      const parsed = Number(chainId);
-      return Number.isNaN(parsed) ? chainId.toLowerCase() : `0x${parsed.toString(16)}`;
-    }
-    return `0x${Number(chainId).toString(16)}`.toLowerCase();
-  };
-  const getActiveProvider = () => provider;
+  const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
-  const fetchData = async () => {
-    if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
+const fetchData = async () => {
+  if (!profile?.currentOrganization?.id || !profile?.walletAddress) {
+    setLoading(false);
+    return;
+  }
 
     try {
       // Get employees in payroll
@@ -151,157 +147,68 @@ setLoading(false);
   }
 };
 
-const SEPOLIA_CHAIN_ID_NUM = 11155111;
-
 const handleSwitchToSepolia = async () => {
-  if (!walletAddress) {
-    toast({ title: "No wallet connected", variant: "destructive" });
-    return;
-  }
-  try {
-    switchChain({ chainId: SEPOLIA_CHAIN_ID_NUM });
-    toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
-
-    // Poll until the active provider reports Sepolia (Dynamic may swap provider instances after switching)
-    for (let i = 0; i < 10; i++) {
-      await new Promise((r) => setTimeout(r, 500));
-      try {
-        const prov = getActiveProvider();
-        if (!prov) continue;
-        const chainId = normalizeChainId(await prov.request({ method: "eth_chainId" }));
-        if (chainId === SEPOLIA_CHAIN_ID) {
-          setCurrentChain(chainId);
-          await connectToEth();
-          break;
-        }
-      } catch (e) {
-        console.warn("Chain check attempt failed:", e);
-      }
+    if (!walletAddress) {
+      toast({ title: "No wallet connected", variant: "destructive" });
+      return;
     }
-  } catch (err: any) {
-    console.error("Failed to switch network:", err);
-    toast({
-      title: "Switch failed",
-      description: err?.message || "Please switch to Sepolia manually in your wallet.",
-      variant: "destructive",
-      duration: 5000,
-    });
-  }
-};
+    try {
+      await switchChain({ chainId: SEPOLIA_CHAIN_ID_NUM });
+      toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
+      await refreshBalance();
+    } catch (err: any) {
+      console.error("Failed to switch network:", err);
+      toast({
+        title: "Switch failed",
+        description: err?.message || "Please switch to Sepolia manually in your wallet.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
 
 const connectToEth = async () => {
-  const activeProvider = getActiveProvider();
-  if (!activeProvider) return;
-
-  try {
-    const initialized = await ethereumService.initialize(activeProvider);
-    if (!initialized) return;
-
-    const chainId = normalizeChainId(await ethereumService.getCurrentChainId(activeProvider));
-    setCurrentChain(chainId);
-
-    if (chainId !== SEPOLIA_CHAIN_ID) {
-      // Don't toast here - the banner already warns. Just mark not connected.
-      setEthConnected(false);
-      setEthBalance("0");
-      return;
-    }
-
-    setEthConnected(true);
+    if (!walletAddress) return;
     await refreshBalance();
-  } catch (err) {
-    console.error("Failed to connect:", err);
-  }
-};
+  };
 
 const refreshBalance = async () => {
-  const activeProvider = getActiveProvider();
-  if (!activeProvider) return;
-  setLoadingBalance(true);
-  try {
-    const chainId = normalizeChainId(await ethereumService.getCurrentChainId(activeProvider));
-    setCurrentChain(chainId);
-
-    if (chainId !== SEPOLIA_CHAIN_ID) {
-      toast({
-        title: "Wrong Network",
-        description: "Please switch to Sepolia to see your balance",
-        duration: 3000,
-      });
-      setEthConnected(false);
-      setEthBalance("0");
-      setLoadingBalance(false);
-      return;
-    }
-
-    const balance = await ethereumService.getBalance(walletAddress || undefined, activeProvider);
-    setEthBalance(balance);
-    setEthConnected(true);
-  } catch (err) {
-    console.error("Failed to get balance:", err);
-  } finally {
-    setLoadingBalance(false);
-  }
-};
-
-useEffect(() => {
-  fetchData();
-  if (provider) {
-    connectToEth();
-  }
-}, [profile?.currentOrganization?.id, profile?.walletAddress, provider, chainId]);
-
-// Listen for chain changes from the wallet so the UI updates immediately after a network switch.
-useEffect(() => {
-  const activeProvider = getActiveProvider();
-  if (!activeProvider || typeof activeProvider.on !== "function") return;
-
-  const handleChainChanged = (newChainId: string) => {
-    const normalizedChainId = normalizeChainId(newChainId);
-    console.log("[Payments] chainChanged event:", normalizedChainId);
-    setCurrentChain(normalizedChainId);
-    if (normalizedChainId === SEPOLIA_CHAIN_ID) {
-      // Re-init ethereum service with the now-correct chain and load balance
-      connectToEth();
-    } else {
-      setEthConnected(false);
-      setEthBalance("0");
-    }
-  };
-
-  activeProvider.on("chainChanged", handleChainChanged);
-  return () => {
-    if (typeof activeProvider.removeListener === "function") {
-      activeProvider.removeListener("chainChanged", handleChainChanged);
-    } else if (typeof activeProvider.off === "function") {
-      activeProvider.off("chainChanged", handleChainChanged);
-    }
-  };
-}, [provider, chainId]);
-
-// Poll chainId as a safety net in case the provider doesn't emit chainChanged (some wallet connectors)
-useEffect(() => {
-  const activeProvider = getActiveProvider();
-  if (!activeProvider) return;
-  const interval = setInterval(async () => {
+    if (!walletAddress) return;
+    setLoadingBalance(true);
     try {
-      const chainId = normalizeChainId(await activeProvider.request({ method: "eth_chainId" }));
-      if (chainId && chainId !== currentChain) {
-        console.log("[Payments] Detected chain change via poll:", chainId);
-        setCurrentChain(chainId);
-        if (chainId === SEPOLIA_CHAIN_ID) {
-          connectToEth();
-        } else {
-          setEthConnected(false);
-          setEthBalance("0");
-        }
+      if (chainId !== SEPOLIA_CHAIN_ID_NUM) {
+        toast({
+          title: "Wrong Network",
+          description: "Please switch to Sepolia to see your balance",
+          duration: 3000,
+        });
+        setEthConnected(false);
+        setEthBalance("0");
+        setLoadingBalance(false);
+        return;
       }
-    } catch {}
-  }, 2000);
-  return () => clearInterval(interval);
-}, [provider, chainId, currentChain]);
 
-  const handleMemberSelect = (memberId: string) => {
+      await refetchBalance();
+      if (balanceData) {
+        setEthBalance(balanceData.formatted);
+        setEthConnected(true);
+      }
+    } catch (err) {
+      console.error("Failed to get balance:", err);
+    } finally {
+      setLoadingBalance(false);
+    }
+  };
+
+useEffect(() => {
+    fetchData();
+    if (walletAddress && chainId === SEPOLIA_CHAIN_ID_NUM) {
+      setEthConnected(true);
+      refetchBalance();
+    }
+  }, [profile?.currentOrganization?.id, profile?.walletAddress, chainId]);
+
+const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
     const member = availableMembers.find(m => m.id === memberId);
     if (member) {
@@ -494,7 +401,7 @@ const handleWithdraw = async () => {
 
   return (
     <div className="space-y-6">
-      {currentChain !== SEPOLIA_CHAIN_ID && (
+      {chainId !== SEPOLIA_CHAIN_ID_NUM && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-3">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
           <div className="flex-1">
@@ -665,12 +572,14 @@ const handleWithdraw = async () => {
                   onClick={ethConnected ? refreshBalance : connectToEth}
                   disabled={loadingBalance}
                 >
-                  {loadingBalance ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-<span className="ml-1 text-xs">{parseFloat(ethBalance).toFixed(4)} ETH</span>
+{loadingBalance ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="ml-1 text-xs">
+                  {balanceData ? parseFloat(balanceData.formatted).toFixed(4) : parseFloat(ethBalance).toFixed(4)} ETH
+                </span>
               </Button>
             </div>
           </CardContent>
