@@ -419,9 +419,11 @@ if (!isAuthenticated) {
                         try {
                           setJoining(true);
                           await organizationService.acceptInvitation(inv.code, walletAddress, walletAddress);
-                          await refreshProfile();
+                          const freshProfile = await refreshProfile();
+                          console.log("After accept - profile:", freshProfile);
                           navigate("/employee");
                         } catch (e) {
+                          console.error("Accept error:", e);
                           setJoinError("Failed to accept invitation");
                         } finally {
                           setJoining(false);

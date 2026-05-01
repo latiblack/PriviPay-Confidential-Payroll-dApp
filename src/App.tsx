@@ -139,6 +139,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode;
   if (!requiredRole) {
     // Check if user has a valid role and organization
     const hasValidAccess = profile.currentRole && profile.currentOrganization;
+    console.log("ProtectedRoute check:", { currentRole: profile.currentRole, currentOrganization: profile.currentOrganization, hasValidAccess });
     
     if (!hasValidAccess) {
       // No valid access - go to auth
