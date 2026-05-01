@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { useAccount, useSwitchChain, useBalance } from 'wagmi';
+import { useAccount, useSwitchChain, useBalance, useWalletClient } from 'wagmi';
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import ethereumService from "@/lib/ethereum";
@@ -39,6 +39,7 @@ const PaymentsPage = () => {
     address: walletAddress as `0x${string}`,
     chainId: 11155111, // Sepolia
   });
+  const { data: walletClient } = useWalletClient();
   const { toast } = useToast();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
@@ -317,20 +318,27 @@ const { error } = await supabase
   };
 
 const handleProcessPayroll = async () => {
-  if (employees.length === 0) return;
+    if (employees.length === 0) return;
+    if (!walletClient) {
+      toast({ title: "Wallet not connected", description: "Please connect your wallet to process payroll", variant: "destructive" });
+      return;
+    }
 
-  setProcessing(true);
-  try {
-    const employeesToPay = employees
-      .filter(e => Number(e.encrypted_salary) > 0)
-      .map(e => ({
-        address: e.wallet_address,
-        salary: Number(e.encrypted_salary) / 100,
-      }));
+    setProcessing(true);
+    try {
+      // Initialize ethereum service with walletClient signer
+      await ethereumService.initializeWithSigner(walletClient);
 
-    if (employeesToPay.length === 0) {
-      toast({ title: "No employees to pay", description: "All employees have $0 salary", variant: "destructive" });
-      setProcessing(false);
+      const employeesToPay = employees
+        .filter(e => Number(e.encrypted_salary) > 0)
+        .map(e => ({
+          address: e.wallet_address,
+          salary: Number(e.encrypted_salary) / 100,
+        }));
+
+      if (employeesToPay.length === 0) {
+        toast({ title: "No employees to pay", description: "All employees have $0 salary", variant: "destructive" });
+        setProcessing(false);
       return;
     }
 

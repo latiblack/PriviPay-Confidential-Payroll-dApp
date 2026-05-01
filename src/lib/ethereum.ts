@@ -39,6 +39,17 @@ class EthereumService {
     }
   }
 
+  async initializeWithSigner(walletClient: any): Promise<boolean> {
+    try {
+      this.signer = walletClient;
+      this.userAddress = walletClient.account.address;
+      return true;
+    } catch (err) {
+      console.error("Failed to initialize with signer:", err);
+      return false;
+    }
+  }
+
   async switchToSepolia(dynamicProvider?: any): Promise<{ success: boolean; needsManualSwitch: boolean }> {
     const eth = dynamicProvider;
     if (!eth) return { success: false, needsManualSwitch: true };
@@ -107,17 +118,24 @@ class EthereumService {
     }
   }
 
-  async sendTransaction(to: string, amountInEth: string): Promise<string> {
+async sendTransaction(to: string, amountInEth: string): Promise<string> {
     if (!this.signer) {
       throw new Error("Wallet not connected");
     }
 
     try {
-      const tx = await this.signer.sendTransaction({
-        to,
-        value: parseEther(amountInEth),
-      });
-
+      let tx;
+      if (this.signer.sendTransaction) {
+        tx = await this.signer.sendTransaction({
+          to,
+          value: parseEther(amountInEth),
+        });
+      } else {
+        tx = await this.signer.sendTransaction({
+          to,
+          value: parseEther(amountInEth),
+        });
+      }
       await tx.wait();
       return tx.hash;
     } catch (err) {
@@ -141,10 +159,20 @@ class EthereumService {
       const emp = employees[i];
       if (emp.salary > 0) {
         try {
-          const tx = await this.signer.sendTransaction({
-            to: emp.address,
-            value: parseEther(emp.salary.toString()),
-          });
+          let tx;
+          // Handle walletClient from wagmi
+          if (this.signer.sendTransaction) {
+            tx = await this.signer.sendTransaction({
+              to: emp.address,
+              value: parseEther(emp.salary.toString()),
+            });
+          } else {
+            // Handle ethers signer
+            tx = await this.signer.sendTransaction({
+              to: emp.address,
+              value: parseEther(emp.salary.toString()),
+            });
+          }
           await tx.wait();
           txHashes.push(tx.hash);
           totalAmount += emp.salary;
@@ -155,10 +183,7 @@ class EthereumService {
       }
     }
 
-    return {
-      totalAmount: totalAmount.toString(),
-      txHashes,
-    };
+return { totalAmount: totalAmount.toString(), txHashes };
   }
 
   isConnected(): boolean {
