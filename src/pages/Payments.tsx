@@ -10,11 +10,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
+import ethereumService from "@/lib/ethereum";
 import {
   DollarSign, Users, Send, Loader2, ArrowDownToLine,
-  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle
+  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle, Wallet, RefreshCw
 } from "lucide-react";
 
 type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
@@ -57,6 +58,9 @@ const PaymentsPage = () => {
   });
   const [savingEmployee, setSavingEmployee] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [ethBalance, setEthBalance] = useState("0");
+  const [ethConnected, setEthConnected] = useState(false);
+  const [loadingBalance, setLoadingBalance] = useState(false);
 
 const fetchData = async () => {
     if (!profile?.currentOrganization?.id || !profile?.walletAddress) return;
@@ -128,13 +132,47 @@ const fetchData = async () => {
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
-      setLoading(false);
-    }
-  };
+setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchData();
-  }, [profile?.currentOrganization?.id, profile?.walletAddress]);
+const connectToEth = async () => {
+  try {
+    const initialized = await ethereumService.initialize();
+    if (!initialized) {
+      toast({ title: "Error", description: "Please install MetaMask", variant: "destructive" });
+      return;
+    }
+    const switched = await ethereumService.switchToSepolia();
+    if (!switched) {
+      toast({ title: "Error", description: "Please switch to Sepolia network", variant: "destructive" });
+      return;
+    }
+    setEthConnected(true);
+    await refreshBalance();
+  } catch (err) {
+    console.error("Failed to connect:", err);
+    toast({ title: "Error", description: "Failed to connect to wallet", variant: "destructive" });
+  }
+};
+
+const refreshBalance = async () => {
+  setLoadingBalance(true);
+  try {
+    const balance = await ethereumService.getBalance();
+    setEthBalance(balance);
+    setEthConnected(true);
+  } catch (err) {
+    console.error("Failed to get balance:", err);
+  } finally {
+    setLoadingBalance(false);
+  }
+};
+
+useEffect(() => {
+  fetchData();
+  connectToEth();
+}, [profile?.currentOrganization?.id, profile?.walletAddress]);
 
   const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
@@ -244,43 +282,72 @@ const { error } = await supabase
     setShowEditDialog(true);
   };
 
-  const handleProcessPayroll = async () => {
-    if (employees.length === 0) return;
+const handleProcessPayroll = async () => {
+  if (employees.length === 0) return;
 
-    setProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: "Payroll Processed",
-        description: `Payments sent to ${employees.length} employees`,
-      });
-    } catch (err) {
-      console.error("Error processing payroll:", err);
-      toast({ title: "Error", description: "Failed to process payroll", variant: "destructive" });
-    } finally {
+  setProcessing(true);
+  try {
+    const employeesToPay = employees
+      .filter(e => Number(e.encrypted_salary) > 0)
+      .map(e => ({
+        address: e.wallet_address,
+        salary: Number(e.encrypted_salary) / 100,
+      }));
+
+    if (employeesToPay.length === 0) {
+      toast({ title: "No employees to pay", description: "All employees have $0 salary", variant: "destructive" });
       setProcessing(false);
+      return;
     }
-  };
 
-  const handleWithdraw = async () => {
-    if (!recipient || !amount) return;
+    const result = await ethereumService.processPayroll(
+      employeesToPay,
+      (current, total, hash) => {
+        if (hash) {
+          toast({
+            title: "Payment Sent",
+            description: `Sent to employee ${current}/${total}`,
+          });
+        }
+      }
+    );
 
-    setProcessing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast({
-        title: "Withdrawal Initiated",
-        description: `$${amount} will be sent to ${recipient.slice(0, 8)}...`,
-      });
-      setRecipient("");
-      setAmount("");
-    } catch (err) {
-      console.error("Error withdrawing:", err);
-      toast({ title: "Error", description: "Failed to withdraw", variant: "destructive" });
-    } finally {
-      setProcessing(false);
-    }
-  };
+    toast({
+      title: "Payroll Processed",
+      description: `Sent ${formatCurrency(Number(result.totalAmount))} to ${result.txHashes.length} employees`,
+    });
+  } catch (err) {
+    console.error("Error processing payroll:", err);
+    toast({ title: "Error", description: "Failed to process payroll. Make sure you're on Sepolia and have enough ETH.", variant: "destructive" });
+  } finally {
+    setProcessing(false);
+  }
+};
+
+const handleWithdraw = async () => {
+  if (!amount) return;
+
+  setProcessing(true);
+  try {
+    const amountEth = (Number(amount) / 100).toString();
+    const txHash = await ethereumService.sendTransaction(
+      profile.walletAddress || "",
+      amountEth
+    );
+
+    toast({
+      title: "Withdrawal Complete",
+      description: `Sent ${formatCurrency(Number(amount))} to your wallet. Tx: ${txHash.slice(0, 10)}...`,
+    });
+    setAmount("");
+    await refreshBalance();
+  } catch (err) {
+    console.error("Error withdrawing:", err);
+    toast({ title: "Error", description: "Failed to withdraw. Make sure you're on Sepolia.", variant: "destructive" });
+  } finally {
+    setProcessing(false);
+  }
+};
 
   const totalPayroll = employees.reduce((sum, e) => {
     const sal = e.encrypted_salary;
@@ -432,22 +499,48 @@ const { error } = await supabase
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              {isOwner ? "Organization Wallet" : "My Wallet"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-mono truncate">
-              {profile.walletAddress?.slice(0, 10)}...{profile.walletAddress?.slice(-4)}
-            </div>
-            <Badge variant="secondary" className="mt-2 bg-white/20 text-white border-0">
-              {profile.currentRole}
-            </Badge>
-          </CardContent>
-        </Card>
+<Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                {isOwner ? "Organization Wallet" : "My Wallet"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-mono truncate">
+                {profile.walletAddress?.slice(0, 10)}...{profile.walletAddress?.slice(-4)}
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                  {profile.currentRole}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20 h-7 px-2"
+                  onClick={ethConnected ? refreshBalance : connectToEth}
+                  disabled={loadingBalance}
+                >
+                  {loadingBalance ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  <span className="ml-1 text-xs">{parseFloat(ethBalance).toFixed(4)} ETH</span>
+                </Button>
+              </div>
+              {!ethConnected && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full mt-2 bg-white/20 text-white hover:bg-white/30 border-0"
+                  onClick={connectToEth}
+                >
+                  Connect Wallet
+                </Button>
+              )}
+            </CardContent>
+          </Card>
 
         {isOwner && (
           <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
