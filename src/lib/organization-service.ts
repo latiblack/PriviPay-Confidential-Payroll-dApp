@@ -177,7 +177,7 @@ export const organizationService = {
         code,
         role: data.role || "employee",
         email: data.email || null,
-        wallet_address: data.walletAddress || null,
+        wallet_address: data.walletAddress ? data.walletAddress.toLowerCase() : null,
         status: "pending",
         created_by: data.createdBy,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
