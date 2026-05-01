@@ -43,7 +43,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error loading profile:", error);
       } finally {
         setLoadingWallet(null);
-        setIsLoading(false);
+        // Don't set isLoading to false here - it will cause flash to login page
+        // during chain switches. Only set to false if wallet is completely gone
+        if (!walletAddress) {
+          setIsLoading(false);
+        }
       }
     };
 
