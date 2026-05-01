@@ -27,29 +27,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      console.log("Loading profile for wallet:", walletAddress);
-      setLoadingWallet(walletAddress);
-      setIsLoading(true);
-      
-      try {
-        const userProfile = await authService.login(walletAddress);
-        console.log("Profile loaded from DB:", userProfile);
-        
-        // Only update if this is still the current wallet
-        if (userProfile.walletAddress === walletAddress) {
-          setProfile(userProfile);
-        }
-      } catch (error) {
-        console.error("Error loading profile:", error);
-      } finally {
-        setLoadingWallet(null);
-        // Don't set isLoading to false here - it will cause flash to login page
-        // during chain switches. Only set to false if wallet is completely gone
-        if (!walletAddress) {
-          setIsLoading(false);
-        }
+console.log("Loading profile for wallet:", walletAddress);
+    setLoadingWallet(walletAddress);
+    setIsLoading(true);
+
+    try {
+      const userProfile = await authService.login(walletAddress);
+      console.log("Profile loaded from DB:", userProfile);
+
+      // Only update if this is still the current wallet
+      if (userProfile.walletAddress === walletAddress) {
+        setProfile(userProfile);
       }
-    };
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    } finally {
+      setLoadingWallet(null);
+      setIsLoading(false);
+    }
+  };
 
     loadProfile();
   }, [walletAddress]);

@@ -268,14 +268,14 @@ if (!isAuthenticated) {
           <CardTitle className="text-2xl">Welcome to PriviPay</CardTitle>
           <CardDescription>Sign in to manage your confidential payroll</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-sm text-muted-foreground text-center">
-            Connect your wallet to get started
-          </p>
-          
+<CardContent className="space-y-6">
+        <p className="text-sm text-muted-foreground text-center">
+          Connect your wallet to get started
+        </p>
+        <div className="flex justify-center">
           <ConnectButton />
-          
-        </CardContent>
+        </div>
+      </CardContent>
       </Card>
     </div>
   );
