@@ -625,11 +625,7 @@ const handleWithdraw = async () => {
                   <RefreshCw className="h-4 w-4" />
                 )}
                 <span className="ml-1 text-xs">
-                  {(() => {
-                    const eth = balanceData ? parseFloat(balanceData.formatted) : parseFloat(ethBalance);
-                    const usd = eth * ethPrice;
-                    return `$${usd.toFixed(2)}`;
-                  })()}
+                  {balanceData ? parseFloat(balanceData.formatted).toFixed(4) : parseFloat(ethBalance).toFixed(4)} ETH
                 </span>
               </Button>
             </div>
@@ -809,7 +805,11 @@ const handleWithdraw = async () => {
             <div className="bg-muted p-4 rounded-lg">
               <div className="text-sm text-muted-foreground mb-1">Available Balance</div>
               <div className="text-2xl font-bold flex items-center gap-2">
-                {ownSalary}
+                {(() => {
+                  const eth = balanceData ? parseFloat(balanceData.formatted) : parseFloat(ethBalance);
+                  const usd = eth * ethPrice;
+                  return `$${usd.toFixed(2)}`;
+                })()}
                 <Badge variant="default" className="text-xs gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Available
                 </Badge>
