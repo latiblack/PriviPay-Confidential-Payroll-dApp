@@ -9,6 +9,7 @@ import { TopBar } from "@/components/TopBar";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import PendingRole from "./pages/PendingRole";
+import PendingInvitations from "./pages/PendingInvitations";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
@@ -140,8 +141,9 @@ const AppLayout = () => {
               <Suspense fallback={<PageLoader />}><Payments /></Suspense>
             </ProtectedRoute>
           } />
-          <Route path="/pending" element={<PendingRole />} />
-          <Route path="/auditor" element={
+<Route path="/pending" element={<PendingRole />} />
+  <Route path="/invitations" element={<PendingInvitations />} />
+  <Route path="/auditor" element={
             <ProtectedRoute>
               <Suspense fallback={<PageLoader />}><AuditorDashboard /></Suspense>
             </ProtectedRoute>

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign, Gift } from "lucide-react";
+import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign, Gift, MailPlus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,7 @@ export const AppSidebar = () => {
     { icon: Users, label: "Employees", path: "/employees" },
     { icon: DollarSign, label: "Treasury", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
+    { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
@@ -28,6 +29,7 @@ export const AppSidebar = () => {
     { icon: DollarSign, label: "Payments", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: BarChart3, label: "Audit", path: "/auditor" },
+    { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
@@ -38,6 +40,7 @@ export const AppSidebar = () => {
     { icon: DollarSign, label: "Payments", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: BarChart3, label: "Audit", path: "/auditor" },
+    { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
@@ -47,6 +50,7 @@ export const AppSidebar = () => {
     { icon: DollarSign, label: "Payments", path: "/payments" },
     { icon: Gift, label: "Bonus", path: "/voting" },
     { icon: BarChart3, label: "Audit", path: "/auditor" },
+    { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 

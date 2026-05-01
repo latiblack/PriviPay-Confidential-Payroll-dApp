@@ -166,6 +166,7 @@ export const organizationService = {
     organizationId: string;
     role?: string;
     email?: string;
+    walletAddress?: string;
     createdBy: string;
   }): Promise<Invitation> {
     const code = generateInviteCode();
@@ -176,6 +177,7 @@ export const organizationService = {
         code,
         role: data.role || "employee",
         email: data.email || null,
+        wallet_address: data.walletAddress || null,
         status: "pending",
         created_by: data.createdBy,
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),

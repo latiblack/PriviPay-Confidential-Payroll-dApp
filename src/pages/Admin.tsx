@@ -36,10 +36,15 @@ const [loading, setLoading] = useState(true);
   const [deletingMember, setDeletingMember] = useState<string | null>(null);
   const [deleteConfirmStep, setDeleteConfirmStep] = useState<{ [key: string]: number }>({});
 
-  // Email invitation state
-  const [inviteEmail, setInviteEmail] = useState("");
+  // Wallet invitation state
+  const [inviteWallet, setInviteWallet] = useState("");
   const [inviteRole, setInviteRole] = useState("staff");
   const [sendingInvite, setSendingInvite] = useState(false);
+
+  // Pending invitations and join requests
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
+  const [joinRequests, setJoinRequests] = useState<any[]>([]);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
   const handleRemoveMember = async (memberId: string) => {
     const currentStep = deleteConfirmStep[memberId] || 0;
@@ -137,6 +142,14 @@ const [loading, setLoading] = useState(true);
     return () => window.removeEventListener("focus", handleFocus);
   }, [profile?.currentOrganization?.id]);
 
+  // Fetch pending invitations and join requests
+  useEffect(() => {
+    if (profile?.currentOrganization?.id && walletAddress) {
+      fetchPendingInvitations();
+      fetchJoinRequests();
+    }
+  }, [profile?.currentOrganization?.id, walletAddress]);
+
   // Get employee data for a member
   const getEmployeeData = (userId: string) => {
     return payrollEmployees.find(emp => emp.wallet_address === userId);
@@ -183,24 +196,133 @@ const [loading, setLoading] = useState(true);
     toast({ title: "Copied!", description: "Invite code copied to clipboard" });
   };
 
-  const handleSendInvitation = async () => {
-    if (!inviteEmail || !profile?.currentOrganization?.id || !walletAddress) return;
-    
+const handleSendInvitation = async () => {
+    if (!inviteWallet || !profile?.currentOrganization?.id || !walletAddress) return;
+
     setSendingInvite(true);
     try {
-      await organizationService.createInvitation({
+      const invitation = await organizationService.createInvitation({
         organizationId: profile.currentOrganization.id,
-        email: inviteEmail,
+        walletAddress: inviteWallet,
         role: inviteRole,
         createdBy: walletAddress,
       });
+
+      // Send notification to the invited wallet address
+      await supabase.from("notifications").insert({
+        organization_id: profile.currentOrganization.id,
+        user_id: inviteWallet.toLowerCase(),
+        title: "New Invitation",
+        message: `You have been invited to join ${profile.currentOrganization.name} as ${inviteRole}`,
+        type: "invitation_sent",
+        read: false,
+      });
+
+      toast({ title: "Invitation Sent", description: `Invitation sent to ${inviteWallet.slice(0, 6)}...${inviteWallet.slice(-4)}` });
+      setInviteWallet("");
       
-      toast({ title: "Invitation Sent", description: `Invitation sent to ${inviteEmail}` });
-      setInviteEmail("");
+      // Refresh pending invitations
+      fetchPendingInvitations();
     } catch (err) {
+      console.error("Error sending invitation:", err);
       toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" });
     } finally {
       setSendingInvite(false);
+    }
+  };
+
+  // Fetch pending invitations sent by this org
+  const fetchPendingInvitations = async () => {
+    if (!profile?.currentOrganization?.id) return;
+    
+    const { data } = await supabase
+      .from("invitations")
+      .select("*")
+      .eq("organization_id", profile.currentOrganization.id)
+      .eq("status", "pending")
+      .eq("created_by", walletAddress);
+    
+    if (data) setPendingInvitations(data);
+  };
+
+  // Fetch join requests (users who want to join via org invite code)
+  const fetchJoinRequests = async () => {
+    if (!profile?.currentOrganization?.id) return;
+    
+    const { data } = await supabase
+      .from("user_roles")
+      .select("*, profiles:user_id(display_name, avatar_url)")
+      .eq("organization_id", profile.currentOrganization.id)
+      .eq("role", "pending");
+    
+    if (data) setJoinRequests(data);
+  };
+
+  // Handle join request (accept/reject)
+  const handleJoinRequest = async (userId: string, action: "accept" | "reject") => {
+    setProcessingRequest(userId);
+    try {
+      if (action === "accept") {
+        // Add user to organization
+        await supabase
+          .from("user_roles")
+          .update({ role: "staff" as any })
+          .eq("user_id", userId)
+          .eq("organization_id", profile?.currentOrganization?.id);
+
+        // Send notification to user
+        await supabase.from("notifications").insert({
+          organization_id: profile?.currentOrganization?.id,
+          user_id: userId,
+          title: "Join Request Approved",
+          message: `Your request to join ${profile?.currentOrganization?.name} has been approved!`,
+          type: "join_approved",
+          read: false,
+        });
+
+        toast({ title: "Request Approved", description: "User has been added to the organization" });
+      } else {
+        // Remove the pending request
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId)
+          .eq("organization_id", profile?.currentOrganization?.id);
+
+        // Send notification to user
+        await supabase.from("notifications").insert({
+          organization_id: profile?.currentOrganization?.id,
+          user_id: userId,
+          title: "Join Request Rejected",
+          message: `Your request to join ${profile?.currentOrganization?.name} has been rejected.`,
+          type: "join_rejected",
+          read: false,
+        });
+
+        toast({ title: "Request Rejected", description: "Join request has been declined" });
+      }
+      
+      fetchJoinRequests();
+    } catch (err) {
+      console.error("Error handling join request:", err);
+      toast({ title: "Error", description: "Failed to process request", variant: "destructive" });
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  // Cancel pending invitation
+  const handleCancelInvitation = async (invitationId: string) => {
+    try {
+      await supabase
+        .from("invitations")
+        .update({ status: "cancelled" })
+        .eq("id", invitationId);
+      
+      toast({ title: "Invitation Cancelled" });
+      fetchPendingInvitations();
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to cancel invitation", variant: "destructive" });
     }
   };
 
@@ -317,53 +439,127 @@ return (
         </CardContent>
       </Card>
 
-      {/* Invite Employee Card with Email */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MailPlus className="h-5 w-5" />
-            Invite Employee
-          </CardTitle>
-          <CardDescription>Send an invitation email to a prospective employee</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Email Address</Label>
-              <Input
-                type="email"
-                placeholder="employee@example.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <select 
-                className="w-full p-2 border rounded-md"
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value)}
-              >
-                <option value="staff">Staff</option>
-                <option value="manager">Manager</option>
-                <option value="auditor">Auditor</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={handleSendInvitation} 
-                disabled={sendingInvite || !inviteEmail}
-                className="w-full gap-2"
-              >
-                {sendingInvite ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Send Invitation
+{/* Invite Employee Card by Wallet Address */}
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <MailPlus className="h-5 w-5" />
+        Invite Employee
+      </CardTitle>
+      <CardDescription>Send an invitation by wallet address</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Wallet Address</Label>
+          <Input
+            placeholder="0x..."
+            value={inviteWallet}
+            onChange={(e) => setInviteWallet(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Role</Label>
+          <select
+            className="w-full p-2 border rounded-md"
+            value={inviteRole}
+            onChange={(e) => setInviteRole(e.target.value)}
+          >
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+            <option value="auditor">Auditor</option>
+          </select>
+        </div>
+        <div className="flex items-end">
+          <Button
+            onClick={handleSendInvitation}
+            disabled={sendingInvite || !inviteWallet}
+            className="w-full gap-2"
+          >
+            {sendingInvite ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Send Invitation
+          </Button>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Pending Invitations */}
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <MailPlus className="h-5 w-5" />
+        Pending Invitations
+      </CardTitle>
+      <CardDescription>Invitations sent to wallet addresses</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {pendingInvitations.length === 0 ? (
+        <p className="text-center py-4 text-muted-foreground">No pending invitations</p>
+      ) : (
+        <div className="space-y-2">
+          {pendingInvitations.map((inv) => (
+            <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div>
+                <p className="font-mono text-sm">{inv.wallet_address?.slice(0, 10)}...{inv.wallet_address?.slice(-4)}</p>
+                <p className="text-xs text-muted-foreground">Role: {inv.role}</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => handleCancelInvitation(inv.id)}>
+                Cancel
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
 
-{/* All Members - Role Management */}
+  {/* Join Requests - Users who want to join via org invite code */}
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Users className="h-5 w-5" />
+        Join Requests
+      </CardTitle>
+      <CardDescription>Users who requested to join your organization</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {joinRequests.length === 0 ? (
+        <p className="text-center py-4 text-muted-foreground">No join requests</p>
+      ) : (
+        <div className="space-y-2">
+          {joinRequests.map((req) => (
+            <div key={req.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div>
+                <p className="font-mono text-sm">{req.user_id?.slice(0, 10)}...{req.user_id?.slice(-4)}</p>
+                <p className="text-xs text-muted-foreground">Requested to join</p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={() => handleJoinRequest(req.user_id, "reject")}
+                  disabled={processingRequest === req.user_id}
+                >
+                  Reject
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="default"
+                  onClick={() => handleJoinRequest(req.user_id, "accept")}
+                  disabled={processingRequest === req.user_id}
+                >
+                  Accept
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </Card>
+
+  {/* All Members - Role Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
