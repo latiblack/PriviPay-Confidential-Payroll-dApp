@@ -417,17 +417,16 @@ const handleWithdraw = async () => {
       {currentChain !== SEPOLIA_CHAIN_ID && (
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-3">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          <div>
+          <div className="flex-1">
             <p className="font-medium">Wrong Network Detected</p>
-            <p className="text-sm">Please switch to Sepolia network in your wallet to use payroll features.</p>
+            <p className="text-sm">Please switch to Sepolia network to use payroll features.</p>
           </div>
           <Button
-            variant="outline"
             size="sm"
-            className="ml-auto border-yellow-400 text-yellow-800 hover:bg-yellow-200"
-            onClick={connectToEth}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            onClick={handleSwitchToSepolia}
           >
-            Retry Connection
+            Switch to Sepolia
           </Button>
         </div>
       )}
