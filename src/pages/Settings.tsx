@@ -18,10 +18,31 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const isOwner = profile?.currentRole === "owner";
-  
+
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
   const [savingOrg, setSavingOrg] = useState(false);
+
+  const [currency, setCurrency] = useState(() => localStorage.getItem("privipay-currency") || "USD");
+  const [language, setLanguage] = useState(() => localStorage.getItem("privipay-language") || "en");
+  const [emailNotifications, setEmailNotifications] = useState(() => localStorage.getItem("privipay-email-notifs") === "true");
+  const [pushNotifications, setPushNotifications] = useState(() => localStorage.getItem("privipay-push-notifs") === "true");
+
+  useEffect(() => {
+    localStorage.setItem("privipay-currency", currency);
+  }, [currency]);
+
+  useEffect(() => {
+    localStorage.setItem("privipay-language", language);
+  }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem("privipay-email-notifs", String(emailNotifications));
+  }, [emailNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem("privipay-push-notifs", String(pushNotifications));
+  }, [pushNotifications]);
 
   // Load org data when profile changes
   useEffect(() => {
@@ -30,14 +51,6 @@ const SettingsPage = () => {
       setOrgDescription(profile.currentOrganization.description || "");
     }
   }, [profile?.currentOrganization]);
-  
-  const [settings, setSettings] = useState({
-    currency: "USD",
-    language: "en",
-    theme: "light",
-    emailNotifications: true,
-    pushNotifications: true,
-  });
 
   const handleSaveOrg = async () => {
     if (!profile?.currentOrganization?.id) return;
@@ -124,33 +137,33 @@ const SettingsPage = () => {
             <CardDescription>Configure currency and language</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Currency</Label>
-              <Select value={settings.currency} onValueChange={(v) => setSettings({...settings, currency: v})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD - US Dollar</SelectItem>
-                  <SelectItem value="EUR">EUR - Euro</SelectItem>
-                  <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                  <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Language</Label>
-              <Select value={settings.language} onValueChange={(v) => setSettings({...settings, language: v})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+<div>
+            <Label>Currency</Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD - US Dollar</SelectItem>
+                <SelectItem value="EUR">EUR - Euro</SelectItem>
+                <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                <SelectItem value="NGN">NGN - Nigerian Naira</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Language</Label>
+            <Select value={language} onValueChange={setLanguage}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="es">Spanish</SelectItem>
+                <SelectItem value="fr">French</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           </CardContent>
         </Card>
 
@@ -200,34 +213,34 @@ const SettingsPage = () => {
             </CardTitle>
             <CardDescription>Manage notification preferences</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Email Notifications</p>
-                <p className="text-sm text-muted-foreground">Receive updates via email</p>
-              </div>
-              <Button 
-                variant={settings.emailNotifications ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSettings({...settings, emailNotifications: !settings.emailNotifications})}
-              >
-                {settings.emailNotifications ? "Enabled" : "Disabled"}
-              </Button>
+<CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Email Notifications</p>
+              <p className="text-sm text-muted-foreground">Receive updates via email</p>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Push Notifications</p>
-                <p className="text-sm text-muted-foreground">Receive updates on your device</p>
-              </div>
-              <Button 
-                variant={settings.pushNotifications ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSettings({...settings, pushNotifications: !settings.pushNotifications})}
-              >
-                {settings.pushNotifications ? "Enabled" : "Disabled"}
-              </Button>
+            <Button
+              variant={emailNotifications ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEmailNotifications(!emailNotifications)}
+            >
+              {emailNotifications ? "Enabled" : "Disabled"}
+            </Button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Push Notifications</p>
+              <p className="text-sm text-muted-foreground">Receive updates on your device</p>
             </div>
-          </CardContent>
+            <Button
+              variant={pushNotifications ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPushNotifications(!pushNotifications)}
+            >
+              {pushNotifications ? "Enabled" : "Disabled"}
+            </Button>
+          </div>
+        </CardContent>
         </Card>
 
         {/* Security */}
