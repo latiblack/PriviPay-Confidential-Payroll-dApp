@@ -108,3 +108,12 @@
     font-family: 'Satoshi', system-ui, sans-serif;
   }
 }
+
+/* Ensure RainbowKit modal appears on top */
+[role="dialog"] {
+  z-index: 9999 !important;
+}
+
+.rainbow-modal-container {
+  z-index: 9999 !important;
+}
