@@ -150,13 +150,14 @@ const handleSwitchToSepolia = async () => {
   }
   try {
     await switchNetwork({ wallet: primaryWallet, network: SEPOLIA_CHAIN_ID_NUM });
-    setEthConnected(true);
-    await refreshBalance();
-  } catch (err) {
+    toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
+    // Re-init after switch
+    setTimeout(() => connectToEth(), 1000);
+  } catch (err: any) {
     console.error("Failed to switch network:", err);
     toast({
-      title: "Switch Network",
-      description: "Please manually switch to Sepolia in your wallet",
+      title: "Switch failed",
+      description: err?.message || "Please switch to Sepolia manually in your wallet.",
       variant: "destructive",
       duration: 5000,
     });
@@ -174,24 +175,8 @@ const connectToEth = async () => {
     setCurrentChain(chainId);
 
     if (chainId !== SEPOLIA_CHAIN_ID) {
-      toast({
-        title: "Wrong Network",
-        description: "Please switch to Sepolia in your wallet to use payroll",
-        variant: "destructive",
-        duration: 5000,
-      });
+      // Don't toast here - the banner already warns. Just mark not connected.
       setEthConnected(false);
-      return;
-    }
-
-    const result = await ethereumService.switchToSepolia(provider);
-    if (!result.success && result.needsManualSwitch) {
-      toast({
-        title: "Switch Network",
-        description: "Please manually switch to Sepolia in your wallet, then refresh",
-        variant: "destructive",
-        duration: 5000,
-      });
       return;
     }
 
