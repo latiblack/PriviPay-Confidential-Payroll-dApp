@@ -43,6 +43,10 @@ const EmployeeDashboard = () => {
   const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
+    console.log("Debug - isOwner:", isOwner, "role:", profile?.currentRole, "hasEmployee:", !!employee);
+  }, [isOwner, profile?.currentRole, employee]);
+
+  useEffect(() => {
     const fetchData = async () => {
       if (!profile?.currentOrganization?.id) return;
 
@@ -203,9 +207,9 @@ if (!isOwner) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log("Edit button clicked, employee:", employee);
+              type="button"
+              onClick={() => {
+                console.log("Edit clicked, isOwner:", isOwner, "employee:", employee);
                 setEditNameForm({
                   name: employee ? (employee as any).name || "" : "",
                   position: employee?.position || ""
@@ -213,7 +217,8 @@ if (!isOwner) {
                 setEditingName(true);
               }}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-4 w-4 mr-1" />
+              <span className="text-xs">Edit</span>
             </Button>
           )}
         </CardHeader>
