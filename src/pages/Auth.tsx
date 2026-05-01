@@ -393,110 +393,123 @@ if (!isAuthenticated) {
           </CardContent>
         )}
         
-        {step === "join-org" && (
-          <CardContent className="space-y-4">
-            {checkingInvites ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : pendingInvitations.length > 0 ? (
-              <>
-                <p className="text-sm text-muted-foreground mb-4">You have pending invitations:</p>
-                {pendingInvitations.map((inv) => (
-                  <div key={inv.id} className="border rounded-lg p-4 space-y-2">
-                    <p className="font-semibold text-lg">{inv.organization_name}</p>
-                    {inv.organization_description && (
-                      <p className="text-sm text-muted-foreground">{inv.organization_description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">Role: {inv.role}</p>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={async () => {
-                          if (walletAddress) {
-                            try {
-                              setJoining(true);
-                              await organizationService.acceptInvitation(inv.code, walletAddress, walletAddress);
-                              await refreshProfile();
-                              navigate("/employee");
-                            } catch (e) {
-                              setJoinError("Failed to accept invitation");
-                            } finally {
-                              setJoining(false);
-                            }
-                          }
-                        }}
-                        disabled={joining}
-                        className="flex-1"
-                      >
-                        {joining ? "..." : "Accept"}
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            setJoining(true);
-                            await organizationService.rejectInvitation(inv.id);
-                            setPendingInvitations(prev => prev.filter(i => i.id !== inv.id));
-                          } catch (e) {
-                            setJoinError("Failed to reject invitation");
-                          } finally {
-                            setJoining(false);
-                          }
-                        }}
-                        disabled={joining}
-                        className="flex-1"
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" onClick={() => setPendingInvitations([])} className="w-full">
-                  Or join with invite code
-                </Button>
-              </>
-            ) : !validatedOrg ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="inviteCode">Invite Code</Label>
-                  <Input id="inviteCode" placeholder="XXXX-XXXX-XXXX" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className="text-center font-mono text-lg tracking-widest" />
-                </div>
-                {joinError && <p className="text-sm text-destructive">{joinError}</p>}
+{step === "join-org" && (
+  <CardContent className="space-y-4">
+    {checkingInvites ? (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    ) : (
+      <>
+        {/* Pending Invitations at the top */}
+        {pendingInvitations.length > 0 && (
+          <>
+            <p className="text-sm text-muted-foreground mb-4">You have pending invitations:</p>
+            {pendingInvitations.map((inv) => (
+              <div key={inv.id} className="border rounded-lg p-4 space-y-2">
+                <p className="font-semibold text-lg">{inv.organization_name}</p>
+                {inv.organization_description && (
+                  <p className="text-sm text-muted-foreground">{inv.organization_description}</p>
+                )}
+                <p className="text-xs text-muted-foreground">Role: {inv.role}</p>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep("select")} className="flex-1">Back</Button>
-                  <Button onClick={handleValidateInvite} disabled={!inviteCode || joining} className="flex-1">
-                    {joining ? "Validating..." : "Continue"}
+                  <Button
+                    onClick={async () => {
+                      if (walletAddress) {
+                        try {
+                          setJoining(true);
+                          await organizationService.acceptInvitation(inv.code, walletAddress, walletAddress);
+                          await refreshProfile();
+                          navigate("/employee");
+                        } catch (e) {
+                          setJoinError("Failed to accept invitation");
+                        } finally {
+                          setJoining(false);
+                        }
+                      }
+                    }}
+                    disabled={joining}
+                    className="flex-1"
+                  >
+                    {joining ? "..." : "Accept"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        setJoining(true);
+                        await organizationService.rejectInvitation(inv.id);
+                        setPendingInvitations(prev => prev.filter(i => i.id !== inv.id));
+                      } catch (e) {
+                        setJoinError("Failed to reject invitation");
+                      } finally {
+                        setJoining(false);
+                      }
+                    }}
+                    disabled={joining}
+                    className="flex-1"
+                  >
+                    Reject
                   </Button>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                  <p className="text-sm text-muted-foreground mb-1">You're joining:</p>
-                  <p className="font-semibold text-lg">{validatedOrg.name}</p>
-                  {validatedOrg.description && (
-                    <p className="text-sm text-muted-foreground mt-2">{validatedOrg.description}</p>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">Your request will be pending until an admin approves it.</p>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => { setValidatedOrg(null); setInviteCode(""); }} className="flex-1">Back</Button>
-                  <Button onClick={async () => {
-                    if (walletAddress) {
-                      try {
-                        await organizationService.joinWithOrgCode(inviteCode, walletAddress, walletAddress);
-                        navigate("/pending");
-                      } catch (e) {
-                        console.error("Join error:", e);
-                        setJoinError("Failed to join organization");
-                      }
-                    }
-                  }} className="flex-1">Join Organization</Button>
-                </div>
-              </>
-            )}
-          </CardContent>
+              </div>
+            ))}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or enter invite code</span>
+              </div>
+            </div>
+          </>
         )}
+
+        {/* Invite Code Input */}
+        {!validatedOrg ? (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="inviteCode">Invite Code</Label>
+              <Input id="inviteCode" placeholder="XXXX-XXXX-XXXX" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className="text-center font-mono text-lg tracking-widest" />
+            </div>
+            {joinError && <p className="text-sm text-destructive">{joinError}</p>}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep("select")} className="flex-1">Back</Button>
+              <Button onClick={handleValidateInvite} disabled={!inviteCode || joining} className="flex-1">
+                {joining ? "Validating..." : "Continue"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-1">You're joining:</p>
+              <p className="font-semibold text-lg">{validatedOrg.name}</p>
+              {validatedOrg.description && (
+                <p className="text-sm text-muted-foreground mt-2">{validatedOrg.description}</p>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">Your request will be pending until an admin approves it.</p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setValidatedOrg(null); setInviteCode(""); }} className="flex-1">Back</Button>
+              <Button onClick={async () => {
+                if (walletAddress) {
+                  try {
+                    await organizationService.joinWithOrgCode(inviteCode, walletAddress, walletAddress);
+                    navigate("/pending");
+                  } catch (e) {
+                    console.error("Join error:", e);
+                    setJoinError("Failed to join organization");
+                  }
+                }
+              }} className="flex-1">Join Organization</Button>
+            </div>
+          </>
+        )}
+      </>
+    )}
+  </CardContent>
+)}
       </Card>
     </div>
   );
