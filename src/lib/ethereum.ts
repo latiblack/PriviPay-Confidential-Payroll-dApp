@@ -39,8 +39,8 @@ class EthereumService {
     }
   }
 
-  async switchToSepolia(ethereum?: any): Promise<boolean> {
-    const eth = ethereum || window.ethereum;
+  async switchToSepolia(dynamicProvider?: any): Promise<boolean> {
+    const eth = dynamicProvider;
     if (!eth) return false;
 
     try {
