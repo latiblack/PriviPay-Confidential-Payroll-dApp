@@ -2,10 +2,13 @@ import { createRoot } from "react-dom/client";
 import { StrictMode, ReactNode, Component, useState, useEffect } from "react";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme, ConnectButton } from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { config } from "./lib/wagmi-config";
 import "@rainbow-me/rainbowkit/styles.css";
 import App from "./App.tsx";
 import "./index.css";
+
+const queryClient = new QueryClient();
 
 const LoadingFallback = () => (
   <div style={{
@@ -91,17 +94,19 @@ const SafeWagmiProvider = ({ children }: { children: ReactNode }) => {
     return <LoadingFallback />;
   }
 
-  return (
+return (
     <WagmiProvider config={config}>
-      <RainbowKitProvider 
-        theme={darkTheme({
-          accentColor: '#3498db',
-          accentColorForeground: 'white',
-          borderRadius: 'medium',
-        })}
-      >
-        {children}
-      </RainbowKitProvider>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          theme={darkTheme({
+            accentColor: '#3498db',
+            accentColorForeground: 'white',
+            borderRadius: 'medium',
+          })}
+        >
+          {children}
+        </RainbowKitProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 };
