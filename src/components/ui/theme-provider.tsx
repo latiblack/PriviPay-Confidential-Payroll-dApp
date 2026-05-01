@@ -3,14 +3,16 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-  storageKey = "theme",
+  defaultTheme = "light",
+  storageKey = "privipay-theme",
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
     <NextThemesProvider
       defaultTheme={defaultTheme}
       storageKey={storageKey}
+      enableSystem={false}
+      attribute="class"
       {...props}
     >
       {children}
