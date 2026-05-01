@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, Component, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,20 +13,86 @@ import PendingInvitations from "./pages/PendingInvitations";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
-const Admin = lazy(() => import("./pages/Admin"));
-const Payments = lazy(() => import("./pages/Payments"));
-const Settings = lazy(() => import("./pages/Settings"));
-const EmployerDashboard = lazy(() => import("./pages/EmployerDashboard"));
-const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
-const AuditorDashboard = lazy(() => import("./pages/AuditorDashboard"));
-const BonusVoting = lazy(() => import("./pages/BonusVoting"));
-const Notifications = lazy(() => import("./pages/Notifications"));
+// Retry lazy loading on failure
+const retryLazy = (importer: () => Promise<any>, retries = 3) => {
+  return new Promise((resolve, reject) => {
+    const attempt = (n: number) => {
+      importer()
+        .then(resolve)
+        .catch((err) => {
+          if (n > 0 && err.message?.includes("Failed to fetch")) {
+            setTimeout(() => attempt(n - 1), 1000);
+          } else {
+            reject(err);
+          }
+        });
+    };
+    attempt(retries);
+  });
+};
+
+const Admin = lazy(() => retryLazy(() => import("./pages/Admin")));
+const Payments = lazy(() => retryLazy(() => import("./pages/Payments")));
+const Settings = lazy(() => retryLazy(() => import("./pages/Settings")));
+const EmployerDashboard = lazy(() => retryLazy(() => import("./pages/EmployerDashboard")));
+const EmployeeDashboard = lazy(() => retryLazy(() => import("./pages/EmployeeDashboard")));
+const AuditorDashboard = lazy(() => retryLazy(() => import("./pages/AuditorDashboard")));
+const BonusVoting = lazy(() => retryLazy(() => import("./pages/BonusVoting")));
+const Notifications = lazy(() => retryLazy(() => import("./pages/Notifications")));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
   </div>
 );
+
+// Error boundary for handling chunk loading errors
+class ModuleErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Module loading error:", error, errorInfo);
+    // Check if it's a chunk loading error
+    if (error.message?.includes("Failed to fetch") || error.message?.includes("dynamically imported")) {
+      // Attempt to recover by reloading the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 p-4">
+          <p className="text-lg text-muted-foreground">Failed to load module</p>
+          <p className="text-sm text-muted-foreground">Reloading automatically...</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md"
+          >
+            Reload Now
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient();
 
@@ -109,53 +175,53 @@ const AppLayout = () => {
       <div className={`flex-1 ${showSidebar ? 'ml-[72px]' : ''}`}>
         <TopBar title={title} />
         <main className="px-6 pb-8">
-        <Routes>
+<Routes>
           <Route path="/admin" element={
             <ProtectedRoute requiredRole="owner">
-              <Suspense fallback={<PageLoader />}><Admin /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><Admin /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
 
-<Route path="/settings" element={
-  <ProtectedRoute>
-    <Suspense fallback={<PageLoader />}><Settings /></Suspense>
-  </ProtectedRoute>
-} />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><Settings /></Suspense></ModuleErrorBoundary>
+            </ProtectedRoute>
+          } />
           <Route path="/employer" element={
             <ProtectedRoute requiredRole="owner">
-              <Suspense fallback={<PageLoader />}><EmployerDashboard /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><EmployerDashboard /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
           <Route path="/employees" element={
             <ProtectedRoute requiredRole="owner">
-              <Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
-          <Route path="/employee" element={
+<Route path="/employee" element={
             <ProtectedRoute>
-              <Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><EmployeeDashboard /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
           <Route path="/payments" element={
             <ProtectedRoute>
-              <Suspense fallback={<PageLoader />}><Payments /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><Payments /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
-<Route path="/pending" element={<PendingRole />} />
-  <Route path="/invitations" element={<PendingInvitations />} />
-  <Route path="/auditor" element={
+          <Route path="/pending" element={<PendingRole />} />
+          <Route path="/invitations" element={<PendingInvitations />} />
+          <Route path="/auditor" element={
             <ProtectedRoute>
-              <Suspense fallback={<PageLoader />}><AuditorDashboard /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><AuditorDashboard /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
           <Route path="/voting" element={
             <ProtectedRoute>
-              <Suspense fallback={<PageLoader />}><BonusVoting /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><BonusVoting /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
           <Route path="/notifications" element={
             <ProtectedRoute>
-              <Suspense fallback={<PageLoader />}><Notifications /></Suspense>
+              <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><Notifications /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
