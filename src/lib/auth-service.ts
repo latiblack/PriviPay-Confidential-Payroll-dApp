@@ -43,11 +43,13 @@ export const authService = {
 
   // Get or create user profile based on wallet address
   async getOrCreateProfile(walletAddress: string): Promise<Profile> {
+    const lowerAddress = walletAddress.toLowerCase();
+    
     // First try to find existing profile
     const { data: existing, error: findError } = await supabase
       .from("profiles")
       .select("*")
-      .eq("wallet_address", walletAddress)
+      .eq("wallet_address", lowerAddress)
       .single();
 
     if (existing) return existing;
@@ -56,9 +58,9 @@ export const authService = {
     const { data: newProfile, error: createError } = await supabase
       .from("profiles")
       .insert({
-        wallet_address: walletAddress,
+        wallet_address: lowerAddress,
         display_name: null,
-        user_id: walletAddress,
+        user_id: lowerAddress,
       })
       .select()
       .single();
@@ -137,11 +139,13 @@ export const authService = {
 
   // Full login - load or create profile
   async login(walletAddress: string): Promise<UserProfile> {
+    const lowerAddress = walletAddress.toLowerCase();
+    
     // Get or create profile
-    const profile = await this.getOrCreateProfile(walletAddress);
+    const profile = await this.getOrCreateProfile(lowerAddress);
     
     // Get organizations and role
-    const { organizations, role, isOwner } = await this.getUserOrganizationsAndRole(walletAddress);
+    const { organizations, role, isOwner } = await this.getUserOrganizationsAndRole(lowerAddress);
 
     const userProfile: UserProfile = {
       id: profile.id,
