@@ -373,7 +373,7 @@ const handleProcessPayroll = async () => {
         .filter(e => Number(e.encrypted_salary) > 0)
         .map(e => {
           const usdAmount = Number(e.encrypted_salary);
-          const ethAmount = ethPrice > 0 ? usdAmount / ethPrice : usdAmount / 2000; // Convert USD to ETH
+          const ethAmount = Number((ethPrice > 0 ? usdAmount / ethPrice : usdAmount / 2000).toFixed(8)); // Convert USD to ETH, round to 8 decimals
           return {
             id: e.id,
             address: e.wallet_address,
@@ -444,7 +444,7 @@ const handleWithdraw = async () => {
   }
 
   const recipientAddress = recipient.trim();
-  const amountValue = amount.trim();
+  const amountValue = Number(parseFloat(amount).toFixed(8)).toString();
 
   setProcessing(true);
   try {
