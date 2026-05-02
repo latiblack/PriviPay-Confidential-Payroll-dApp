@@ -230,10 +230,11 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    if (!isOwner && profile?.walletAddress) {
+    if (!isOwner && profile?.walletAddress && walletClient) {
       const fetchTotalReceived = async () => {
         setLoadingTotalReceived(true);
         try {
+          await ethereumService.initializeWithSigner(walletClient);
           const txHistory = await ethereumService.getTransactionHistory(profile.walletAddress.toLowerCase(), 50);
           const total = txHistory.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
           setTotalReceived(formatCurrency(total * 100));
@@ -246,7 +247,7 @@ useEffect(() => {
       };
       fetchTotalReceived();
     }
-  }, [isOwner, profile?.walletAddress]);
+  }, [isOwner, profile?.walletAddress, walletClient]);
 
 const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
@@ -372,7 +373,7 @@ const handleProcessPayroll = async () => {
         .filter(e => Number(e.encrypted_salary) > 0)
         .map(e => ({
           address: e.wallet_address,
-          salary: Number(e.encrypted_salary) / 100,
+          salary: Number(e.encrypted_salary),
         }));
 
       if (employeesToPay.length === 0) {
