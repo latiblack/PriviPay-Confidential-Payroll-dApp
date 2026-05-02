@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,39 +88,39 @@ const handleRemoveMember = async (memberId: string) => {
     setDeleteConfirmStep({ ...deleteConfirmStep, [memberId]: 0 });
   };
 
+  const fetchData = useCallback(async () => {
+    if (!profile?.currentOrganization?.id) return;
+
+    try {
+      // Get employees in payroll
+      const { data: empData, error: empError } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
+
+      if (empError) throw empError;
+      setPayrollEmployees(empData || []);
+
+      // Get all members from user_roles
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
+
+      if (roleError) throw roleError;
+      setMembers(roleData || []);
+      
+      setInviteCode(profile.currentOrganization.invite_code || "");
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [profile?.currentOrganization?.id, profile?.currentOrganization?.invite_code]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!profile?.currentOrganization?.id) return;
-
-      try {
-        // Get employees in payroll
-        const { data: empData, error: empError } = await supabase
-          .from("employees")
-          .select("*")
-          .eq("organization_id", profile.currentOrganization.id);
-
-        if (empError) throw empError;
-        setPayrollEmployees(empData || []);
-
-        // Get all members from user_roles
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .select("*")
-          .eq("organization_id", profile.currentOrganization.id);
-
-        if (roleError) throw roleError;
-        setMembers(roleData || []);
-        
-        setInviteCode(profile.currentOrganization.invite_code || "");
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, [profile?.currentOrganization?.id]);
+  }, [fetchData]);
 
   // Refresh data when window gains focus
   useEffect(() => {
