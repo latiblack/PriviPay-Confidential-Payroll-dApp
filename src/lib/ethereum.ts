@@ -166,6 +166,7 @@ async processPayroll(
             account: this.signer.account,
             to: emp.address,
             value: parseEther(emp.salary.toString()),
+            gas: BigInt(21000), // Standard gas limit for ETH transfer
           });
           // viem returns hash string; ethers returns object with .hash
           const hash = typeof tx === "string" ? tx : tx.hash;
