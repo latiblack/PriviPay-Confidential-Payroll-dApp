@@ -128,13 +128,14 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
         to,
         value: parseEther(amountInEth),
       };
-      // Use wallet client's sendTransaction directly (wagmi v2)
+      // Use wallet client's sendTransaction directly (wagmi v2 viem returns hash string)
       const tx = await this.signer.sendTransaction({
         account: this.signer.account,
         to: txParams.to,
         value: txParams.value,
       });
-      return tx.hash;
+      // viem walletClient returns hash as string; ethers returns object with .hash
+      return typeof tx === "string" ? tx : tx.hash;
     } catch (err: any) {
       console.error("Transaction failed:", err);
       // Provide more specific error message
@@ -146,8 +147,8 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
   }
 
 async processPayroll(
-    employees: { address: string; salary: number }[],
-    onProgress?: (current: number, total: number, hash?: string) => void
+    employees: { address: string; salary: number; [key: string]: any }[],
+    onProgress?: (current: number, total: number, hash?: string) => void | Promise<void>
   ): Promise<{ totalAmount: string; txHashes: string[] }> {
     if (!this.signer) {
       throw new Error("Wallet not connected");
@@ -160,22 +161,16 @@ async processPayroll(
       const emp = employees[i];
       if (emp.salary > 0) {
         try {
-          let tx;
-          if (this.signer.sendTransaction) {
-            tx = await this.signer.sendTransaction({
-              to: emp.address,
-              value: parseEther(emp.salary.toString()),
-            });
-          } else {
-            tx = await this.signer.sendTransaction({
-              to: emp.address,
-              value: parseEther(emp.salary.toString()),
-            });
-          }
-          // Don't wait for confirmation - just get the hash immediately
-          txHashes.push(tx.hash);
+          const tx = await this.signer.sendTransaction({
+            account: this.signer.account,
+            to: emp.address,
+            value: parseEther(emp.salary.toString()),
+          });
+          // viem returns hash string; ethers returns object with .hash
+          const hash = typeof tx === "string" ? tx : tx.hash;
+          txHashes.push(hash);
           totalAmount += emp.salary;
-          onProgress?.(i + 1, employees.length, tx.hash);
+          await onProgress?.(i + 1, employees.length, hash);
         } catch (err) {
           console.error(`Failed to pay ${emp.address}:`, err);
         }

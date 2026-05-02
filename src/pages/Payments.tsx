@@ -372,8 +372,10 @@ const handleProcessPayroll = async () => {
       const employeesToPay = employees
         .filter(e => Number(e.encrypted_salary) > 0)
         .map(e => ({
+          id: e.id,
           address: e.wallet_address,
           salary: Number(e.encrypted_salary),
+          encrypted_salary: e.encrypted_salary,
         }));
 
       if (employeesToPay.length === 0) {
@@ -382,10 +384,25 @@ const handleProcessPayroll = async () => {
       return;
     }
 
+    const orgId = profile.currentOrganization.id;
     const result = await ethereumService.processPayroll(
       employeesToPay,
-      (current, total, hash) => {
+      async (current, total, hash) => {
         if (hash) {
+          // Persist payroll record so charts/history can read it
+          const emp = employeesToPay[current - 1];
+          try {
+            await supabase.from("payroll_records").insert({
+              organization_id: orgId,
+              employee_id: emp.id,
+              encrypted_amount: emp.encrypted_salary || String(emp.salary * 100),
+              tx_hash: hash,
+              status: "completed",
+              paid_at: new Date().toISOString(),
+            });
+          } catch (e) {
+            console.error("Failed to record payroll:", e);
+          }
           toast({
             title: "Payment Sent",
             description: `Sent to employee ${current}/${total}`,

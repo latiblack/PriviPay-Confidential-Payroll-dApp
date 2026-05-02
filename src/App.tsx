@@ -15,8 +15,8 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 
 // Retry lazy loading on failure
-const retryLazy = (importer: () => Promise<any>, retries = 3) => {
-  return new Promise((resolve, reject) => {
+const retryLazy = <T,>(importer: () => Promise<T>, retries = 3): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
     const attempt = (n: number) => {
       importer()
         .then(resolve)
