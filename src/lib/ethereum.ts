@@ -128,13 +128,14 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
         to,
         value: parseEther(amountInEth),
       };
-      // Use wallet client's sendTransaction directly (wagmi v2)
+      // Use wallet client's sendTransaction directly (wagmi v2 viem returns hash string)
       const tx = await this.signer.sendTransaction({
         account: this.signer.account,
         to: txParams.to,
         value: txParams.value,
       });
-      return tx.hash;
+      // viem walletClient returns hash as string; ethers returns object with .hash
+      return typeof tx === "string" ? tx : tx.hash;
     } catch (err: any) {
       console.error("Transaction failed:", err);
       // Provide more specific error message
