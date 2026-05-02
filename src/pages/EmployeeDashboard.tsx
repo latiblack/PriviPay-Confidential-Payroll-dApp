@@ -131,8 +131,7 @@ const EmployeeDashboard = () => {
 
         const mapped: PaymentData[] = (payData || []).map((p) => ({
           id: p.id,
-          // encrypted_amount is stored in cents
-          amount: Number(p.encrypted_amount || 0) / 100,
+          amount: Number(p.encrypted_amount || 0),
           type: "salary",
           status: p.status === "completed" ? "completed" : (p.status as string) || "pending",
           created_at: p.paid_at || p.created_at,
