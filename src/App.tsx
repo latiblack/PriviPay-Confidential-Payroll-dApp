@@ -171,13 +171,13 @@ const AppLayout = () => {
     return <Auth />;
   }
 
-  return (
+return (
     <div className="flex min-h-screen">
       {showSidebar && <AppSidebar />}
-      <div className={`flex-1 ${showSidebar ? 'ml-[72px]' : ''}`}>
+      <div className={`flex-1 ${showSidebar ? 'lg:ml-[72px]' : ''} ${showSidebar ? 'ml-0' : ''}`}>
         <TopBar title={title} />
-        <main className="px-6 pb-8">
-<Routes>
+        <main className="px-3 sm:px-4 lg:px-6 pb-8">
+          <Routes>
           <Route path="/admin" element={
             <ProtectedRoute requiredRole="owner">
               <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><Admin /></Suspense></ModuleErrorBoundary>

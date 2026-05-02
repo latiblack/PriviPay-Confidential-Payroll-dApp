@@ -163,10 +163,10 @@ export const AuthPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100/50">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-background/50 to-primary/5">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-300/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/15 rounded-full blur-3xl" />
         </div>
         
         <div className="relative min-h-screen flex items-center justify-center">
@@ -179,18 +179,18 @@ export const AuthPage = () => {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 sm:w-32 h-2 bg-blue-200/50 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: '60%' }} />
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 sm:w-32 h-2 bg-primary/20 rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }} />
               </div>
             </div>
             <div className="space-y-2 sm:space-y-3">
-              <h2 className="text-2xl sm:text-3xl font-bold text-blue-900 tracking-tight">PriviPay</h2>
-              <p className="text-blue-600/80 text-sm sm:text-base px-2">Setting up your secure environment</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">PriviPay</h2>
+              <p className="text-muted-foreground text-sm sm:text-base px-2">Setting up your secure environment</p>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         </div>
@@ -201,14 +201,14 @@ export const AuthPage = () => {
 // User is authenticated but waiting for embedded wallet to be created
   if (isAuthenticated && user && !walletAddress) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100/50">
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-background/50 to-primary/5">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-300/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/15 rounded-full blur-3xl" />
         </div>
         
         <div className="relative min-h-screen flex items-center justify-center p-3 sm:p-4">
-          <Card className="w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-xl border-blue-100 shadow-xl shadow-blue-200/30 mx-2">
+          <Card className="w-full max-w-sm sm:max-w-md bg-card/80 backdrop-blur-xl border-border shadow-xl shadow-primary/5 mx-2">
             <CardHeader className="text-center px-3 sm:px-4">
               <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 mb-3 sm:mb-4">
                 <img 
@@ -217,17 +217,17 @@ export const AuthPage = () => {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <CardTitle className="text-xl sm:text-2xl text-blue-900">Creating Your Wallet</CardTitle>
-              <CardDescription className="text-blue-600/70 text-sm">Setting up your secure wallet for confidential payroll</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl">Creating Your Wallet</CardTitle>
+              <CardDescription className="text-muted-foreground text-sm">Setting up your secure wallet for confidential payroll</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 px-3 sm:px-4">
-              <p className="text-sm text-blue-600/80 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 Please wait while we create your secure wallet.
               </p>
               <div className="flex items-center justify-center gap-2 mt-4">
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </CardContent>
           </Card>
@@ -315,11 +315,11 @@ export const AuthPage = () => {
 
 if (!isAuthenticated) {
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-blue-100/50">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-background/50 to-primary/5">
       {/* Light decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-300/20 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/15 rounded-full blur-3xl" />
       </div>
 
       {/* Main Content */}
@@ -334,36 +334,36 @@ if (!isAuthenticated) {
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-1 sm:mb-2 tracking-tight">PriviPay</h1>
-            <p className="text-blue-600/80 text-sm sm:text-lg px-2">Confidential Payroll Management</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2 tracking-tight">PriviPay</h1>
+            <p className="text-muted-foreground text-sm sm:text-lg px-2">Confidential Payroll Management</p>
           </div>
 
           {/* Main Card */}
-          <Card className="bg-white/80 backdrop-blur-xl border-blue-100 shadow-xl shadow-blue-200/30 mx-2 sm:mx-0">
+          <Card className="bg-card/80 backdrop-blur-xl border-border shadow-xl shadow-primary/5 mx-2 sm:mx-0">
             <CardHeader className="text-center pb-2 px-3 sm:px-4">
-              <CardTitle className="text-xl sm:text-2xl text-blue-900 font-semibold">Welcome Back</CardTitle>
-              <CardDescription className="text-blue-600/70 text-sm">Connect your wallet to continue</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl font-semibold">Welcome Back</CardTitle>
+              <CardDescription className="text-muted-foreground text-sm">Connect your wallet to continue</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 sm:space-y-6 pt-3 sm:pt-4 px-3 sm:px-4">
               {/* Feature Highlights - responsive grid */}
               <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-                <div className="p-2 sm:p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/5 border border-primary/10">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   </div>
-                  <p className="text-[10px] sm:text-xs text-blue-700 leading-tight">FHE Encrypted</p>
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">FHE Encrypted</p>
                 </div>
-                <div className="p-2 sm:p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/5 border border-primary/10">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   </div>
-                  <p className="text-[10px] sm:text-xs text-blue-700 leading-tight">Secure Access</p>
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">Secure Access</p>
                 </div>
-                <div className="p-2 sm:p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/5 border border-primary/10">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   </div>
-                  <p className="text-[10px] sm:text-xs text-blue-700 leading-tight">Verified Audit</p>
+                  <p className="text-[10px] sm:text-xs text-foreground leading-tight">Verified Audit</p>
                 </div>
               </div>
 
@@ -397,34 +397,34 @@ if (!isAuthenticated) {
                             onClick={openConnectModal}
                             className="w-full group"
                           >
-                            <div className="w-full h-12 sm:h-14 bg-blue-600 rounded-xl flex items-center justify-center gap-2 sm:gap-3 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/25 px-2">
+                            <div className="w-full h-12 sm:h-14 bg-primary rounded-xl flex items-center justify-center gap-2 sm:gap-3 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25 px-2">
                               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                               </div>
-                              <span className="text-white font-semibold text-base sm:text-lg">Connect Wallet</span>
-                              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-white/70 group-hover:translate-x-1 transition-transform" />
+                              <span className="text-primary-foreground font-semibold text-base sm:text-lg">Connect Wallet</span>
+                              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground/70 group-hover:translate-x-1 transition-transform" />
                             </div>
                           </button>
                         ) : (
                           <button
                             onClick={openAccountModal}
-                            className="w-full rounded-xl border border-blue-200 hover:bg-blue-50 transition-colors"
+                            className="w-full rounded-xl border border-border hover:bg-muted transition-colors"
                           >
-                            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-blue-50">
+                            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-muted/50">
                               <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs sm:text-sm font-bold">
                                   {account.displayName?.[0] || account.displayName?.slice(0, 2) || '?'}
                                 </div>
                                 <div className="text-left">
-                                  <p className="text-blue-900 font-medium text-sm sm:text-base">{account.displayName}</p>
-                                  <p className="text-blue-600 text-xs">{account.displayBalance?.[0] || '0.00'} ETH</p>
+                                  <p className="text-foreground font-medium text-sm sm:text-base">{account.displayName}</p>
+                                  <p className="text-muted-foreground text-xs">{account.displayBalance?.[0] || '0.00'} ETH</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 {chain?.iconUrl && (
                                   <img src={chain.iconUrl} alt={chain.name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full" />
                                 )}
-                                <ArrowRight className="w-4 h-4 text-blue-400 rotate-90" />
+                                <ArrowRight className="w-4 h-4 text-muted-foreground rotate-90" />
                               </div>
                             </div>
                           </button>
@@ -435,14 +435,14 @@ if (!isAuthenticated) {
                 </ConnectButton.Custom>
               </div>
 
-              <p className="text-center text-[10px] sm:text-xs text-blue-400 px-2">
+              <p className="text-center text-[10px] sm:text-xs text-muted-foreground px-2">
                 By connecting, you agree to our Terms of Service
               </p>
             </CardContent>
           </Card>
 
           {/* Footer */}
-          <p className="text-center text-blue-500/60 text-xs sm:text-sm mt-6 sm:mt-8 px-2">
+          <p className="text-center text-muted-foreground/60 text-xs sm:text-sm mt-6 sm:mt-8 px-2">
             Powered by Fully Homomorphic Encryption
           </p>
         </div>
