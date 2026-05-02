@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { initFhevm, encryptSalary, encryptBonus } from "./fhe-service";
+import { initFhevm, encryptSalary, encryptBonus, decryptValue } from "./fhe-service";
 
 const CONFIDENTIAL_PAYROLL_ADDRESS = "0x2f8457EA818590aaEc5DCCA155828bf691A0Ba84";
 
@@ -67,6 +67,18 @@ export class FHEContractService {
 
   async getEncryptedBalance(employeeAddress: string): Promise<string> {
     return await this.contract.getEncryptedBalance(employeeAddress);
+  }
+
+  async getDecryptedBalance(employeeAddress: string): Promise<number> {
+    try {
+      const encryptedBalance = await this.contract.getEncryptedBalance(employeeAddress);
+      // Convert handle to actual value (may need relayer for true decryption)
+      const balance = await decryptValue(encryptedBalance);
+      return balance;
+    } catch (err) {
+      console.error("Failed to get decrypted balance:", err);
+      return 0;
+    }
   }
 
   async grantAccess(viewerAddress: string): Promise<ethers.Transaction> {

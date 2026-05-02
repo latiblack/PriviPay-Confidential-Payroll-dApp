@@ -13,6 +13,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { ethereumService } from "@/lib/ethereum";
 import { useWalletClient } from "wagmi";
+import { createFHEContract } from "@/lib/fhe-contract-service";
+import { initFhevm } from "@/lib/fhe-service";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
 
@@ -43,6 +45,8 @@ const EmployeeDashboard = () => {
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [ethPrice, setEthPrice] = useState<number>(0);
+  const [fheBalance, setFheBalance] = useState<number>(0);
+  const [fheLoading, setFheLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [editNameForm, setEditNameForm] = useState({ name: "", position: "" });
@@ -65,6 +69,30 @@ const EmployeeDashboard = () => {
     };
     fetchEthPrice();
   }, []);
+
+  // Initialize FHE and fetch balance for employees
+  useEffect(() => {
+    const fetchFHEBalance = async () => {
+      if (isOwner || !employee || !walletClient) return;
+      
+      setFheLoading(true);
+      try {
+        await initFhevm();
+        const fheContract = createFHEContract(walletClient);
+        const balance = await fheContract.getDecryptedBalance(employee.wallet_address);
+        setFheBalance(balance);
+      } catch (err) {
+        console.error("Failed to fetch FHE balance:", err);
+        setFheBalance(0);
+      } finally {
+        setFheLoading(false);
+      }
+    };
+    
+    if (employee?.wallet_address) {
+      fetchFHEBalance();
+    }
+  }, [employee, walletClient, isOwner]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -282,7 +310,7 @@ if (!isOwner) {
 
       {employee && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -329,6 +357,24 @@ if (!isOwner) {
               <CardContent>
                 <div className="text-2xl font-bold">{payments[0] ? formatCurrency(payments[0].amount) : "—"}</div>
                 <p className="text-xs text-muted-foreground mt-1">{payments[0] ? new Date(payments[0].created_at).toLocaleDateString() : "no payments yet"}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  FHE Balance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {fheLoading ? (
+                  <div className="text-2xl font-bold">Loading...</div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{formatCurrency(fheBalance)}</div>
+                    <p className="text-xs opacity-75 mt-1">encrypted on-chain</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
