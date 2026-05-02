@@ -456,7 +456,7 @@ if (!isOwner) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{formatCurrency(Number(employee.encrypted_salary || 0))}</div>
+                <div className="text-3xl font-bold">{formatCurrency(Number(employee.encrypted_salary || 0) + employeeBonus)}</div>
                 <p className="text-xs opacity-75 mt-1">per month</p>
               </CardContent>
             </Card>
