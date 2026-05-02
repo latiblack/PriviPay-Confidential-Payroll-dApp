@@ -13,10 +13,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { ethereumService } from "@/lib/ethereum";
 import { useWalletClient } from "wagmi";
-import { createFHEContract } from "@/lib/fhe-contract-service";
-import { initFhevm } from "@/lib/fhe-service";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, ArrowDownToLine, BarChart3, User, Edit, ExternalLink } from "lucide-react";
+import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
@@ -45,19 +43,10 @@ const EmployeeDashboard = () => {
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
   const [ethPrice, setEthPrice] = useState<number>(0);
-  const [fheBalance, setFheBalance] = useState<number>(0);
-  const [fheSalary, setFheSalary] = useState<number | null>(null);
-  const [fheLoading, setFheLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [editNameForm, setEditNameForm] = useState({ name: "", position: "" });
   const [savingName, setSavingName] = useState(false);
-  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawing, setWithdrawing] = useState(false);
-  const [showAccessDialog, setShowAccessDialog] = useState(false);
-  const [accessAddress, setAccessAddress] = useState("");
-  const [grantingAccess, setGrantingAccess] = useState(false);
 
   useEffect(() => {
     console.log("Debug - isOwner:", isOwner, "role:", profile?.currentRole, "hasEmployee:", !!employee);
@@ -76,43 +65,6 @@ const EmployeeDashboard = () => {
     };
     fetchEthPrice();
   }, []);
-
-  // Initialize FHE and fetch balance for employees
-  useEffect(() => {
-    const fetchFHEData = async () => {
-      if (isOwner || !employee || !walletClient) return;
-      
-      setFheLoading(true);
-      try {
-        await initFhevm();
-        const fheContract = createFHEContract(walletClient);
-        
-        // Get decrypted salary
-        try {
-          const salary = await fheContract.getDecryptedBalance(employee.wallet_address);
-          setFheSalary(salary);
-        } catch (e) {
-          console.log("Could not get FHE salary");
-        }
-        
-        // Get decrypted balance (total received - withdrawn)
-        try {
-          const balance = await fheContract.getDecryptedBalance(employee.wallet_address);
-          setFheBalance(balance);
-        } catch (e) {
-          console.log("Could not get FHE balance");
-        }
-      } catch (err) {
-        console.error("Failed to fetch FHE data:", err);
-      } finally {
-        setFheLoading(false);
-      }
-    };
-    
-    if (employee?.wallet_address) {
-      fetchFHEData();
-    }
-  }, [employee, walletClient, isOwner]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -252,52 +204,6 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const handleWithdraw = async () => {
-    if (!employee || !withdrawAmount || !walletClient) return;
-    
-    setWithdrawing(true);
-    try {
-      await initFhevm();
-      const fheContract = createFHEContract(walletClient);
-      
-      const encryptedAmount = await fheContract.contract.runner?.provider?.call({
-        to: fheContract.getContractAddress(),
-        data: "0x" // This would need proper encryption
-      } as any);
-      
-      // For now, just show the withdraw dialog working
-      toast({ title: "Withdraw Initiated", description: "This feature requires FHE encryption setup" });
-      setShowWithdrawDialog(false);
-      setWithdrawAmount("");
-    } catch (err) {
-      console.error("Withdraw failed:", err);
-      toast({ title: "Error", description: "Failed to withdraw", variant: "destructive" });
-    } finally {
-      setWithdrawing(false);
-    }
-  };
-
-  const handleGrantAccess = async () => {
-    if (!employee || !accessAddress || !walletClient) return;
-    
-    setGrantingAccess(true);
-    try {
-      await initFhevm();
-      const fheContract = createFHEContract(walletClient);
-      const tx = await fheContract.grantAccess(accessAddress);
-      await tx.wait();
-      
-      toast({ title: "Access Granted", description: `Access granted to ${accessAddress.slice(0,6)}...` });
-      setShowAccessDialog(false);
-      setAccessAddress("");
-    } catch (err) {
-      console.error("Failed to grant access:", err);
-      toast({ title: "Error", description: "Failed to grant access", variant: "destructive" });
-    } finally {
-      setGrantingAccess(false);
-    }
-  };
-
   const targetEmployeeId = (isOwner || isManager) ? selectedEmployeeId : employee?.id;
   const employeeBonus = targetEmployeeId ? bonuses.filter(b => b.employee_id === targetEmployeeId).reduce((sum, b) => sum + Number(b.amount), 0) : 0;
   const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0) + employeeBonus;
@@ -376,7 +282,7 @@ if (!isOwner) {
 
       {employee && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -423,24 +329,6 @@ if (!isOwner) {
               <CardContent>
                 <div className="text-2xl font-bold">{payments[0] ? formatCurrency(payments[0].amount) : "—"}</div>
                 <p className="text-xs text-muted-foreground mt-1">{payments[0] ? new Date(payments[0].created_at).toLocaleDateString() : "no payments yet"}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  FHE Balance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {fheLoading ? (
-                  <div className="text-2xl font-bold">Loading...</div>
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{formatCurrency(fheBalance)}</div>
-                    <p className="text-xs opacity-75 mt-1">encrypted on-chain</p>
-                  </>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -517,80 +405,13 @@ if (!isOwner) {
               )}
             </CardContent>
           </Card>
-
-          {/* FHE Actions */}
-          <div className="flex gap-4">
-            <Button onClick={() => setShowWithdrawDialog(true)} className="flex items-center gap-2">
-              <ArrowDownToLine className="h-4 w-4" />
-              Withdraw from FHE Balance
-            </Button>
-            <Button variant="outline" onClick={() => setShowAccessDialog(true)} className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Manage Access
-            </Button>
-          </div>
         </>
       )}
     </div>
-
-    {/* Withdraw Dialog */}
-    <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Withdraw from FHE Balance</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div>
-            <Label>Amount (USD)</Label>
-            <Input 
-              type="number" 
-              value={withdrawAmount} 
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              placeholder="Enter amount to withdraw"
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Your encrypted balance: {formatCurrency(fheBalance)}
-          </p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>Cancel</Button>
-          <Button onClick={handleWithdraw} disabled={withdrawing || !withdrawAmount}>
-            {withdrawing ? "Processing..." : "Withdraw"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    {/* Access Management Dialog */}
-    <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Manage Data Access</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Grant another address permission to view your encrypted salary and balance data.
-          </p>
-          <div>
-            <Label>Wallet Address</Label>
-            <Input 
-              value={accessAddress} 
-              onChange={(e) => setAccessAddress(e.target.value)}
-              placeholder="0x..."
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowAccessDialog(false)}>Cancel</Button>
-          <Button onClick={handleGrantAccess} disabled={grantingAccess || !accessAddress}>
-            {grantingAccess ? "Granting..." : "Grant Access"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
+
+  return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Employee Analytics</h1>

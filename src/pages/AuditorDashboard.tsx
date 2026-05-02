@@ -9,7 +9,7 @@ import { formatCurrency } from "@/lib/currency";
 import { 
   Users, DollarSign, TrendingUp, Shield, CheckCircle, AlertCircle, 
   Clock, Calendar, Wallet, FileText, Activity, Target, AlertTriangle,
-  Scale, Timer, MoneyDown, BarChart3, Loader2
+  Scale, Timer, TrendingDown, BarChart3, Loader2
 } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -312,7 +312,7 @@ const AuditorDashboard = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <MoneyDown className="h-4 w-4" />
+              <TrendingDown className="h-4 w-4" />
               Total Paid
             </CardTitle>
           </CardHeader>
