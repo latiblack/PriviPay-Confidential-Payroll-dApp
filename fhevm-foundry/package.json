@@ -10,7 +10,7 @@
     "deploy": "forge script script/Deploy.s.sol --broadcast --verify"
   },
   "dependencies": {
-    "@fhevm/fhevm": "^0.7.0",
+    "fhevm": "^0.6.2",
     "solmate": "^6.0.0"
   },
   "devDependencies": {

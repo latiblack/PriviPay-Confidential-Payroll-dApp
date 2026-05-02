@@ -25,9 +25,6 @@ contract ConfidentialPayrollFHE {
     // Whether an address is an employee
     mapping(address => bool) public isEmployee;
 
-    // Employee authorized to view their data
-    mapping(address => bool) public authorizedViewers;
-
     // Events
     event SalarySetEncrypted(address indexed employee);
     event BonusDistributedEncrypted(address indexed employee);
@@ -41,11 +38,6 @@ contract ConfidentialPayrollFHE {
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
-        _;
-    }
-
-    modifier onlyEmployee() {
-        if (!isEmployee[msg.sender]) revert NotEmployee();
         _;
     }
 
@@ -84,14 +76,10 @@ contract ConfidentialPayrollFHE {
     }
 
     /// @notice Set encrypted salary for an employee
-    /// @param employee Employee address
-    /// @param encryptedSalary Encrypted salary amount (from client using FHE)
     function setEncryptedSalary(address employee, euint256 encryptedSalary) external onlyOwner {
         if (!isEmployee[employee]) revert NotEmployee();
         
         encryptedSalaries[employee] = encryptedSalary;
-        
-        // Grant employee access to read their salary
         FHE.allow(employee, encryptedSalary);
         
         emit SalarySetEncrypted(employee);
@@ -102,8 +90,6 @@ contract ConfidentialPayrollFHE {
         if (!isEmployee[employee]) revert NotEmployee();
         
         encryptedBonuses[employee] = encryptedBonus;
-        
-        // Grant employee access to read their bonus
         FHE.allow(employee, encryptedBonus);
         
         emit BonusDistributedEncrypted(employee);
@@ -126,16 +112,12 @@ contract ConfidentialPayrollFHE {
     }
 
     /// @notice Process payroll for all employees (encrypted calculation)
-    /// @dev This calculates total without revealing individual salaries
     function processPayrollEncrypted() external onlyOwner returns (euint256) {
         euint256 total = FHE.asEuint256(0);
         
         for (uint i = 0; i < employeeList.length; i++) {
             address emp = employeeList[i];
-            
-            // Add salary + bonus (all encrypted operations)
-            total = add(total, encryptedSalaries[emp]);
-            total = add(total, encryptedBonuses[emp]);
+            total = FHE.add(total, FHE.add(encryptedSalaries[emp], encryptedBonuses[emp]));
         }
         
         emit PayrollProcessedEncrypted(employeeList.length);
@@ -154,7 +136,7 @@ contract ConfidentialPayrollFHE {
         return employeeList[index];
     }
 
-    /// @notice Check if caller can view a specific employee's data
+    /// @notice Check if caller can view employee data
     function canViewEmployeeData(address employee) external view returns (bool) {
         return msg.sender == employee || msg.sender == owner;
     }

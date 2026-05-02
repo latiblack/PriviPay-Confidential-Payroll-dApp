@@ -1,0 +1,21 @@
+{
+  "name": "fhevm-hardhat",
+  "version": "0.1.0",
+  "description": "Confidential Payroll using Zama FHE",
+  "license": "BSD-3-Clause-Clear",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "fhevm": "^0.6.2",
+    "fhevmjs": "^0.6.1"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.0"
+  }
+}
