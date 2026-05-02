@@ -159,6 +159,7 @@ async processPayroll(
 
     for (let i = 0; i < employees.length; i++) {
       const emp = employees[i];
+      console.log("Processing payroll for:", emp.address, "salary:", emp.salary);
       if (emp.salary > 0) {
         try {
           const tx = await this.signer.sendTransaction({
@@ -168,6 +169,7 @@ async processPayroll(
           });
           // viem returns hash string; ethers returns object with .hash
           const hash = typeof tx === "string" ? tx : tx.hash;
+          console.log("Transaction successful, hash:", hash);
           txHashes.push(hash);
           totalAmount += emp.salary;
           await onProgress?.(i + 1, employees.length, hash);

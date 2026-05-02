@@ -10,6 +10,8 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
+import { ethereumService } from "@/lib/ethereum";
+import { useWalletClient } from "wagmi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
 
@@ -28,6 +30,7 @@ interface PaymentData {
 const EmployeeDashboard = () => {
   const { profile } = useAuth();
   const { walletAddress } = useWalletAuth();
+  const { data: walletClient } = useWalletClient();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
   const isManager = profile?.currentRole === "manager";

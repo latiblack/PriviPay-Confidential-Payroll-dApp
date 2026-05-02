@@ -388,11 +388,12 @@ const handleProcessPayroll = async () => {
     const result = await ethereumService.processPayroll(
       employeesToPay,
       async (current, total, hash) => {
+        console.log("Payment callback:", current, total, hash);
         if (hash) {
-          // Persist payroll record so charts/history can read it
           const emp = employeesToPay[current - 1];
+          console.log("Recording payment for employee:", emp.id, emp.encrypted_salary);
           try {
-            await supabase.from("payroll_records").insert({
+            const { error: insertError } = await supabase.from("payroll_records").insert({
               organization_id: orgId,
               employee_id: emp.id,
               encrypted_amount: emp.encrypted_salary || String(emp.salary * 100),
@@ -400,6 +401,11 @@ const handleProcessPayroll = async () => {
               status: "completed",
               paid_at: new Date().toISOString(),
             });
+            if (insertError) {
+              console.error("Insert error:", insertError);
+            } else {
+              console.log("Payment recorded successfully");
+            }
           } catch (e) {
             console.error("Failed to record payroll:", e);
           }
