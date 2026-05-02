@@ -147,8 +147,8 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
   }
 
 async processPayroll(
-    employees: { address: string; salary: number }[],
-    onProgress?: (current: number, total: number, hash?: string) => void
+    employees: { address: string; salary: number; [key: string]: any }[],
+    onProgress?: (current: number, total: number, hash?: string) => void | Promise<void>
   ): Promise<{ totalAmount: string; txHashes: string[] }> {
     if (!this.signer) {
       throw new Error("Wallet not connected");
