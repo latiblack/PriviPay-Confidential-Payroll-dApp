@@ -42,6 +42,7 @@ const EmployeeDashboard = () => {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
+  const [ethPrice, setEthPrice] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [editNameForm, setEditNameForm] = useState({ name: "", position: "" });
@@ -50,6 +51,20 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     console.log("Debug - isOwner:", isOwner, "role:", profile?.currentRole, "hasEmployee:", !!employee);
   }, [isOwner, profile?.currentRole, employee]);
+
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+        const data = await res.json();
+        setEthPrice(data.ethereum?.usd || 0);
+      } catch (e) {
+        console.error("Failed to fetch ETH price:", e);
+        setEthPrice(0);
+      }
+    };
+    fetchEthPrice();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -189,8 +204,10 @@ const EmployeeDashboard = () => {
     }
   };
 
-  const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0);
-  const monthlyCount = payments.filter(p => p.status === "completed").length;
+  const targetEmployeeId = (isOwner || isManager) ? selectedEmployeeId : employee?.id;
+  const employeeBonusUSD = targetEmployeeId ? bonuses.filter(b => b.employee_id === targetEmployeeId).reduce((sum, b) => sum + (Number(b.amount) * ethPrice), 0) : 0;
+  const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0) + employeeBonusUSD;
+  const monthlyCount = payments.filter(p => p.status === "completed").length + bonuses.filter(b => b.employee_id === targetEmployeeId).length;
   const maxPayment = Math.max(...payments.map(p => p.amount), 1);
 
   if (loading) {
