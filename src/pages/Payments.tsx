@@ -230,16 +230,34 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    if (!isOwner && profile?.walletAddress && walletClient) {
+    if (!isOwner && profile?.walletAddress && profile.currentOrganization?.id) {
       const fetchTotalReceived = async () => {
         setLoadingTotalReceived(true);
         try {
-          await ethereumService.initializeWithSigner(walletClient);
-          const txHistory = await ethereumService.getTransactionHistory(profile.walletAddress.toLowerCase(), 50);
-          const total = txHistory.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-          setTotalReceived(formatCurrency(total * 100));
+          // Find employee's wallet address in employees table
+          const { data: empData } = await supabase
+            .from("employees")
+            .select("id")
+            .eq("organization_id", profile.currentOrganization.id)
+            .eq("wallet_address", profile.walletAddress.toLowerCase())
+            .single();
+          
+          if (empData) {
+            // Get all payroll records for this employee
+            const { data: payData } = await supabase
+              .from("payroll_records")
+              .select("encrypted_amount, status")
+              .eq("employee_id", empData.id);
+            
+            const total = (payData || [])
+              .filter(p => p.status === "completed")
+              .reduce((sum, p) => sum + Number(p.encrypted_amount || 0), 0);
+            setTotalReceived(formatCurrency(total));
+          } else {
+            setTotalReceived("$0.00");
+          }
         } catch (err) {
-          console.error("Failed to fetch transaction history:", err);
+          console.error("Failed to fetch total received:", err);
           setTotalReceived("$0.00");
         } finally {
           setLoadingTotalReceived(false);
@@ -247,7 +265,7 @@ useEffect(() => {
       };
       fetchTotalReceived();
     }
-  }, [isOwner, profile?.walletAddress, walletClient]);
+  }, [isOwner, profile?.walletAddress, profile.currentOrganization?.id]);
 
 const handleMemberSelect = (memberId: string) => {
     setSelectedMemberId(memberId);
