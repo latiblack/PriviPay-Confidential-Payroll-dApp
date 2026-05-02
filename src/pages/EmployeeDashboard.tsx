@@ -129,6 +129,7 @@ const EmployeeDashboard = () => {
           .order("paid_at", { ascending: false, nullsFirst: false })
           .limit(50);
 
+        console.log("Profile org:", profile?.currentOrganization);
         console.log("Org ID:", profile.currentOrganization?.id);
         console.log("All pay data:", allPayData, "error:", payError);
         if (payError) throw payError;
@@ -439,6 +440,7 @@ if (!isOwner) {
           {/* DEBUG: Show payment data */}
           <div className="p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
             <p className="font-bold text-yellow-800">DEBUG:</p>
+            <p className="text-sm">Org ID in profile: {profile?.currentOrganization?.id}</p>
             <p className="text-sm">Employee ID: {employee?.id}</p>
             <p className="text-sm">Payments count: {payments.length}</p>
             <p className="text-sm">Payments: {JSON.stringify(payments)}</p>
