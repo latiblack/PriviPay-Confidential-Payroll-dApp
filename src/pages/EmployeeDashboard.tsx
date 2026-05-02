@@ -250,6 +250,142 @@ if (!isOwner) {
           )}
         </CardContent>
       </Card>
+
+      {employee && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Total Received
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalReceived)}</div>
+                <p className="text-xs text-muted-foreground mt-1">all time</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Payments
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{monthlyCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">completed</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Avg Payment
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(monthlyCount > 0 ? Math.round(totalReceived / monthlyCount) : 0)}</div>
+                <p className="text-xs text-muted-foreground mt-1">per transaction</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Last Payment
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{payments[0] ? formatCurrency(payments[0].amount) : "—"}</div>
+                <p className="text-xs text-muted-foreground mt-1">{payments[0] ? new Date(payments[0].created_at).toLocaleDateString() : "no payments yet"}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Payment Chart
+              </CardTitle>
+              <CardDescription>Successful salary payments from Sepolia blockchain</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No payment history yet</p>
+              ) : (
+                <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
+                  {payments.slice(0, 12).reverse().map((payment) => (
+                    <div key={payment.id} className="flex flex-col items-center gap-2 flex-1">
+                      <div
+                        className={`w-full rounded-t-lg transition-all hover:opacity-80 ${payment.status === "completed" ? "bg-primary" : "bg-yellow-500"}`}
+                        style={{
+                          height: `${Math.max((payment.amount / maxPayment) * 200, 20)}px`,
+                          minHeight: "20px"
+                        }}
+                        title={`${formatCurrency(payment.amount)} - ${payment.status}`}
+                      />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(payment.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Payment History
+              </CardTitle>
+              <CardDescription>Recent salary payments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No payment history yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {payments.map((payment) => (
+                    <div key={payment.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${payment.status === "completed" ? "bg-primary/10" : "bg-yellow-100"}`}>
+                          <ArrowUpRight className={`h-6 w-6 ${payment.status === "completed" ? "text-primary" : "text-yellow-600"}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium capitalize">{payment.type}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(payment.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                          </p>
+                          {payment.tx_hash && (
+                            <a
+                              href={`https://sepolia.etherscan.io/tx/${payment.tx_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                            >
+                              {payment.tx_hash.slice(0, 10)}...{payment.tx_hash.slice(-6)}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-xl">{formatCurrency(payment.amount)}</p>
+                        <Badge variant={payment.status === "completed" ? "default" : "secondary"}>{payment.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
