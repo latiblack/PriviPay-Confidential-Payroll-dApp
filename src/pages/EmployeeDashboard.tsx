@@ -99,46 +99,51 @@ const EmployeeDashboard = () => {
     fetchData();
   }, [profile?.currentOrganization?.id, isOwner, isManager, walletAddress]);
 
+  // Fetch payment history from payroll_records for the relevant employee
   useEffect(() => {
-    // For owners, still allow fetching employee-specific data when selected
-    const fetchEmployeeData = async () => {
-      if (!selectedEmployeeId) {
-        if (!isOwner) {
-          setEmployee(null);
-          setPayments([]);
-        }
+    const fetchPayments = async () => {
+      // Owner/manager: use selected employee. Employee: use their own record.
+      const targetEmployeeId = (isOwner || isManager) ? selectedEmployeeId : employee?.id;
+
+      if (!targetEmployeeId) {
+        setPayments([]);
         return;
       }
 
-      try {
+      // For owner, also update displayed employee object on selection change
+      if ((isOwner || isManager) && selectedEmployeeId) {
         const emp = employees.find(e => e.id === selectedEmployeeId);
-        if (emp) {
-          setEmployee(emp);
+        if (emp) setEmployee(emp);
+      }
 
-          const { data: payData, error: payError } = await (supabase as any)
-            .from("payments")
-            .select("*")
-            .eq("employee_id", emp.id)
-            .order("created_at", { ascending: false })
-            .limit(20);
+      try {
+        const { data: payData, error: payError } = await supabase
+          .from("payroll_records")
+          .select("*")
+          .eq("employee_id", targetEmployeeId)
+          .order("paid_at", { ascending: false, nullsFirst: false })
+          .limit(50);
 
-          if (!payError && payData) {
-            setPayments(payData.map((p: any) => ({
-              id: p.id,
-              amount: Number(p.amount),
-              type: p.payment_type || "salary",
-              status: p.status || "pending",
-              created_at: p.created_at
-            })));
-          }
-        }
+        if (payError) throw payError;
+
+        const mapped: PaymentData[] = (payData || []).map((p) => ({
+          id: p.id,
+          // encrypted_amount is stored in cents
+          amount: Number(p.encrypted_amount || 0) / 100,
+          type: "salary",
+          status: p.status === "completed" ? "completed" : (p.status as string) || "pending",
+          created_at: p.paid_at || p.created_at,
+          tx_hash: p.tx_hash,
+        }));
+        setPayments(mapped);
       } catch (err) {
-        console.error("Error fetching employee data:", err);
+        console.error("Error fetching payments:", err);
+        setPayments([]);
       }
     };
 
-    fetchEmployeeData();
-  }, [selectedEmployeeId, employees, isOwner]);
+    fetchPayments();
+  }, [selectedEmployeeId, employees, isOwner, isManager, employee?.id]);
 
   const getMemberRole = (walletAddress: string) => {
     const member = members.find(m => m.user_id?.toLowerCase() === walletAddress?.toLowerCase());
