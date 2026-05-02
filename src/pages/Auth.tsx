@@ -163,24 +163,32 @@ export const AuthPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
-        <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
-              <Wallet className="h-10 w-10 text-primary-foreground" />
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        
+        <div className="relative min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-8">
+            <div className="relative">
+              <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-primary via-primary to-purple-600 flex items-center justify-center shadow-2xl shadow-primary/30">
+                <Wallet className="h-12 w-12 text-white" />
+              </div>
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-2 bg-primary/20 rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }} />
+              </div>
             </div>
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-24 h-1 bg-primary/20 rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }} />
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold text-white tracking-tight">PriviPay</h2>
+              <p className="text-slate-400">Setting up your secure environment</p>
             </div>
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold tracking-tight">PriviPay</h2>
-            <p className="text-sm text-muted-foreground">Setting up your secure environment</p>
-          </div>
-          <div className="flex items-center justify-center gap-1">
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
           </div>
         </div>
       </div>
@@ -190,21 +198,34 @@ export const AuthPage = () => {
   // User is authenticated but waiting for embedded wallet to be created
   if (isAuthenticated && user && !walletAddress) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            </div>
-            <CardTitle className="text-2xl">Creating Your Wallet</CardTitle>
-            <CardDescription>Setting up your secure wallet for confidential payroll</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Please wait while we create your secure wallet.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        
+        <div className="relative min-h-screen flex items-center justify-center p-4">
+          <Card className="w-full max-w-md bg-white/10 backdrop-blur-xl border-white/10 shadow-2xl">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center mb-4 shadow-lg">
+                <Loader2 className="h-8 w-8 text-white animate-spin" />
+              </div>
+              <CardTitle className="text-2xl text-white">Creating Your Wallet</CardTitle>
+              <CardDescription className="text-slate-400">Setting up your secure wallet for confidential payroll</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-400 text-center">
+                Please wait while we create your secure wallet.
+              </p>
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -288,21 +309,142 @@ export const AuthPage = () => {
 
 if (!isAuthenticated) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Welcome to PriviPay</CardTitle>
-          <CardDescription>Sign in to manage your confidential payroll</CardDescription>
-        </CardHeader>
-<CardContent className="space-y-6">
-        <p className="text-sm text-muted-foreground text-center">
-          Connect your wallet to get started
-        </p>
-        <div className="flex justify-center">
-          <ConnectButton />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
         </div>
-      </CardContent>
-      </Card>
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Logo & Title */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-primary to-purple-600 shadow-2xl shadow-primary/30 mb-6">
+              <Wallet className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">PriviPay</h1>
+            <p className="text-slate-400 text-lg">Confidential Payroll Management</p>
+          </div>
+
+          {/* Main Card */}
+          <Card className="bg-white/10 backdrop-blur-xl border-white/10 shadow-2xl">
+            <CardHeader className="text-center pb-2">
+              <CardTitle className="text-2xl text-white font-semibold">Welcome Back</CardTitle>
+              <CardDescription className="text-slate-400">Connect your wallet to continue</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-4">
+              {/* Feature Highlights */}
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-3 rounded-xl bg-white/5">
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-xs text-slate-300">FHE Encrypted</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5">
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <p className="text-xs text-slate-300">Secure Access</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5">
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <p className="text-xs text-slate-300">Verified Audit</p>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-transparent text-slate-500">Secure Wallet Connection</span>
+                </div>
+              </div>
+
+              {/* Connect Wallet Button */}
+              <div className="flex justify-center">
+                <ConnectButton.Custom>
+                  {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+                    const ready = mounted;
+                    const connected = ready && account && chain;
+                    
+                    return (
+                      <div
+                        {...(!ready && {
+                          'aria-hidden': true,
+                          'style': { opacity: 0.8, pointerEvents: 'none', userSelect: 'none' },
+                        })}
+                        className="w-full"
+                      >
+                        {!connected ? (
+                          <button
+                            onClick={openConnectModal}
+                            className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary to-purple-600 p-[2px] transition-all hover:shadow-lg hover:shadow-primary/25"
+                          >
+                            <div className="relative w-full h-14 bg-slate-900/90 rounded-xl flex items-center justify-center gap-3 overflow-hidden">
+                              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                              </div>
+                              <span className="text-white font-semibold text-lg">Connect Wallet</span>
+                              <ArrowRight className="w-5 h-5 text-white/70 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={openAccountModal}
+                            className="w-full rounded-xl bg-white/10 border border-white/10 p-1 hover:bg-white/20 transition-colors"
+                          >
+                            <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-slate-800/80">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold">
+                                  {account.displayName?.[0] || account.displayName?.slice(0, 2) || '?'}
+                                </div>
+                                <div className="text-left">
+                                  <p className="text-white font-medium">{account.displayName}</p>
+                                  <p className="text-slate-400 text-xs">{account.displayBalance?.[0] || '0.00'} ETH</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {chain?.iconUrl && (
+                                  <img src={chain.iconUrl} alt={chain.name} className="w-6 h-6 rounded-full" />
+                                )}
+                                <ArrowRight className="w-4 h-4 text-slate-400 rotate-90" />
+                              </div>
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }}
+                </ConnectButton.Custom>
+              </div>
+
+              <p className="text-center text-xs text-slate-500">
+                By connecting, you agree to our Terms of Service
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Footer */}
+          <p className="text-center text-slate-500 text-sm mt-8">
+            Powered by Fully Homomorphic Encryption
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
