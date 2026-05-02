@@ -41,6 +41,20 @@ export const organizationService = {
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Add owner to user_roles with 'employer' role
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert({
+        user_id: lowerOwnerId,
+        organization_id: org.id,
+        role: "employer",
+      } as UserRoleInsert);
+
+    if (roleError) {
+      console.error("Failed to add owner to user_roles:", roleError);
+    }
+
     return org;
   },
 

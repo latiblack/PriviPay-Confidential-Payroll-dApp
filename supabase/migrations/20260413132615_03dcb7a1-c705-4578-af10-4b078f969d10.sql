@@ -217,10 +217,10 @@ CREATE POLICY "Org members can view payroll"
   ON public.payroll_records FOR SELECT
   USING (public.is_org_member(auth.uid(), organization_id));
 
-CREATE POLICY "Employers can create payroll"
+CREATE POLICY "Org members can create payroll"
   ON public.payroll_records FOR INSERT
   TO authenticated
-  WITH CHECK (public.has_org_role(auth.uid(), organization_id, 'employer'));
+  WITH CHECK (public.is_org_member(auth.uid(), organization_id));
 
 CREATE POLICY "Employers can update payroll"
   ON public.payroll_records FOR UPDATE
