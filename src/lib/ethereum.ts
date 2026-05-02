@@ -147,8 +147,8 @@ async sendTransaction(to: string, amountInEth: string): Promise<string> {
   }
 
 async processPayroll(
-    employees: { address: string; salary: number }[],
-    onProgress?: (current: number, total: number, hash?: string) => void
+    employees: { address: string; salary: number; [key: string]: any }[],
+    onProgress?: (current: number, total: number, hash?: string) => void | Promise<void>
   ): Promise<{ totalAmount: string; txHashes: string[] }> {
     if (!this.signer) {
       throw new Error("Wallet not connected");
@@ -170,7 +170,7 @@ async processPayroll(
           const hash = typeof tx === "string" ? tx : tx.hash;
           txHashes.push(hash);
           totalAmount += emp.salary;
-          onProgress?.(i + 1, employees.length, hash);
+          await onProgress?.(i + 1, employees.length, hash);
         } catch (err) {
           console.error(`Failed to pay ${emp.address}:`, err);
         }
