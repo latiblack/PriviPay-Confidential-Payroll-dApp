@@ -157,56 +157,20 @@ export type Database = {
           },
         ]
       }
-invitations: {
-    Row: {
-      code: string
-      created_at: string | null
-      created_by: string
-      email: string | null
-      expires_at: string | null
-      id: string
-      organization_id: string
-      role: string
-      status: string
-      updated_at: string | null
-      wallet_address: string | null
-    }
-    Insert: {
-      code: string
-      created_at?: string | null
-      created_by: string
-      email?: string | null
-      expires_at?: string | null
-      id?: string
-      organization_id: string
-      role?: string
-      status?: string
-      updated_at?: string | null
-      wallet_address?: string | null
-    }
-    Update: {
-      code?: string
-      created_at?: string | null
-      created_by?: string
-      email?: string | null
-      expires_at?: string | null
-      id?: string
-      organization_id?: string
-      role?: string
-      status?: string
-      updated_at?: string | null
-      wallet_address?: string | null
-    }
-    Relationships: [
-      {
-        foreignKeyName: "invitations_organization_id_fkey"
-        columns: ["organization_id"]
-        isOneOf: false
-        referencedRelation: "organizations"
-        referencedColumns: ["id"]
-      },
-    ]
-  }
+      invitations: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string
+          email: string | null
+          expires_at: string | null
+          id: string
+          organization_id: string
+          role: string
+          status: string
+          updated_at: string | null
+          wallet_address: string | null
+        }
         Insert: {
           code: string
           created_at?: string | null
@@ -218,6 +182,7 @@ invitations: {
           role?: string
           status?: string
           updated_at?: string | null
+          wallet_address?: string | null
         }
         Update: {
           code?: string
@@ -230,6 +195,7 @@ invitations: {
           role?: string
           status?: string
           updated_at?: string | null
+          wallet_address?: string | null
         }
         Relationships: [
           {
