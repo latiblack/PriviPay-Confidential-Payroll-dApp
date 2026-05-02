@@ -205,8 +205,8 @@ const EmployeeDashboard = () => {
   };
 
   const targetEmployeeId = (isOwner || isManager) ? selectedEmployeeId : employee?.id;
-  const employeeBonusUSD = targetEmployeeId ? bonuses.filter(b => b.employee_id === targetEmployeeId).reduce((sum, b) => sum + (Number(b.amount) * ethPrice), 0) : 0;
-  const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0) + employeeBonusUSD;
+  const employeeBonus = targetEmployeeId ? bonuses.filter(b => b.employee_id === targetEmployeeId).reduce((sum, b) => sum + Number(b.amount), 0) : 0;
+  const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0) + employeeBonus;
   const monthlyCount = payments.filter(p => p.status === "completed").length + bonuses.filter(b => b.employee_id === targetEmployeeId).length;
   const maxPayment = Math.max(...payments.map(p => p.amount), 1);
 

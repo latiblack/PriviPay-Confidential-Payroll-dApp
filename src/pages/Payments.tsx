@@ -378,9 +378,9 @@ const handleProcessPayroll = async () => {
       const employeesToPay = employees
         .filter(e => Number(e.encrypted_salary) > 0)
         .map(e => {
-          // Add bonus to salary
+          // Add bonus to salary (bonus is stored in USD)
           const employeeBonus = bonusData?.filter(b => b.employee_id === e.id).reduce((sum, b) => sum + Number(b.amount), 0) || 0;
-          const usdAmount = Number(e.encrypted_salary) + employeeBonus;
+          const usdAmount = Number(e.encrypted_salary) + employeeBonus; // both are USD
           const ethAmount = Number((ethPrice > 0 ? usdAmount / ethPrice : usdAmount / 2000).toFixed(8)); // Convert USD to ETH, round to 8 decimals
           return {
             id: e.id,
