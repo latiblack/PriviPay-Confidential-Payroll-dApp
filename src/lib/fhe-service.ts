@@ -6,7 +6,7 @@ export const initFhevm = async (): Promise<FhevmInstance> => {
   if (instance) return instance;
   
   instance = await createInstance({
-    network: "zamaSepolia",
+    network: "sepolia",
     gatewayUrl: "https://relayer.testnet.zama.org",
   });
   

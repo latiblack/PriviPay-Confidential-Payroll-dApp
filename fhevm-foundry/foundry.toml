@@ -7,11 +7,10 @@ optimizer = true
 optimizer_runs = 200
 
 [rpc_endpoints]
-zamaSepolia = "https://rpc.sepolia.zama.xyz"
 sepolia = "${SEPOLIA_RPC_URL}"
 
 [etherscan]
-zamaSepolia = { key = "${ZAMA_ETHERSCAN_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
 
 [fhevm]
 version = "0.3.0"
