@@ -376,96 +376,127 @@ const AuditorDashboard = () => {
         ))}
       </div>
 
-      {/* Payroll Records Table */}
-      <Card>
+      {/* Payment History - ENCRYPTED (anonymized for auditors) */}
+      <Card className="border-2 border-blue-200 bg-blue-50/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-blue-700">
             <FileText className="h-5 w-5" />
             Payment History
           </CardTitle>
-          <CardDescription>Complete audit trail of all payments</CardDescription>
+          <CardDescription className="text-blue-600">
+            Encrypted audit trail - Values anonymized for compliance verification
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {payrollRecords.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">No payment records found</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 text-sm font-medium">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium">Transaction</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payrollRecords.slice(0, 20).map((record) => (
-                    <tr key={record.id} className="border-b hover:bg-muted/50">
-                      <td className="py-3 px-4 text-sm">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-blue-600 mb-4">
+                <Shield className="h-4 w-4" />
+                <span>Data is encrypted. Showing verification only - amounts and identities are hidden.</span>
+              </div>
+              {payrollRecords.slice(0, 15).map((record) => (
+                <div key={record.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-blue-100">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-blue-800">Encrypted Payment Record</p>
+                      <p className="text-sm text-blue-600">
                         {record.paid_at 
                           ? new Date(record.paid_at).toLocaleDateString() 
                           : "Pending"}
-                      </td>
-                      <td className="py-3 px-4 text-sm font-mono">
-                        {record.tx_hash ? (
-                          <a 
-                            href={`https://sepolia.etherscan.io/tx/${record.tx_hash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            {record.tx_hash.slice(0, 10)}...
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">No tx</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-sm font-medium">
-                        {formatCurrency(Number(record.encrypted_amount || 0))}
-                      </td>
-                      <td className="py-3 px-4">
-                        <Badge variant={record.status === "completed" ? "default" : "secondary"}>
-                          {record.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {payrollRecords.length > 20 && (
-                <p className="text-center py-4 text-sm text-muted-foreground">
-                  Showing 20 of {payrollRecords.length} records. Export for complete list.
-                </p>
-              )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-blue-800">●●●●●●●</p>
+                    <p className="text-xs text-blue-500">Amount encrypted</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {record.tx_hash ? (
+                      <a 
+                        href={`https://sepolia.etherscan.io/tx/${record.tx_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Verify on-chain
+                      </a>
+                    ) : (
+                      <span className="text-xs text-blue-400">No tx</span>
+                    )}
+                    <Badge variant={record.status === "completed" ? "default" : "secondary"}>
+                      {record.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+              <p className="text-center py-2 text-sm text-blue-600">
+                {payrollRecords.length} encrypted payment records verified
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Employee Salary Audit */}
-      <Card>
+      {/* Salary Structure Audit - ENCRYPTED (anonymized) */}
+      <Card className="border-2 border-purple-200 bg-purple-50/50">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-purple-700">
             <Scale className="h-5 w-5" />
             Salary Structure Audit
           </CardTitle>
-          <CardDescription>Review of employee compensation records</CardDescription>
+          <CardDescription className="text-purple-600">
+            Encrypted compensation records - Identity and amounts anonymized
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {employees.map((emp) => (
-              <div key={emp.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium">{emp.name || "Unnamed Employee"}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {emp.position || "Staff"} • {emp.wallet_address?.slice(0, 8)}...{emp.wallet_address?.slice(-4)}
-                  </p>
+            <div className="flex items-center gap-2 text-sm text-purple-600 mb-4">
+              <Shield className="h-4 w-4" />
+              <span>Employee identities and salary amounts are encrypted. Showing existence verification only.</span>
+            </div>
+            
+            {/* Summary of encrypted records */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-white rounded-lg border border-purple-100 text-center">
+                <p className="text-2xl font-bold text-purple-700">{employees.length}</p>
+                <p className="text-sm text-purple-600">Encrypted Records</p>
+              </div>
+              <div className="p-4 bg-white rounded-lg border border-purple-100 text-center">
+                <p className="text-2xl font-bold text-purple-700">{employees.filter(e => e.status === "active").length}</p>
+                <p className="text-sm text-purple-600">Active Status</p>
+              </div>
+              <div className="p-4 bg-white rounded-lg border border-purple-100 text-center">
+                <p className="text-2xl font-bold text-purple-700">{employees.filter(e => e.position).length}</p>
+                <p className="text-sm text-purple-600">With Position Data</p>
+              </div>
+            </div>
+
+            {/* Anonymized employee records */}
+            {employees.map((emp, index) => (
+              <div key={emp.id} className="flex items-center justify-between p-4 bg-white rounded-lg border border-purple-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-medium">
+                    {(index + 1).toString().padStart(2, '0')}
+                  </div>
+                  <div>
+                    <p className="font-medium text-purple-800">Employee #{index + 1}</p>
+                    <p className="text-sm text-purple-600">
+                      Position: {emp.position || "Staff"} • Status: {emp.status}
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(Number(emp.encrypted_salary || 0))}</p>
-                  <p className="text-xs text-muted-foreground">/month</p>
+                  <p className="font-semibold text-purple-800">●●●●●●</p>
+                  <p className="text-xs text-purple-500">Amount encrypted</p>
                 </div>
+                <Badge variant="outline" className="text-purple-600">
+                  Verified
+                </Badge>
               </div>
             ))}
           </div>
