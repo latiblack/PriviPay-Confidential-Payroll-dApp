@@ -133,6 +133,7 @@ const EmployeeDashboard = () => {
         if (payError) throw payError;
 
         const payData = allPayData?.filter(p => p.employee_id === targetEmployeeId) || [];
+        console.log("Filtered payData for", targetEmployeeId, ":", payData);
 
         const mapped: PaymentData[] = (payData || []).map((p) => ({
           id: p.id,
@@ -433,6 +434,14 @@ if (!isOwner) {
 
       {employee && (
         <>
+          {/* DEBUG: Show payment data */}
+          <div className="p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
+            <p className="font-bold text-yellow-800">DEBUG:</p>
+            <p className="text-sm">Employee ID: {employee?.id}</p>
+            <p className="text-sm">Payments count: {payments.length}</p>
+            <p className="text-sm">Payments: {JSON.stringify(payments)}</p>
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardHeader className="pb-2">
