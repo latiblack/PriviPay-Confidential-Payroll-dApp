@@ -132,7 +132,7 @@ const EmployeeDashboard = () => {
         console.log("All pay data:", allPayData, "error:", payError);
         if (payError) throw payError;
 
-        const payData = allPayData?.filter(p => p.employee_id === targetEmployeeId) || [];
+        const payData = allPayData?.filter(p => String(p.employee_id) === String(targetEmployeeId)) || [];
         console.log("Filtered payData for", targetEmployeeId, ":", payData);
 
         const mapped: PaymentData[] = (payData || []).map((p) => ({
