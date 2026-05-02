@@ -14,6 +14,8 @@ import { useAccount, useSwitchChain, useBalance, useWalletClient } from 'wagmi';
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import ethereumService from "@/lib/ethereum";
+import { createFHEContract } from "@/lib/fhe-contract-service";
+import { initFhevm, encryptSalary, encryptBonus } from "@/lib/fhe-service";
 import {
   DollarSign, Users, Send, Loader2, ArrowDownToLine,
   Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle, Wallet, RefreshCw
@@ -72,6 +74,8 @@ const [ethBalance, setEthBalance] = useState("0");
   const [ethPrice, setEthPrice] = useState<number>(0);
   const [totalReceived, setTotalReceived] = useState<string>("$0.00");
   const [loadingTotalReceived, setLoadingTotalReceived] = useState(false);
+  const [fheContract, setFheContract] = useState<any>(null);
+  const [fheInitialized, setFheInitialized] = useState(false);
   const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
 const fetchData = async () => {
@@ -212,6 +216,24 @@ useEffect(() => {
     }
   }, [profile?.currentOrganization?.id, profile?.walletAddress, chainId]);
 
+  // Initialize FHE when owner wallet is connected
+  useEffect(() => {
+    const initFHE = async () => {
+      if (isOwner && walletClient) {
+        try {
+          await initFhevm();
+          const fhe = createFHEContract(walletClient);
+          setFheContract(fhe);
+          setFheInitialized(true);
+          console.log("FHE initialized successfully");
+        } catch (err) {
+          console.error("Failed to initialize FHE:", err);
+        }
+      }
+    };
+    initFHE();
+  }, [isOwner, walletClient]);
+
   useEffect(() => {
     const fetchEthPrice = async () => {
       try {
@@ -288,26 +310,39 @@ const handleMemberSelect = (memberId: string) => {
     }
   };
 
-  const handleAddEmployee = async () => {
+const handleAddEmployee = async () => {
     if (!profile?.currentOrganization?.id) return;
 
     setSavingEmployee(true);
     try {
-const { error } = await supabase
-      .from("employees")
-      .insert({
-        organization_id: profile.currentOrganization.id,
-        wallet_address: employeeForm.wallet_address,
-        name: employeeForm.name || null,
-        position: employeeForm.position || null,
-        department: employeeForm.department || null,
-        encrypted_salary: employeeForm.salary,
-        status: "active",
-      });
+      // Add to Supabase first
+      const { error } = await supabase
+        .from("employees")
+        .insert({
+          organization_id: profile.currentOrganization.id,
+          wallet_address: employeeForm.wallet_address,
+          name: employeeForm.name || null,
+          position: employeeForm.position || null,
+          department: employeeForm.department || null,
+          encrypted_salary: employeeForm.salary,
+          status: "active",
+        });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    toast({ title: "Employee Added", description: "Employee has been added to payroll" });
+      // Also set encrypted salary on FHE contract if available
+      if (fheContract && fheInitialized && employeeForm.salary) {
+        try {
+          const empAddress = employeeForm.wallet_address.toLowerCase();
+          await fheContract.addEmployee(empAddress);
+          await fheContract.setEncryptedSalary(empAddress, Number(employeeForm.salary));
+          console.log("FHE: Employee added with encrypted salary");
+        } catch (fheErr) {
+          console.error("FHE: Failed to set encrypted salary:", fheErr);
+        }
+      }
+
+      toast({ title: "Employee Added", description: "Employee has been added to payroll" });
     setShowAddDialog(false);
     setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
       setSelectedMemberId("");
@@ -458,6 +493,17 @@ const handleProcessPayroll = async () => {
       title: "Payroll Processed",
       description: `Sent ${formatCurrency(Number(result.totalAmount))} to ${result.txHashes.length} employees`,
     });
+
+    // Also process via FHE contract (for encrypted record keeping)
+    if (fheContract && fheInitialized) {
+      try {
+        const tx = await fheContract.processPayroll();
+        await tx.wait();
+        console.log("FHE: Payroll processed on-chain");
+      } catch (fheErr) {
+        console.error("FHE: Payroll processing failed:", fheErr);
+      }
+    }
   } catch (err) {
     console.error("Error processing payroll:", err);
     toast({ title: "Error", description: "Failed to process payroll. Make sure you're on Sepolia and have enough ETH.", variant: "destructive" });
