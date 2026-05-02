@@ -117,3 +117,25 @@
 .rainbow-modal-container {
   z-index: 9999 !important;
 }
+
+/* Mobile fixes */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+* {
+  max-width: 100vw;
+  box-sizing: border-box;
+}
+
+/* Fix for iOS viewport */
+@viewport {
+  width: device-width;
+  zoom: 1;
+  min-zoom: 1;
+  max-zoom: 1;
+}

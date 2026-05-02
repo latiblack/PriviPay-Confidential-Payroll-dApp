@@ -170,22 +170,22 @@ export const AuthPage = () => {
         </div>
         
         <div className="relative min-h-screen flex items-center justify-center">
-          <div className="text-center space-y-8">
+          <div className="text-center space-y-6 sm:space-y-8">
             <div className="relative">
-              <div className="w-24 h-24 mx-auto mb-6">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6">
                 <img 
                   src="/logo.png" 
                   alt="PriviPay" 
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-2 bg-blue-200/50 rounded-full overflow-hidden">
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 sm:w-32 h-2 bg-blue-200/50 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: '60%' }} />
               </div>
             </div>
-            <div className="space-y-3">
-              <h2 className="text-3xl font-bold text-blue-900 tracking-tight">PriviPay</h2>
-              <p className="text-blue-600/80">Setting up your secure environment</p>
+            <div className="space-y-2 sm:space-y-3">
+              <h2 className="text-2xl sm:text-3xl font-bold text-blue-900 tracking-tight">PriviPay</h2>
+              <p className="text-blue-600/80 text-sm sm:text-base px-2">Setting up your secure environment</p>
             </div>
             <div className="flex items-center justify-center gap-2">
               <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -207,20 +207,20 @@ export const AuthPage = () => {
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-300/20 rounded-full blur-3xl" />
         </div>
         
-        <div className="relative min-h-screen flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-white/80 backdrop-blur-xl border-blue-100 shadow-xl shadow-blue-200/30">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 mb-4">
+        <div className="relative min-h-screen flex items-center justify-center p-3 sm:p-4">
+          <Card className="w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-xl border-blue-100 shadow-xl shadow-blue-200/30 mx-2">
+            <CardHeader className="text-center px-3 sm:px-4">
+              <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 mb-3 sm:mb-4">
                 <img 
                   src="/logo.png" 
                   alt="PriviPay" 
                   className="w-full h-full object-contain"
                 />
               </div>
-              <CardTitle className="text-2xl text-blue-900">Creating Your Wallet</CardTitle>
-              <CardDescription className="text-blue-600/70">Setting up your secure wallet for confidential payroll</CardDescription>
+              <CardTitle className="text-xl sm:text-2xl text-blue-900">Creating Your Wallet</CardTitle>
+              <CardDescription className="text-blue-600/70 text-sm">Setting up your secure wallet for confidential payroll</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-3 sm:px-4">
               <p className="text-sm text-blue-600/80 text-center">
                 Please wait while we create your secure wallet.
               </p>
@@ -323,47 +323,47 @@ if (!isAuthenticated) {
       </div>
 
       {/* Main Content */}
-      <div className="relative min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+      <div className="relative min-h-screen flex items-center justify-center p-3 sm:p-4">
+        <div className="w-full max-w-sm sm:max-w-md">
           {/* Logo & Title */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-24 h-24 mb-6">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 mb-4 sm:mb-6">
               <img 
                 src="/logo.png" 
                 alt="PriviPay" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <h1 className="text-3xl font-bold text-blue-900 mb-2 tracking-tight">PriviPay</h1>
-            <p className="text-blue-600/80 text-lg">Confidential Payroll Management</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-1 sm:mb-2 tracking-tight">PriviPay</h1>
+            <p className="text-blue-600/80 text-sm sm:text-lg px-2">Confidential Payroll Management</p>
           </div>
 
           {/* Main Card */}
-          <Card className="bg-white/80 backdrop-blur-xl border-blue-100 shadow-xl shadow-blue-200/30">
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-2xl text-blue-900 font-semibold">Welcome Back</CardTitle>
-              <CardDescription className="text-blue-600/70">Connect your wallet to continue</CardDescription>
+          <Card className="bg-white/80 backdrop-blur-xl border-blue-100 shadow-xl shadow-blue-200/30 mx-2 sm:mx-0">
+            <CardHeader className="text-center pb-2 px-3 sm:px-4">
+              <CardTitle className="text-xl sm:text-2xl text-blue-900 font-semibold">Welcome Back</CardTitle>
+              <CardDescription className="text-blue-600/70 text-sm">Connect your wallet to continue</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 pt-4">
-              {/* Feature Highlights */}
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-blue-600" />
+            <CardContent className="space-y-4 sm:space-y-6 pt-3 sm:pt-4 px-3 sm:px-4">
+              {/* Feature Highlights - responsive grid */}
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                <div className="p-2 sm:p-3 rounded-xl bg-blue-50 border border-blue-100">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
-                  <p className="text-xs text-blue-700">FHE Encrypted</p>
+                  <p className="text-[10px] sm:text-xs text-blue-700 leading-tight">FHE Encrypted</p>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600" />
+                <div className="p-2 sm:p-3 rounded-xl bg-blue-50 border border-blue-100">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
-                  <p className="text-xs text-blue-700">Secure Access</p>
+                  <p className="text-[10px] sm:text-xs text-blue-700 leading-tight">Secure Access</p>
                 </div>
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-                  <div className="w-10 h-10 mx-auto mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                <div className="p-2 sm:p-3 rounded-xl bg-blue-50 border border-blue-100">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1 sm:mb-2 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
-                  <p className="text-xs text-blue-700">Verified Audit</p>
+                  <p className="text-[10px] sm:text-xs text-blue-700 leading-tight">Verified Audit</p>
                 </div>
               </div>
 
@@ -397,12 +397,12 @@ if (!isAuthenticated) {
                             onClick={openConnectModal}
                             className="w-full group"
                           >
-                            <div className="w-full h-14 bg-blue-600 rounded-xl flex items-center justify-center gap-3 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/25">
-                              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                                <Wallet className="w-5 h-5 text-white" />
+                            <div className="w-full h-12 sm:h-14 bg-blue-600 rounded-xl flex items-center justify-center gap-2 sm:gap-3 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/25 px-2">
+                              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                                <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                               </div>
-                              <span className="text-white font-semibold text-lg">Connect Wallet</span>
-                              <ArrowRight className="w-5 h-5 text-white/70 group-hover:translate-x-1 transition-transform" />
+                              <span className="text-white font-semibold text-base sm:text-lg">Connect Wallet</span>
+                              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-white/70 group-hover:translate-x-1 transition-transform" />
                             </div>
                           </button>
                         ) : (
@@ -410,19 +410,19 @@ if (!isAuthenticated) {
                             onClick={openAccountModal}
                             className="w-full rounded-xl border border-blue-200 hover:bg-blue-50 transition-colors"
                           >
-                            <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-blue-50">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-blue-50">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
                                   {account.displayName?.[0] || account.displayName?.slice(0, 2) || '?'}
                                 </div>
                                 <div className="text-left">
-                                  <p className="text-blue-900 font-medium">{account.displayName}</p>
+                                  <p className="text-blue-900 font-medium text-sm sm:text-base">{account.displayName}</p>
                                   <p className="text-blue-600 text-xs">{account.displayBalance?.[0] || '0.00'} ETH</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 {chain?.iconUrl && (
-                                  <img src={chain.iconUrl} alt={chain.name} className="w-6 h-6 rounded-full" />
+                                  <img src={chain.iconUrl} alt={chain.name} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full" />
                                 )}
                                 <ArrowRight className="w-4 h-4 text-blue-400 rotate-90" />
                               </div>
@@ -435,14 +435,14 @@ if (!isAuthenticated) {
                 </ConnectButton.Custom>
               </div>
 
-              <p className="text-center text-xs text-blue-400">
+              <p className="text-center text-[10px] sm:text-xs text-blue-400 px-2">
                 By connecting, you agree to our Terms of Service
               </p>
             </CardContent>
           </Card>
 
           {/* Footer */}
-          <p className="text-center text-blue-500/60 text-sm mt-8">
+          <p className="text-center text-blue-500/60 text-xs sm:text-sm mt-6 sm:mt-8 px-2">
             Powered by Fully Homomorphic Encryption
           </p>
         </div>
