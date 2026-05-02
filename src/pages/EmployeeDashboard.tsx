@@ -122,15 +122,17 @@ const EmployeeDashboard = () => {
 
       try {
         console.log("Fetching payments for employee:", targetEmployeeId);
-        const { data: payData, error: payError } = await supabase
+        const { data: allPayData, error: payError } = await supabase
           .from("payroll_records")
           .select("*")
-          .eq("employee_id", targetEmployeeId)
+          .eq("organization_id", profile.currentOrganization.id)
           .order("paid_at", { ascending: false, nullsFirst: false })
           .limit(50);
 
-        console.log("Pay data:", payData, "error:", payError);
+        console.log("All pay data:", allPayData, "error:", payError);
         if (payError) throw payError;
+
+        const payData = allPayData?.filter(p => p.employee_id === targetEmployeeId) || [];
 
         const mapped: PaymentData[] = (payData || []).map((p) => ({
           id: p.id,
