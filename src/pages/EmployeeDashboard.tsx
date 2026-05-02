@@ -64,6 +64,7 @@ const EmployeeDashboard = () => {
         if (empError) throw empError;
 
         const activeEmployees = (empData || []).filter(e => Number(e.encrypted_salary) > 0);
+        console.log("Employees loaded:", empData?.length, "Active:", activeEmployees.length);
         setEmployees(activeEmployees);
 
         // Get bonuses for calculating total
@@ -120,6 +121,7 @@ const EmployeeDashboard = () => {
       }
 
       try {
+        console.log("Fetching payments for employee:", targetEmployeeId);
         const { data: payData, error: payError } = await supabase
           .from("payroll_records")
           .select("*")
@@ -127,6 +129,7 @@ const EmployeeDashboard = () => {
           .order("paid_at", { ascending: false, nullsFirst: false })
           .limit(50);
 
+        console.log("Pay data:", payData, "error:", payError);
         if (payError) throw payError;
 
         const mapped: PaymentData[] = (payData || []).map((p) => ({
