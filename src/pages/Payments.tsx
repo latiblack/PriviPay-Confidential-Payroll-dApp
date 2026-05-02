@@ -371,12 +371,16 @@ const handleProcessPayroll = async () => {
 
       const employeesToPay = employees
         .filter(e => Number(e.encrypted_salary) > 0)
-        .map(e => ({
-          id: e.id,
-          address: e.wallet_address,
-          salary: Number(e.encrypted_salary),
-          encrypted_salary: e.encrypted_salary,
-        }));
+        .map(e => {
+          const usdAmount = Number(e.encrypted_salary);
+          const ethAmount = ethPrice > 0 ? usdAmount / ethPrice : usdAmount / 2000; // Convert USD to ETH
+          return {
+            id: e.id,
+            address: e.wallet_address,
+            salary: ethAmount,
+            encrypted_salary: e.encrypted_salary,
+          };
+        });
 
       if (employeesToPay.length === 0) {
         toast({ title: "No employees to pay", description: "All employees have $0 salary", variant: "destructive" });
