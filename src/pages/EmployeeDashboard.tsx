@@ -591,6 +591,17 @@ if (!isOwner) {
                               day: "numeric"
                             })}
                           </p>
+                          {payment.tx_hash && (
+                            <a
+                              href={`https://sepolia.etherscan.io/tx/${payment.tx_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                            >
+                              {payment.tx_hash.slice(0, 10)}...{payment.tx_hash.slice(-6)}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className="text-right">
