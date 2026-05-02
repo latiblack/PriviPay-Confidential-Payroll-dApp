@@ -129,9 +129,11 @@ const EmployeeDashboard = () => {
           .order("paid_at", { ascending: false, nullsFirst: false })
           .limit(50);
 
+        console.log("Org ID:", profile.currentOrganization?.id);
         console.log("All pay data:", allPayData, "error:", payError);
         if (payError) throw payError;
 
+        console.log("Comparing:", String(targetEmployeeId), "vs", allPayData?.map(p => String(p.employee_id)));
         const payData = allPayData?.filter(p => String(p.employee_id) === String(targetEmployeeId)) || [];
         console.log("Filtered payData for", targetEmployeeId, ":", payData);
 
