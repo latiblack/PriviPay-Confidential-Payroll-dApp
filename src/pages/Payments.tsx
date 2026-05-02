@@ -369,16 +369,24 @@ const handleProcessPayroll = async () => {
       // Initialize ethereum service with walletClient signer
       await ethereumService.initializeWithSigner(walletClient);
 
+      // Get bonuses for this organization
+      const { data: bonusData } = await supabase
+        .from("bonuses")
+        .select("*")
+        .eq("organization_id", profile.currentOrganization.id);
+
       const employeesToPay = employees
         .filter(e => Number(e.encrypted_salary) > 0)
         .map(e => {
-          const usdAmount = Number(e.encrypted_salary);
+          // Add bonus to salary
+          const employeeBonus = bonusData?.filter(b => b.employee_id === e.id).reduce((sum, b) => sum + Number(b.amount), 0) || 0;
+          const usdAmount = Number(e.encrypted_salary) + employeeBonus;
           const ethAmount = Number((ethPrice > 0 ? usdAmount / ethPrice : usdAmount / 2000).toFixed(8)); // Convert USD to ETH, round to 8 decimals
           return {
             id: e.id,
             address: e.wallet_address,
             salary: ethAmount,
-            encrypted_salary: e.encrypted_salary,
+            encrypted_salary: String(usdAmount), // Store total (salary + bonus) in USD
           };
         });
 
