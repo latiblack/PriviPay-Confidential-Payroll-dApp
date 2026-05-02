@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit } from "lucide-react";
+import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
 type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
@@ -22,6 +22,7 @@ interface PaymentData {
   type: string;
   status: string;
   created_at: string;
+  tx_hash?: string | null;
 }
 
 const EmployeeDashboard = () => {
