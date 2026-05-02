@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { ethereumService } from "@/lib/ethereum";
@@ -327,23 +328,15 @@ if (!isOwner) {
               {payments.length === 0 ? (
                 <p className="text-center py-8 text-muted-foreground">No payment history yet</p>
               ) : (
-                <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
-                  {payments.slice(0, 12).reverse().map((payment) => (
-                    <div key={payment.id} className="flex flex-col items-center gap-2 flex-1">
-                      <div
-                        className={`w-full rounded-t-lg transition-all hover:opacity-80 ${payment.status === "completed" ? "bg-primary" : "bg-yellow-500"}`}
-                        style={{
-                          height: `${Math.max((payment.amount / maxPayment) * 200, 20)}px`,
-                          minHeight: "20px"
-                        }}
-                        title={`${formatCurrency(payment.amount)} - ${payment.status}`}
-                      />
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(payment.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={payments.slice(0, 12).reverse().map(p => ({ ...p, date: new Date(p.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) }))}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                    <Tooltip formatter={(value: number) => [formatCurrency(value), "Amount"]} />
+                    <Line type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={2} dot={{ fill: "#2563eb" }} />
+                  </LineChart>
+                </ResponsiveContainer>
               )}
             </CardContent>
           </Card>
@@ -437,15 +430,6 @@ if (!isOwner) {
 
       {employee && (
         <>
-          {/* DEBUG: Show payment data */}
-          <div className="p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
-            <p className="font-bold text-yellow-800">DEBUG:</p>
-            <p className="text-sm">Org ID in profile: {profile?.currentOrganization?.id}</p>
-            <p className="text-sm">Employee ID: {employee?.id}</p>
-            <p className="text-sm">Payments count: {payments.length}</p>
-            <p className="text-sm">Payments: {JSON.stringify(payments)}</p>
-          </div>
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardHeader className="pb-2">
@@ -542,39 +526,18 @@ if (!isOwner) {
               <CardDescription>Real blockchain transactions from Sepolia</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isOwner && payments.length === 0 ? (
-                <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="flex flex-col items-center gap-2 flex-1">
-                      <div 
-                        className="w-full rounded-t-lg bg-gray-200"
-                        style={{ height: "20px" }}
-                        title="No transactions"
-                      />
-                      <span className="text-xs text-muted-foreground">--</span>
-                    </div>
-                  ))}
-                </div>
-              ) : payments.length === 0 ? (
+              {payments.length === 0 ? (
                 <p className="text-center py-8 text-muted-foreground">No payment history</p>
               ) : (
-                <div className="h-64 flex items-end justify-around gap-2 px-4 py-4">
-                  {payments.slice(0, 12).reverse().map((payment, index) => (
-                    <div key={payment.id} className="flex flex-col items-center gap-2 flex-1">
-                      <div 
-                        className={`w-full rounded-t-lg transition-all hover:opacity-80 ${payment.status === "completed" ? "bg-green-500" : "bg-yellow-500"}`}
-                        style={{ 
-                          height: `${Math.max((payment.amount / maxPayment) * 200, 20)}px`,
-                          minHeight: "20px"
-                        }}
-                        title={`${formatCurrency(payment.amount)} - ${payment.status}`}
-                      />
-                      <span className="text-xs text-muted-foreground transform -rotate-45 origin-left whitespace-nowrap">
-                        {new Date(payment.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={payments.slice(0, 12).reverse().map(p => ({ ...p, date: new Date(p.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) }))}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                    <Tooltip formatter={(value: number) => [formatCurrency(value), "Amount"]} />
+                    <Line type="monotone" dataKey="amount" stroke={isOwner ? "#22c55e" : "#2563eb"} strokeWidth={2} dot={{ fill: isOwner ? "#22c55e" : "#2563eb" }} />
+                  </LineChart>
+                </ResponsiveContainer>
               )}
             </CardContent>
           </Card>
