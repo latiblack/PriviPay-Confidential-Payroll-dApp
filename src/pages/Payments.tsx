@@ -249,9 +249,16 @@ useEffect(() => {
               .select("encrypted_amount, status")
               .eq("employee_id", empData.id);
             
+            // Also get bonuses for this employee
+            const { data: bonusData } = await supabase
+              .from("bonuses")
+              .select("amount")
+              .eq("employee_id", empData.id);
+            
+            const employeeBonus = (bonusData || []).reduce((sum, b) => sum + Number(b.amount), 0);
             const total = (payData || [])
               .filter(p => p.status === "completed")
-              .reduce((sum, p) => sum + Number(p.encrypted_amount || 0), 0);
+              .reduce((sum, p) => sum + Number(p.encrypted_amount || 0), 0) + employeeBonus;
             setTotalReceived(formatCurrency(total));
           } else {
             setTotalReceived("$0.00");
