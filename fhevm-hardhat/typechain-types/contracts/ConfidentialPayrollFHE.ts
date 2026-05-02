@@ -27,29 +27,48 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "addEmployee"
+      | "canViewEmployeeData"
+      | "getAllEmployees"
       | "getEmployee"
       | "getEmployeeCount"
+      | "getEncryptedBalance"
       | "getEncryptedBonus"
       | "getEncryptedSalary"
+      | "grantAccess"
       | "isEmployee"
       | "orgId"
       | "owner"
       | "processPayrollEncrypted"
+      | "removeEmployee"
+      | "revokeAccess"
       | "setEncryptedBonus"
       | "setEncryptedSalary"
+      | "withdrawSalary"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "AccessGranted"
+      | "AccessRevoked"
       | "BonusDistributedEncrypted"
       | "EmployeeAdded"
+      | "EmployeeRemoved"
       | "PayrollProcessedEncrypted"
       | "SalarySetEncrypted"
+      | "SalaryWithdrawn"
   ): EventFragment;
 
   encodeFunctionData(
     functionFragment: "addEmployee",
     values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "canViewEmployeeData",
+    values: [AddressLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getAllEmployees",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getEmployee",
@@ -60,11 +79,19 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "getEncryptedBalance",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getEncryptedBonus",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getEncryptedSalary",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "grantAccess",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -78,6 +105,14 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "removeEmployee",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "revokeAccess",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setEncryptedBonus",
     values: [AddressLike, BigNumberish]
   ): string;
@@ -85,9 +120,21 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
     functionFragment: "setEncryptedSalary",
     values: [AddressLike, BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "withdrawSalary",
+    values: [BigNumberish]
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "addEmployee",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "canViewEmployeeData",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getAllEmployees",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -99,11 +146,19 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "getEncryptedBalance",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getEncryptedBonus",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "getEncryptedSalary",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "grantAccess",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "isEmployee", data: BytesLike): Result;
@@ -114,6 +169,14 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "removeEmployee",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "revokeAccess",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setEncryptedBonus",
     data: BytesLike
   ): Result;
@@ -121,6 +184,36 @@ export interface ConfidentialPayrollFHEInterface extends Interface {
     functionFragment: "setEncryptedSalary",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "withdrawSalary",
+    data: BytesLike
+  ): Result;
+}
+
+export namespace AccessGrantedEvent {
+  export type InputTuple = [employee: AddressLike, viewer: AddressLike];
+  export type OutputTuple = [employee: string, viewer: string];
+  export interface OutputObject {
+    employee: string;
+    viewer: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace AccessRevokedEvent {
+  export type InputTuple = [employee: AddressLike, viewer: AddressLike];
+  export type OutputTuple = [employee: string, viewer: string];
+  export interface OutputObject {
+    employee: string;
+    viewer: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace BonusDistributedEncryptedEvent {
@@ -147,6 +240,18 @@ export namespace EmployeeAddedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace EmployeeRemovedEvent {
+  export type InputTuple = [employee: AddressLike];
+  export type OutputTuple = [employee: string];
+  export interface OutputObject {
+    employee: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace PayrollProcessedEncryptedEvent {
   export type InputTuple = [employeeCount: BigNumberish];
   export type OutputTuple = [employeeCount: bigint];
@@ -160,6 +265,18 @@ export namespace PayrollProcessedEncryptedEvent {
 }
 
 export namespace SalarySetEncryptedEvent {
+  export type InputTuple = [employee: AddressLike];
+  export type OutputTuple = [employee: string];
+  export interface OutputObject {
+    employee: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace SalaryWithdrawnEvent {
   export type InputTuple = [employee: AddressLike];
   export type OutputTuple = [employee: string];
   export interface OutputObject {
@@ -220,9 +337,23 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     "nonpayable"
   >;
 
+  canViewEmployeeData: TypedContractMethod<
+    [employee: AddressLike, viewer: AddressLike],
+    [boolean],
+    "view"
+  >;
+
+  getAllEmployees: TypedContractMethod<[], [string[]], "view">;
+
   getEmployee: TypedContractMethod<[index: BigNumberish], [string], "view">;
 
   getEmployeeCount: TypedContractMethod<[], [bigint], "view">;
+
+  getEncryptedBalance: TypedContractMethod<
+    [employee: AddressLike],
+    [bigint],
+    "view"
+  >;
 
   getEncryptedBonus: TypedContractMethod<
     [employee: AddressLike],
@@ -236,6 +367,8 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     "view"
   >;
 
+  grantAccess: TypedContractMethod<[viewer: AddressLike], [void], "nonpayable">;
+
   isEmployee: TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
 
   orgId: TypedContractMethod<[], [string], "view">;
@@ -243,6 +376,18 @@ export interface ConfidentialPayrollFHE extends BaseContract {
   owner: TypedContractMethod<[], [string], "view">;
 
   processPayrollEncrypted: TypedContractMethod<[], [bigint], "nonpayable">;
+
+  removeEmployee: TypedContractMethod<
+    [employee: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  revokeAccess: TypedContractMethod<
+    [viewer: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   setEncryptedBonus: TypedContractMethod<
     [employee: AddressLike, encryptedBonus: BigNumberish],
@@ -256,6 +401,12 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     "nonpayable"
   >;
 
+  withdrawSalary: TypedContractMethod<
+    [encryptedAmount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -264,17 +415,33 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     nameOrSignature: "addEmployee"
   ): TypedContractMethod<[employee: AddressLike], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "canViewEmployeeData"
+  ): TypedContractMethod<
+    [employee: AddressLike, viewer: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getAllEmployees"
+  ): TypedContractMethod<[], [string[]], "view">;
+  getFunction(
     nameOrSignature: "getEmployee"
   ): TypedContractMethod<[index: BigNumberish], [string], "view">;
   getFunction(
     nameOrSignature: "getEmployeeCount"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getEncryptedBalance"
+  ): TypedContractMethod<[employee: AddressLike], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getEncryptedBonus"
   ): TypedContractMethod<[employee: AddressLike], [bigint], "view">;
   getFunction(
     nameOrSignature: "getEncryptedSalary"
   ): TypedContractMethod<[employee: AddressLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "grantAccess"
+  ): TypedContractMethod<[viewer: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "isEmployee"
   ): TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
@@ -287,6 +454,12 @@ export interface ConfidentialPayrollFHE extends BaseContract {
   getFunction(
     nameOrSignature: "processPayrollEncrypted"
   ): TypedContractMethod<[], [bigint], "nonpayable">;
+  getFunction(
+    nameOrSignature: "removeEmployee"
+  ): TypedContractMethod<[employee: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "revokeAccess"
+  ): TypedContractMethod<[viewer: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setEncryptedBonus"
   ): TypedContractMethod<
@@ -301,7 +474,24 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "withdrawSalary"
+  ): TypedContractMethod<[encryptedAmount: BigNumberish], [void], "nonpayable">;
 
+  getEvent(
+    key: "AccessGranted"
+  ): TypedContractEvent<
+    AccessGrantedEvent.InputTuple,
+    AccessGrantedEvent.OutputTuple,
+    AccessGrantedEvent.OutputObject
+  >;
+  getEvent(
+    key: "AccessRevoked"
+  ): TypedContractEvent<
+    AccessRevokedEvent.InputTuple,
+    AccessRevokedEvent.OutputTuple,
+    AccessRevokedEvent.OutputObject
+  >;
   getEvent(
     key: "BonusDistributedEncrypted"
   ): TypedContractEvent<
@@ -317,6 +507,13 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     EmployeeAddedEvent.OutputObject
   >;
   getEvent(
+    key: "EmployeeRemoved"
+  ): TypedContractEvent<
+    EmployeeRemovedEvent.InputTuple,
+    EmployeeRemovedEvent.OutputTuple,
+    EmployeeRemovedEvent.OutputObject
+  >;
+  getEvent(
     key: "PayrollProcessedEncrypted"
   ): TypedContractEvent<
     PayrollProcessedEncryptedEvent.InputTuple,
@@ -330,8 +527,37 @@ export interface ConfidentialPayrollFHE extends BaseContract {
     SalarySetEncryptedEvent.OutputTuple,
     SalarySetEncryptedEvent.OutputObject
   >;
+  getEvent(
+    key: "SalaryWithdrawn"
+  ): TypedContractEvent<
+    SalaryWithdrawnEvent.InputTuple,
+    SalaryWithdrawnEvent.OutputTuple,
+    SalaryWithdrawnEvent.OutputObject
+  >;
 
   filters: {
+    "AccessGranted(address,address)": TypedContractEvent<
+      AccessGrantedEvent.InputTuple,
+      AccessGrantedEvent.OutputTuple,
+      AccessGrantedEvent.OutputObject
+    >;
+    AccessGranted: TypedContractEvent<
+      AccessGrantedEvent.InputTuple,
+      AccessGrantedEvent.OutputTuple,
+      AccessGrantedEvent.OutputObject
+    >;
+
+    "AccessRevoked(address,address)": TypedContractEvent<
+      AccessRevokedEvent.InputTuple,
+      AccessRevokedEvent.OutputTuple,
+      AccessRevokedEvent.OutputObject
+    >;
+    AccessRevoked: TypedContractEvent<
+      AccessRevokedEvent.InputTuple,
+      AccessRevokedEvent.OutputTuple,
+      AccessRevokedEvent.OutputObject
+    >;
+
     "BonusDistributedEncrypted(address)": TypedContractEvent<
       BonusDistributedEncryptedEvent.InputTuple,
       BonusDistributedEncryptedEvent.OutputTuple,
@@ -354,6 +580,17 @@ export interface ConfidentialPayrollFHE extends BaseContract {
       EmployeeAddedEvent.OutputObject
     >;
 
+    "EmployeeRemoved(address)": TypedContractEvent<
+      EmployeeRemovedEvent.InputTuple,
+      EmployeeRemovedEvent.OutputTuple,
+      EmployeeRemovedEvent.OutputObject
+    >;
+    EmployeeRemoved: TypedContractEvent<
+      EmployeeRemovedEvent.InputTuple,
+      EmployeeRemovedEvent.OutputTuple,
+      EmployeeRemovedEvent.OutputObject
+    >;
+
     "PayrollProcessedEncrypted(uint256)": TypedContractEvent<
       PayrollProcessedEncryptedEvent.InputTuple,
       PayrollProcessedEncryptedEvent.OutputTuple,
@@ -374,6 +611,17 @@ export interface ConfidentialPayrollFHE extends BaseContract {
       SalarySetEncryptedEvent.InputTuple,
       SalarySetEncryptedEvent.OutputTuple,
       SalarySetEncryptedEvent.OutputObject
+    >;
+
+    "SalaryWithdrawn(address)": TypedContractEvent<
+      SalaryWithdrawnEvent.InputTuple,
+      SalaryWithdrawnEvent.OutputTuple,
+      SalaryWithdrawnEvent.OutputObject
+    >;
+    SalaryWithdrawn: TypedContractEvent<
+      SalaryWithdrawnEvent.InputTuple,
+      SalaryWithdrawnEvent.OutputTuple,
+      SalaryWithdrawnEvent.OutputObject
     >;
   };
 }
