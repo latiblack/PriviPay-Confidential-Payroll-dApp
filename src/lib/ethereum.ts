@@ -170,7 +170,7 @@ async processPayroll(
           const hash = typeof tx === "string" ? tx : tx.hash;
           txHashes.push(hash);
           totalAmount += emp.salary;
-          onProgress?.(i + 1, employees.length, hash);
+          await onProgress?.(i + 1, employees.length, hash);
         } catch (err) {
           console.error(`Failed to pay ${emp.address}:`, err);
         }
