@@ -1,4 +1,4 @@
-import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRight, TrendingUp, DollarSign, CheckCircle2 } from "lucide-react";
+import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRight, TrendingUp, DollarSign, CheckCircle2, FileText } from "lucide-react";
 import Logo from "../components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -88,6 +88,7 @@ const Landing = () => {
   const features = [
     { icon: Lock, title: "Encrypted Salaries & Bonuses", description: "Compensation is stored as encrypted integers (euint) on-chain. Raw salary and bonus figures are never exposed — not to validators, not to the public." },
     { icon: Eye, title: "Auditor-Ready Transparency", description: "Regulators and auditors get verifiable aggregates, totals and proofs they need for compliance — without ever decrypting an individual employee's pay." },
+    { icon: FileText, title: "Exportable Audit Reports", description: "Auditors can export compliance-ready reports — payroll totals, tax bases and verifiable summaries — straight from the platform, with no individual salaries leaked. (Coming soon)" },
     { icon: BarChart3, title: "Compliant Computation", description: "Run payroll, tax and reporting computations directly on encrypted data via FHE. Satisfy disclosure requirements while honoring data protection laws." },
   ];
 
@@ -101,12 +102,12 @@ const Landing = () => {
   const steps = [
     { step: "01", title: "Encrypt", desc: "Salaries and bonuses are encrypted client-side before being written on-chain as euint256. Employee pay data leaves your org already protected." },
     { step: "02", title: "Compute", desc: "Smart contracts run payroll, tax and reporting logic directly on encrypted data using FHE — no decryption required to operate." },
-    { step: "03", title: "Disclose Selectively", desc: "Auditors and regulators receive the aggregates and proofs they're entitled to. Employees see only their own pay. Access is enforced cryptographically." },
+    { step: "03", title: "Disclose & Export", desc: "Auditors and regulators receive the aggregates and proofs they're entitled to, and can export compliance-ready reports — while individual employee pay stays encrypted." },
   ];
 
   const benefits = [
     { icon: Shield, title: "Built for Crypto Companies", desc: "Purpose-built for teams running on-chain payroll who face growing pressure to disclose without exposing employees to risk." },
-    { icon: BarChart3, title: "Satisfy Auditors & Regulators", desc: "Provide verifiable totals, tax bases and reporting on encrypted payroll — meeting external compliance without leaking individual data." },
+    { icon: FileText, title: "One-Click Audit Exports", desc: "Give auditors and regulators the reports they need — payroll totals, tax bases, period summaries — exportable on demand, with employee data still encrypted." },
     { icon: Lock, title: "Honor Data Protection Laws", desc: "Stay aligned with GDPR and similar privacy regimes. Employee compensation is never disclosed beyond what the law actually requires." },
     { icon: Globe, title: "Reduce Legal & Reputational Risk", desc: "Avoid the legal exposure that comes with publicly visible on-chain salaries — wrongful disclosure, discrimination claims, and talent poaching." },
   ];
