@@ -10,7 +10,9 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletClient, useAccount, useSwitchChain } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
+import { deployPayrollContract } from "@/lib/deploy-payroll-contract";
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
@@ -20,6 +22,10 @@ export const AuthPage = () => {
   const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<AuthStep>("select");
   const [loading, setLoading] = useState(true);
+  const { data: walletClient } = useWalletClient();
+  const { chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
+  const [deployStatus, setDeployStatus] = useState<string>("");
 
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
@@ -238,26 +244,59 @@ export const AuthPage = () => {
 
   const handleCreateOrg = async () => {
     if (!walletAddress || !orgName) return;
+    if (!walletClient) {
+      console.error("Wallet client not ready");
+      return;
+    }
     setCreating(true);
+    setDeployStatus("");
     try {
+      // Ensure we're on Sepolia before deploying
+      if (chainId !== 11155111) {
+        setDeployStatus("Switching to Sepolia network...");
+        try {
+          await switchChain({ chainId: 11155111 });
+        } catch (e) {
+          throw new Error("Please switch your wallet to the Sepolia network and try again.");
+        }
+      }
+
+      setDeployStatus("Creating organization...");
       const org = await organizationService.createOrganization({
         name: orgName,
         description: orgDescription,
         ownerWalletAddress: walletAddress,
         ownerId: walletAddress,
       });
-      
+
+      // Deploy a dedicated payroll contract for this organization.
+      setDeployStatus("Deploying your payroll contract on Sepolia...");
+      try {
+        const { address, txHash } = await deployPayrollContract(walletClient, org.id);
+        await organizationService.updateContractInfo(org.id, address, txHash);
+        console.log("Deployed org contract:", address, txHash);
+      } catch (deployErr) {
+        console.error("Contract deployment failed:", deployErr);
+        // Org row exists; surface the error so the user can retry from settings.
+        throw new Error(
+          "Organization created but contract deployment failed. You can retry from Settings. " +
+            ((deployErr as Error)?.message || ""),
+        );
+      }
+
+      setDeployStatus("Generating invite code...");
       const invitation = await organizationService.createInvitation({
         organizationId: org.id,
         role: "employer",
         createdBy: walletAddress,
       });
-      
+
       setCreatedOrg({ name: org.name, code: invitation.code });
       await refreshProfile();
       setStep("success");
     } catch (error) {
       console.error("Error creating organization:", error);
+      setDeployStatus((error as Error)?.message || "Something went wrong");
     } finally {
       setCreating(false);
     }
@@ -528,10 +567,20 @@ if (!isAuthenticated) {
               <Label htmlFor="orgDescription">Description (Optional)</Label>
               <Textarea id="orgDescription" placeholder="Brief description of your organization" value={orgDescription} onChange={(e) => setOrgDescription(e.target.value)} rows={3} />
             </div>
+            {deployStatus && (
+              <p className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-md px-3 py-2">
+                {creating && <Loader2 className="inline h-3 w-3 mr-1.5 animate-spin" />}
+                {deployStatus}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              We'll deploy a dedicated confidential payroll contract from your wallet on Sepolia.
+              You'll need to approve one transaction.
+            </p>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep("select")} className="flex-1">Back</Button>
-              <Button onClick={handleCreateOrg} disabled={!orgName || creating} className="flex-1">
-                {creating ? "Creating..." : "Create Organization"}
+              <Button variant="outline" onClick={() => setStep("select")} className="flex-1" disabled={creating}>Back</Button>
+              <Button onClick={handleCreateOrg} disabled={!orgName || creating || !walletClient} className="flex-1">
+                {creating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Working...</> : "Create Organization"}
               </Button>
             </div>
           </CardContent>

@@ -250,6 +250,9 @@ export type Database = {
       }
       organizations: {
         Row: {
+          contract_address: string | null
+          contract_deployed_at: string | null
+          contract_tx_hash: string | null
           created_at: string
           description: string | null
           id: string
@@ -260,6 +263,9 @@ export type Database = {
           wallet_address: string | null
         }
         Insert: {
+          contract_address?: string | null
+          contract_deployed_at?: string | null
+          contract_tx_hash?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -270,6 +276,9 @@ export type Database = {
           wallet_address?: string | null
         }
         Update: {
+          contract_address?: string | null
+          contract_deployed_at?: string | null
+          contract_tx_hash?: string | null
           created_at?: string
           description?: string | null
           id?: string

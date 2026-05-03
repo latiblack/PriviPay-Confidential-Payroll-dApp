@@ -222,7 +222,8 @@ useEffect(() => {
       if (isOwner && walletClient) {
         try {
           await initFhevm();
-          const fhe = createFHEContract(walletClient as any);
+          const orgContractAddress = (profile?.currentOrganization as any)?.contract_address || undefined;
+          const fhe = createFHEContract(walletClient as any, orgContractAddress);
           setFheContract(fhe);
           setFheInitialized(true);
           console.log("FHE initialized successfully");
