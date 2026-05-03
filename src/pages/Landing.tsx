@@ -86,29 +86,29 @@ const DashboardMockup = () => (
 const Landing = () => {
   const { isAuthenticated } = useWalletAuth();
   const features = [
-    { icon: Lock, title: "Encrypted Salaries", description: "All salary data stored as encrypted integers (euint) on-chain. No raw values are ever exposed publicly." },
-    { icon: Eye, title: "Selective Transparency", description: "Employees see only their own salary. Employers see all. Auditors see totals only — role-based decryption." },
-    { icon: Users, title: "Confidential Voting", description: "Managers vote on bonuses privately. Results computed on encrypted data via Fully Homomorphic Encryption." },
+    { icon: Lock, title: "Encrypted Salaries & Bonuses", description: "Compensation is stored as encrypted integers (euint) on-chain. Raw salary and bonus figures are never exposed — not to validators, not to the public." },
+    { icon: Eye, title: "Auditor-Ready Transparency", description: "Regulators and auditors get verifiable aggregates, totals and proofs they need for compliance — without ever decrypting an individual employee's pay." },
+    { icon: BarChart3, title: "Compliant Computation", description: "Run payroll, tax and reporting computations directly on encrypted data via FHE. Satisfy disclosure requirements while honoring data protection laws." },
   ];
 
   const stats = [
-    { value: "$2.4B+", label: "Payroll Processed" },
-    { value: "10,000+", label: "Employees Protected" },
-    { value: "99.99%", label: "Uptime" },
-    { value: "0", label: "Data Breaches" },
+    { value: "B2B", label: "Built for Crypto Companies" },
+    { value: "GDPR", label: "Privacy-Law Aligned" },
+    { value: "On-chain", label: "Verifiable Payroll" },
+    { value: "0", label: "Plaintext Salaries Exposed" },
   ];
 
   const steps = [
-    { step: "01", title: "Encrypt", desc: "Salaries are encrypted client-side before being stored as euint256 on the blockchain. Nobody — not even validators — can see the data." },
-    { step: "02", title: "Compute", desc: "Smart contracts perform payroll calculations directly on encrypted data using FHE. No decryption needed during computation." },
-    { step: "03", title: "Decrypt Selectively", desc: "Only authorized roles can decrypt specific data. Access rules are enforced cryptographically, not by policy alone." },
+    { step: "01", title: "Encrypt", desc: "Salaries and bonuses are encrypted client-side before being written on-chain as euint256. Employee pay data leaves your org already protected." },
+    { step: "02", title: "Compute", desc: "Smart contracts run payroll, tax and reporting logic directly on encrypted data using FHE — no decryption required to operate." },
+    { step: "03", title: "Disclose Selectively", desc: "Auditors and regulators receive the aggregates and proofs they're entitled to. Employees see only their own pay. Access is enforced cryptographically." },
   ];
 
   const benefits = [
-    { icon: Shield, title: "Prevent Salary Politics", desc: "Eliminate internal conflicts caused by salary visibility. Keep compensation confidential without being secretive." },
-    { icon: Globe, title: "Block Talent Poaching", desc: "Competitors can't target your team based on compensation data. Your salary structure stays private." },
-    { icon: BarChart3, title: "Verifiable Compliance", desc: "Auditors can verify payroll totals and tax compliance without seeing individual salaries." },
-    { icon: Users, title: "Fair Bonus Allocation", desc: "Anonymous voting ensures bias-free bonus decisions. Results are computed on encrypted votes." },
+    { icon: Shield, title: "Built for Crypto Companies", desc: "Purpose-built for teams running on-chain payroll who face growing pressure to disclose without exposing employees to risk." },
+    { icon: BarChart3, title: "Satisfy Auditors & Regulators", desc: "Provide verifiable totals, tax bases and reporting on encrypted payroll — meeting external compliance without leaking individual data." },
+    { icon: Lock, title: "Honor Data Protection Laws", desc: "Stay aligned with GDPR and similar privacy regimes. Employee compensation is never disclosed beyond what the law actually requires." },
+    { icon: Globe, title: "Reduce Legal & Reputational Risk", desc: "Avoid the legal exposure that comes with publicly visible on-chain salaries — wrongful disclosure, discrimination claims, and talent poaching." },
   ];
 
   return (
