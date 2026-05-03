@@ -1,4 +1,4 @@
-import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRight, TrendingUp, DollarSign, CheckCircle2 } from "lucide-react";
+import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRight, TrendingUp, DollarSign, CheckCircle2, FileText } from "lucide-react";
 import Logo from "../components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
