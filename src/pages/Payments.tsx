@@ -222,7 +222,7 @@ useEffect(() => {
       if (isOwner && walletClient) {
         try {
           await initFhevm();
-          const fhe = createFHEContract(walletClient);
+          const fhe = createFHEContract(walletClient as any);
           setFheContract(fhe);
           setFheInitialized(true);
           console.log("FHE initialized successfully");

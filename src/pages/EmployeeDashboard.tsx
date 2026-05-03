@@ -74,7 +74,7 @@ const EmployeeDashboard = () => {
       if (!employee?.wallet_address || !walletClient) return;
       setFheLoading(true);
       try {
-        const fheService = new FHEContractService(walletClient);
+        const fheService = new FHEContractService(walletClient as any);
         const decryptedBalance = await fheService.getDecryptedBalance(employee.wallet_address);
         setFheBalance(decryptedBalance);
         console.log("FHE decrypted balance:", decryptedBalance);
