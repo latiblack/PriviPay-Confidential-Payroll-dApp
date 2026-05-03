@@ -1,13 +1,21 @@
-import { FhevmInstance, createInstance } from "fhevmjs";
+import { initSDK, createInstance, SepoliaConfig, FhevmInstance } from "@zama-fhe/relayer-sdk/web";
 
 let instance: FhevmInstance | null = null;
+let sdkInitialized = false;
 
-export const initFhevm = async (): Promise<FhevmInstance> => {
+export const initFhevm = async (provider?: any): Promise<FhevmInstance> => {
   if (instance) return instance;
   
+  if (!sdkInitialized) {
+    await initSDK();
+    sdkInitialized = true;
+  }
+  
+  const network = provider || "https://ethereum-sepolia-rpc.publicnode.com";
+  
   instance = await createInstance({
-    network: "sepolia",
-    gatewayUrl: "https://relayer.testnet.zama.org",
+    ...SepoliaConfig,
+    network,
   });
   
   return instance;
@@ -15,34 +23,33 @@ export const initFhevm = async (): Promise<FhevmInstance> => {
 
 export const encryptSalary = async (amount: number): Promise<string> => {
   const fhe = await initFhevm();
-  const encrypted = fhe.encryptEuint32(amount);
-  return encrypted;
+  const encrypted = fhe.encrypt({ euint32: amount });
+  return encrypted.euint32;
 };
 
 export const encryptBonus = async (amount: number): Promise<string> => {
   const fhe = await initFhevm();
-  const encrypted = fhe.encryptEuint32(amount);
-  return encrypted;
+  const encrypted = fhe.encrypt({ euint32: amount });
+  return encrypted.euint32;
 };
 
 export const encryptAmount = async (amount: number): Promise<string> => {
   const fhe = await initFhevm();
-  return fhe.encryptEuint32(amount);
+  const encrypted = fhe.encrypt({ euint32: amount });
+  return encrypted.euint32;
 };
 
-// Decrypt using fhevmjs built-in (works with testnet config)
 export const decryptValue = async (ciphertext: string): Promise<number> => {
   try {
     const fhe = await initFhevm();
     const decrypted = fhe.decrypt(ciphertext);
-    return decrypted;
+    return typeof decrypted === 'number' ? decrypted : 0;
   } catch (err) {
     console.error("FHE decryption failed:", err);
     return 0;
   }
 };
 
-// Decrypt using Zama Relayer API directly (more reliable for testnet)
 export const decryptViaRelayer = async (
   ciphertext: string,
   contractAddress: string,
@@ -73,15 +80,12 @@ export const decryptViaRelayer = async (
   }
 };
 
-// Request decryption from contract (creates a decryption request)
 export const requestDecryption = async (
   contractAddress: string,
   method: string,
   args: any[],
   signerAddress: string
 ): Promise<string> => {
-  // This would typically trigger a transaction to request decryption
-  // The relayer then processes it and returns the result
   console.log("Requesting decryption for:", method);
   return "";
 };
@@ -102,7 +106,6 @@ export const reencryptForUser = async (
   return reencrypted;
 };
 
-// Check if FHE is properly initialized
 export const isFHEInitialized = (): boolean => {
   return instance !== null;
 };

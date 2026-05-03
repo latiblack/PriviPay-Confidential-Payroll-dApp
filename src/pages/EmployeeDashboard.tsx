@@ -75,10 +75,9 @@ const EmployeeDashboard = () => {
       setFheLoading(true);
       try {
         const fheService = new FHEContractService(walletClient);
-        const encryptedBalance = await fheService.getEncryptedBalance(employee.wallet_address);
-        // For now display as 0 since decryption requires relayer
-        setFheBalance(0);
-        console.log("FHE encrypted balance handle:", encryptedBalance);
+        const decryptedBalance = await fheService.getDecryptedBalance(employee.wallet_address);
+        setFheBalance(decryptedBalance);
+        console.log("FHE decrypted balance:", decryptedBalance);
       } catch (e) {
         console.log("FHE balance fetch error:", e);
         setFheBalance(0);
