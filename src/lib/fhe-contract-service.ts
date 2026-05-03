@@ -122,14 +122,14 @@ export class FHEContractService {
   }
 
   getContractAddress(): string {
-    return CONFIDENTIAL_PAYROLL_ADDRESS;
+    return this.address;
   }
 }
 
-export const createFHEContract = (signer: ethers.Signer): FHEContractService => {
-  return new FHEContractService(signer);
+export const createFHEContract = (signer: ethers.Signer, contractAddress?: string): FHEContractService => {
+  return new FHEContractService(signer, contractAddress);
 };
 
 export const getFHEContractAddress = (): string => {
-  return CONFIDENTIAL_PAYROLL_ADDRESS;
+  return DEFAULT_PAYROLL_ADDRESS;
 };
