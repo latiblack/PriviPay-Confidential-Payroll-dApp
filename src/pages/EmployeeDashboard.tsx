@@ -12,6 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { ethereumService } from "@/lib/ethereum";
+import { FHEContractService } from "@/lib/fhe-contract-service";
 import { useWalletClient } from "wagmi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
@@ -47,6 +48,8 @@ const EmployeeDashboard = () => {
   const [editingName, setEditingName] = useState(false);
   const [editNameForm, setEditNameForm] = useState({ name: "", position: "" });
   const [savingName, setSavingName] = useState(false);
+  const [fheBalance, setFheBalance] = useState<number>(0);
+  const [fheLoading, setFheLoading] = useState(false);
 
   useEffect(() => {
     console.log("Debug - isOwner:", isOwner, "role:", profile?.currentRole, "hasEmployee:", !!employee);
@@ -65,6 +68,28 @@ const EmployeeDashboard = () => {
     };
     fetchEthPrice();
   }, []);
+
+  useEffect(() => {
+    const fetchFheBalance = async () => {
+      if (!employee?.wallet_address || !walletClient) return;
+      setFheLoading(true);
+      try {
+        const fheService = new FHEContractService(walletClient);
+        const encryptedBalance = await fheService.getEncryptedBalance(employee.wallet_address);
+        // For now display as 0 since decryption requires relayer
+        setFheBalance(0);
+        console.log("FHE encrypted balance handle:", encryptedBalance);
+      } catch (e) {
+        console.log("FHE balance fetch error:", e);
+        setFheBalance(0);
+      } finally {
+        setFheLoading(false);
+      }
+    };
+    if (employee?.wallet_address && walletClient) {
+      fetchFheBalance();
+    }
+  }, [employee?.wallet_address, walletClient]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -282,7 +307,7 @@ if (!isOwner) {
 
       {employee && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -329,6 +354,27 @@ if (!isOwner) {
               <CardContent>
                 <div className="text-2xl font-bold">{payments[0] ? formatCurrency(payments[0].amount) : "—"}</div>
                 <p className="text-xs text-muted-foreground mt-1">{payments[0] ? new Date(payments[0].created_at).toLocaleDateString() : "no payments yet"}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-primary flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  FHE Balance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {fheLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Loading...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-primary">{formatCurrency(fheBalance)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">encrypted on-chain</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
