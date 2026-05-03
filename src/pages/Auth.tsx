@@ -10,7 +10,9 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { organizationService } from "@/lib/organization-service";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useWalletClient, useAccount, useSwitchChain } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
+import { deployPayrollContract } from "@/lib/deploy-payroll-contract";
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
@@ -20,6 +22,10 @@ export const AuthPage = () => {
   const { profile, refreshProfile } = useAuth();
   const [step, setStep] = useState<AuthStep>("select");
   const [loading, setLoading] = useState(true);
+  const { data: walletClient } = useWalletClient();
+  const { chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
+  const [deployStatus, setDeployStatus] = useState<string>("");
 
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
