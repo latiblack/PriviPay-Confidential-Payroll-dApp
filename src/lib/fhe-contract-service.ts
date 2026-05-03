@@ -1,7 +1,9 @@
 import { ethers } from "ethers";
 import { initFhevm, encryptSalary, encryptBonus, decryptValue } from "./fhe-service";
 
-const CONFIDENTIAL_PAYROLL_ADDRESS = "0x2f8457EA818590aaEc5DCCA155828bf691A0Ba84";
+// Fallback shared address (legacy). New organizations deploy their own contract
+// stored on `organizations.contract_address`.
+const DEFAULT_PAYROLL_ADDRESS = "0x2f8457EA818590aaEc5DCCA155828bf691A0Ba84";
 
 const FHE_ABI = [
   "function addEmployee(address employee) external",
@@ -30,9 +32,11 @@ const FHE_ABI = [
 
 export class FHEContractService {
   private contract: ethers.Contract;
-  
-  constructor(signer: ethers.Signer) {
-    this.contract = new ethers.Contract(CONFIDENTIAL_PAYROLL_ADDRESS, FHE_ABI, signer);
+  private address: string;
+
+  constructor(signer: ethers.Signer, contractAddress?: string) {
+    this.address = contractAddress || DEFAULT_PAYROLL_ADDRESS;
+    this.contract = new ethers.Contract(this.address, FHE_ABI, signer);
   }
 
   async addEmployee(employeeAddress: string): Promise<ethers.Transaction> {
