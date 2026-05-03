@@ -244,26 +244,59 @@ export const AuthPage = () => {
 
   const handleCreateOrg = async () => {
     if (!walletAddress || !orgName) return;
+    if (!walletClient) {
+      console.error("Wallet client not ready");
+      return;
+    }
     setCreating(true);
+    setDeployStatus("");
     try {
+      // Ensure we're on Sepolia before deploying
+      if (chainId !== 11155111) {
+        setDeployStatus("Switching to Sepolia network...");
+        try {
+          await switchChain({ chainId: 11155111 });
+        } catch (e) {
+          throw new Error("Please switch your wallet to the Sepolia network and try again.");
+        }
+      }
+
+      setDeployStatus("Creating organization...");
       const org = await organizationService.createOrganization({
         name: orgName,
         description: orgDescription,
         ownerWalletAddress: walletAddress,
         ownerId: walletAddress,
       });
-      
+
+      // Deploy a dedicated payroll contract for this organization.
+      setDeployStatus("Deploying your payroll contract on Sepolia...");
+      try {
+        const { address, txHash } = await deployPayrollContract(walletClient, org.id);
+        await organizationService.updateContractInfo(org.id, address, txHash);
+        console.log("Deployed org contract:", address, txHash);
+      } catch (deployErr) {
+        console.error("Contract deployment failed:", deployErr);
+        // Org row exists; surface the error so the user can retry from settings.
+        throw new Error(
+          "Organization created but contract deployment failed. You can retry from Settings. " +
+            ((deployErr as Error)?.message || ""),
+        );
+      }
+
+      setDeployStatus("Generating invite code...");
       const invitation = await organizationService.createInvitation({
         organizationId: org.id,
         role: "employer",
         createdBy: walletAddress,
       });
-      
+
       setCreatedOrg({ name: org.name, code: invitation.code });
       await refreshProfile();
       setStep("success");
     } catch (error) {
       console.error("Error creating organization:", error);
+      setDeployStatus((error as Error)?.message || "Something went wrong");
     } finally {
       setCreating(false);
     }
