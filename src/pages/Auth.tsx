@@ -567,10 +567,20 @@ if (!isAuthenticated) {
               <Label htmlFor="orgDescription">Description (Optional)</Label>
               <Textarea id="orgDescription" placeholder="Brief description of your organization" value={orgDescription} onChange={(e) => setOrgDescription(e.target.value)} rows={3} />
             </div>
+            {deployStatus && (
+              <p className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-md px-3 py-2">
+                {creating && <Loader2 className="inline h-3 w-3 mr-1.5 animate-spin" />}
+                {deployStatus}
+              </p>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              We'll deploy a dedicated confidential payroll contract from your wallet on Sepolia.
+              You'll need to approve one transaction.
+            </p>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep("select")} className="flex-1">Back</Button>
-              <Button onClick={handleCreateOrg} disabled={!orgName || creating} className="flex-1">
-                {creating ? "Creating..." : "Create Organization"}
+              <Button variant="outline" onClick={() => setStep("select")} className="flex-1" disabled={creating}>Back</Button>
+              <Button onClick={handleCreateOrg} disabled={!orgName || creating || !walletClient} className="flex-1">
+                {creating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Working...</> : "Create Organization"}
               </Button>
             </div>
           </CardContent>
