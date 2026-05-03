@@ -151,19 +151,19 @@ const Landing = () => {
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1.5 text-sm text-primary font-medium mb-8">
               <Zap className="h-3.5 w-3.5" />
-              Powered by Fully Homomorphic Encryption
+              Compliance-grade onchain payroll for crypto companies
               <ChevronRight className="h-3.5 w-3.5" />
             </div>
 
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] text-foreground">
-              The payroll platform{" "}
-              <span className="text-primary">built for privacy</span>
+              Transparent to auditors.{" "}
+              <span className="text-primary">Private for employees.</span>
             </h1>
 
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Organizations want it. Managers choose it. Employees love it.
-              <br className="hidden sm:block" />
-              Privacy-first payroll powered by on-chain encryption.
+              PriviPay is the B2B onchain payroll platform that lets crypto companies meet
+              audit, regulatory and disclosure requirements — without exposing employee
+              salaries, bonuses, or breaching data protection laws.
             </p>
 
 <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
