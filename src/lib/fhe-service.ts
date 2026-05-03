@@ -101,7 +101,7 @@ export const reencryptForUser = async (
   inputPublicKey: string,
   userPrivateKey: string
 ): Promise<string> => {
-  const fhe = await initFhevm();
+  const fhe = await initFhevm() as any;
   const reencrypted = fhe.reencrypt(ciphertext, inputPublicKey, userPrivateKey);
   return reencrypted;
 };
