@@ -22,26 +22,26 @@ export const initFhevm = async (provider?: any): Promise<FhevmInstance> => {
 };
 
 export const encryptSalary = async (amount: number): Promise<string> => {
-  const fhe = await initFhevm();
+  const fhe = await initFhevm() as any;
   const encrypted = fhe.encrypt({ euint32: amount });
   return encrypted.euint32;
 };
 
 export const encryptBonus = async (amount: number): Promise<string> => {
-  const fhe = await initFhevm();
+  const fhe = await initFhevm() as any;
   const encrypted = fhe.encrypt({ euint32: amount });
   return encrypted.euint32;
 };
 
 export const encryptAmount = async (amount: number): Promise<string> => {
-  const fhe = await initFhevm();
+  const fhe = await initFhevm() as any;
   const encrypted = fhe.encrypt({ euint32: amount });
   return encrypted.euint32;
 };
 
 export const decryptValue = async (ciphertext: string): Promise<number> => {
   try {
-    const fhe = await initFhevm();
+    const fhe = await initFhevm() as any;
     const decrypted = fhe.decrypt(ciphertext);
     return typeof decrypted === 'number' ? decrypted : 0;
   } catch (err) {
