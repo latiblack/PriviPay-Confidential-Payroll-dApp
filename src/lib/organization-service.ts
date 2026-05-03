@@ -58,6 +58,18 @@ export const organizationService = {
     return org;
   },
 
+  async updateContractInfo(orgId: string, contractAddress: string, txHash: string): Promise<void> {
+    const { error } = await supabase
+      .from("organizations")
+      .update({
+        contract_address: contractAddress.toLowerCase(),
+        contract_tx_hash: txHash,
+        contract_deployed_at: new Date().toISOString(),
+      } as any)
+      .eq("id", orgId);
+    if (error) throw new Error(error.message);
+  },
+
   async getOrganizationByCode(code: string): Promise<Organization | null> {
     const { data, error } = await supabase
       .from("organizations")
