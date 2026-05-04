@@ -651,9 +651,9 @@ if (!isAuthenticated) {
                           const freshProfile = await refreshProfile();
                           console.log("After accept - profile:", freshProfile);
                           navigate("/employee");
-                        } catch (e) {
+                        } catch (e: any) {
                           console.error("Accept error:", e);
-                          setJoinError("Failed to accept invitation");
+                          setJoinError(e?.message || "Failed to accept invitation");
                         } finally {
                           setJoining(false);
                         }
@@ -728,9 +728,9 @@ if (!isAuthenticated) {
                   try {
                     await organizationService.joinWithOrgCode(inviteCode, walletAddress, walletAddress);
                     navigate("/pending");
-                  } catch (e) {
+                  } catch (e: any) {
                     console.error("Join error:", e);
-                    setJoinError("Failed to join organization");
+                    setJoinError(e?.message || "Failed to join organization");
                   }
                 }
               }} className="flex-1">Join Organization</Button>

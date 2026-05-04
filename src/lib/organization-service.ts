@@ -19,6 +19,38 @@ function generateInviteCode(): string {
 }
 
 export const organizationService = {
+  /**
+   * Enforce: one wallet → one organization.
+   * Throws if the wallet already owns or belongs to ANY organization.
+   */
+  async assertWalletHasNoOrganization(walletAddress: string): Promise<void> {
+    const lower = walletAddress.toLowerCase();
+
+    const { data: owned, error: ownedErr } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("owner_id", lower)
+      .limit(1);
+    if (ownedErr) throw new Error(ownedErr.message);
+    if (owned && owned.length > 0) {
+      throw new Error(
+        `This wallet already owns an organization ("${owned[0].name}"). One wallet can only belong to one organization. Please use a different wallet.`,
+      );
+    }
+
+    const { data: roles, error: rolesErr } = await supabase
+      .from("user_roles")
+      .select("organization_id, role")
+      .eq("user_id", lower)
+      .limit(1);
+    if (rolesErr) throw new Error(rolesErr.message);
+    if (roles && roles.length > 0) {
+      throw new Error(
+        `This wallet is already part of an organization. One wallet can only belong to one organization. Please use a different wallet.`,
+      );
+    }
+  },
+
   async createOrganization(data: {
     name: string;
     description?: string;
@@ -28,7 +60,10 @@ export const organizationService = {
     // Use lowercase for wallet addresses for consistency
     const lowerOwnerId = data.ownerId.toLowerCase();
     const lowerWalletAddress = data.ownerWalletAddress.toLowerCase();
-    
+
+    // Enforce one-wallet-one-org
+    await this.assertWalletHasNoOrganization(lowerOwnerId);
+
     const { data: org, error } = await supabase
       .from("organizations")
       .insert({
@@ -265,6 +300,9 @@ export const organizationService = {
   },
 
 async acceptInvitation(code: string, userId: string, walletAddress: string): Promise<void> {
+    // Enforce one-wallet-one-org
+    await this.assertWalletHasNoOrganization(userId);
+
     // First, find the invitation by code (case-insensitive)
     const { data: invitation, error: findError } = await supabase
       .from("invitations")
@@ -295,6 +333,9 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
   },
 
   async joinWithOrgCode(code: string, userId: string, walletAddress: string): Promise<void> {
+    // Enforce one-wallet-one-org
+    await this.assertWalletHasNoOrganization(userId);
+
     const org = await this.findOrgByInviteCode(code);
     if (!org) throw new Error("Invalid invite code");
 
