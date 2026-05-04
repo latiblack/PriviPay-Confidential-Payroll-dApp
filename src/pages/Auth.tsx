@@ -651,9 +651,9 @@ if (!isAuthenticated) {
                           const freshProfile = await refreshProfile();
                           console.log("After accept - profile:", freshProfile);
                           navigate("/employee");
-                        } catch (e) {
+                        } catch (e: any) {
                           console.error("Accept error:", e);
-                          setJoinError("Failed to accept invitation");
+                          setJoinError(e?.message || "Failed to accept invitation");
                         } finally {
                           setJoining(false);
                         }
