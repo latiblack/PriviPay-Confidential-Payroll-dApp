@@ -333,6 +333,9 @@ async acceptInvitation(code: string, userId: string, walletAddress: string): Pro
   },
 
   async joinWithOrgCode(code: string, userId: string, walletAddress: string): Promise<void> {
+    // Enforce one-wallet-one-org
+    await this.assertWalletHasNoOrganization(userId);
+
     const org = await this.findOrgByInviteCode(code);
     if (!org) throw new Error("Invalid invite code");
 
