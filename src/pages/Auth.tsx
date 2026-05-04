@@ -245,13 +245,13 @@ export const AuthPage = () => {
   const handleCreateOrg = async () => {
     if (!walletAddress || !orgName) return;
     if (!walletClient) {
-      console.error("Wallet client not ready");
+      setDeployStatus("Wallet not ready. Please reconnect and try again.");
       return;
     }
     setCreating(true);
     setDeployStatus("");
     try {
-      // Ensure we're on Sepolia before deploying
+      // 1. Ensure we're on Sepolia BEFORE doing anything
       if (chainId !== 11155111) {
         setDeployStatus("Switching to Sepolia network...");
         try {
@@ -259,9 +259,53 @@ export const AuthPage = () => {
         } catch (e) {
           throw new Error("Please switch your wallet to the Sepolia network and try again.");
         }
+        // Give wallet a moment to update walletClient with new chain
+        await new Promise((r) => setTimeout(r, 800));
       }
 
-      setDeployStatus("Creating organization...");
+      // 2. Pre-check the wallet has some Sepolia ETH for gas
+      setDeployStatus("Checking wallet balance for gas...");
+      try {
+        const { createPublicClient, http, formatEther } = await import("viem");
+        const { sepolia } = await import("viem/chains");
+        const pub = createPublicClient({
+          chain: sepolia,
+          transport: http(import.meta.env.VITE_SEPOLIA_RPC || "https://rpc.sepolia.org"),
+        });
+        const bal = await pub.getBalance({ address: walletAddress as `0x${string}` });
+        // ~0.002 ETH safety floor for contract deployment gas
+        if (bal < 2_000_000_000_000_000n) {
+          throw new Error(
+            `Insufficient Sepolia ETH for gas (have ${formatEther(bal)} ETH). ` +
+              `Get free testnet ETH from a Sepolia faucet (e.g. sepoliafaucet.com), then try again.`,
+          );
+        }
+      } catch (balErr: any) {
+        if (balErr?.message?.includes("Insufficient")) throw balErr;
+        // If balance check itself fails, log and continue — wallet will surface the real error.
+        console.warn("Balance precheck failed, continuing:", balErr);
+      }
+
+      // 3. Generate a temp org id for the on-chain bytes32 (deploy FIRST, persist nothing yet)
+      setDeployStatus("Deploying your payroll contract on Sepolia. Please confirm in your wallet...");
+      const tempOrgId = crypto.randomUUID();
+      let deployed: { address: string; txHash: string };
+      try {
+        deployed = await deployPayrollContract(walletClient, tempOrgId);
+      } catch (deployErr: any) {
+        console.error("Contract deployment failed:", deployErr);
+        const msg = (deployErr?.shortMessage || deployErr?.message || "").toLowerCase();
+        if (msg.includes("user rejected") || msg.includes("user denied")) {
+          throw new Error("You declined the transaction in your wallet. The organization was not created.");
+        }
+        if (msg.includes("insufficient funds")) {
+          throw new Error("Insufficient Sepolia ETH for gas. Top up your wallet and try again.");
+        }
+        throw new Error("Contract deployment failed. The organization was not created. " + (deployErr?.shortMessage || deployErr?.message || ""));
+      }
+
+      // 4. Only NOW create the org row in the database
+      setDeployStatus("Saving organization...");
       const org = await organizationService.createOrganization({
         name: orgName,
         description: orgDescription,
@@ -269,19 +313,11 @@ export const AuthPage = () => {
         ownerId: walletAddress,
       });
 
-      // Deploy a dedicated payroll contract for this organization.
-      setDeployStatus("Deploying your payroll contract on Sepolia...");
+      // 5. Persist contract info
       try {
-        const { address, txHash } = await deployPayrollContract(walletClient, org.id);
-        await organizationService.updateContractInfo(org.id, address, txHash);
-        console.log("Deployed org contract:", address, txHash);
-      } catch (deployErr) {
-        console.error("Contract deployment failed:", deployErr);
-        // Org row exists; surface the error so the user can retry from settings.
-        throw new Error(
-          "Organization created but contract deployment failed. You can retry from Settings. " +
-            ((deployErr as Error)?.message || ""),
-        );
+        await organizationService.updateContractInfo(org.id, deployed.address, deployed.txHash);
+      } catch (e) {
+        console.error("Failed to save contract info:", e);
       }
 
       setDeployStatus("Generating invite code...");
