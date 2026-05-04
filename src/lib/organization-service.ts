@@ -300,6 +300,9 @@ export const organizationService = {
   },
 
 async acceptInvitation(code: string, userId: string, walletAddress: string): Promise<void> {
+    // Enforce one-wallet-one-org
+    await this.assertWalletHasNoOrganization(userId);
+
     // First, find the invitation by code (case-insensitive)
     const { data: invitation, error: findError } = await supabase
       .from("invitations")
