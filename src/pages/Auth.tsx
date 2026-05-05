@@ -288,10 +288,12 @@ export const AuthPage = () => {
 
       // 3. Generate a temp org id for the on-chain bytes32 (deploy FIRST, persist nothing yet)
       setDeployStatus("Deploying your payroll contract on Sepolia. Please confirm in your wallet...");
+      console.log("Starting contract deployment...");
       const tempOrgId = crypto.randomUUID();
       let deployed: { address: string; txHash: string };
       try {
         deployed = await deployPayrollContract(walletClient, tempOrgId);
+        console.log("Contract deployed successfully:", deployed);
       } catch (deployErr: any) {
         console.error("Contract deployment failed:", deployErr);
         const msg = (deployErr?.shortMessage || deployErr?.message || "").toLowerCase();
@@ -306,30 +308,38 @@ export const AuthPage = () => {
 
       // 4. Only NOW create the org row in the database
       setDeployStatus("Saving organization...");
+      console.log("Creating organization in database...");
       const org = await organizationService.createOrganization({
         name: orgName,
         description: orgDescription,
         ownerWalletAddress: walletAddress,
         ownerId: walletAddress,
       });
+      console.log("Organization created:", org);
 
       // 5. Persist contract info
+      console.log("Saving contract info...");
       try {
         await organizationService.updateContractInfo(org.id, deployed.address, deployed.txHash);
+        console.log("Contract info saved");
       } catch (e) {
         console.error("Failed to save contract info:", e);
       }
 
       setDeployStatus("Generating invite code...");
+      console.log("Creating invitation...");
       const invitation = await organizationService.createInvitation({
         organizationId: org.id,
         role: "employer",
         createdBy: walletAddress,
       });
+      console.log("Invitation created:", invitation);
 
+      console.log("Setting success state...");
       setCreatedOrg({ name: org.name, code: invitation.code });
       await refreshProfile();
       setStep("success");
+      console.log("Done! Moving to success page");
     } catch (error) {
       console.error("Error creating organization:", error);
       setDeployStatus((error as Error)?.message || "Something went wrong");
