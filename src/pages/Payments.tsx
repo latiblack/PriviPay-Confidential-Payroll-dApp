@@ -228,6 +228,16 @@ useEffect(() => {
           setFheContract(fhe);
           setFheInitialized(true);
           console.log("FHE initialized with address:", orgContractAddress || "DEFAULT");
+
+          // Verify owner
+          try {
+            const owner = await fhe.getOwner();
+            console.log("FHE contract owner:", owner);
+            console.log("Wallet address:", walletAddress);
+            setContractOwnerAddress(owner);
+          } catch (e) {
+            console.error("Failed to get contract owner:", e);
+          }
         } catch (err) {
           console.error("Failed to initialize FHE:", err);
         }
@@ -372,10 +382,15 @@ const handleAddEmployee = async () => {
       // Salary encryption is not compatible with this contract's current ABI and
       // would revert with a third-party execution error, so we keep salary in DB
       // until the contract is upgraded to accept external ciphertext proofs.
+      console.log("Adding employee to FHE contract:", empAddress);
+      console.log("FHE contract address:", fheContract.getContractAddress());
       try {
         const tx1: any = await fheContract.addEmployee(empAddress);
+        console.log("Transaction sent:", tx1.hash);
         if (tx1?.wait) await tx1.wait();
+        console.log("Transaction confirmed");
       } catch (fheErr: any) {
+        console.error("FHE contract call failed:", fheErr);
         const msg = String(fheErr?.shortMessage || fheErr?.reason || fheErr?.message || fheErr);
         const alreadyEmployee = await fheContract.isEmployee(empAddress).catch(() => false);
         if (!alreadyEmployee) throw fheErr;
