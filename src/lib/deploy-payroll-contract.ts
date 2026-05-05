@@ -3,13 +3,15 @@ import { sepolia } from "viem/chains";
 import artifact from "./contracts/ConfidentialPayrollFHE.json";
 
 const DEPLOYMENT_GAS_LIMIT = 3_000_000n;
-const DEPLOYMENT_TIMEOUT_MS = 120_000;
+const DEPLOYMENT_TIMEOUT_MS = 180_000;
 
 const waitForReceipt = async (txHash: string, walletClient: WalletClient): Promise<any> => {
   const pub = createPublicClient({
     chain: walletClient.chain ?? sepolia,
     transport: http(import.meta.env.VITE_SEPOLIA_RPC || "https://rpc.sepolia.org"),
   });
+
+  console.log("Waiting for transaction receipt:", txHash);
 
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error("Transaction confirmation timed out")), DEPLOYMENT_TIMEOUT_MS);
@@ -36,7 +38,10 @@ export async function deployPayrollContract(
 
   const orgIdBytes32 = keccak256(toBytes(orgId));
 
-  const hash = await walletClient.deployContract({
+  console.log("Calling walletClient.deployContract...");
+
+  // Wrap deployContract in a timeout
+  const deployPromise = walletClient.deployContract({
     abi: artifact.abi as any,
     bytecode: artifact.bytecode as `0x${string}`,
     args: [orgIdBytes32],
@@ -45,15 +50,22 @@ export async function deployPayrollContract(
     gas: DEPLOYMENT_GAS_LIMIT,
   });
 
-  console.log("Transaction sent:", hash);
+  const hash = await Promise.race([
+    deployPromise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Deployment request timed out")), 60000)
+    )
+  ]);
 
-  const receipt = await waitForReceipt(hash, walletClient);
+  console.log("Transaction hash received:", hash);
 
-  console.log("Transaction receipt:", receipt);
+  const receipt = await waitForReceipt(hash as string, walletClient);
+
+  console.log("Transaction receipt received:", receipt);
 
   if (!receipt.contractAddress) {
     throw new Error("Deployment succeeded but no contract address returned");
   }
 
-  return { address: receipt.contractAddress, txHash: hash };
+  return { address: receipt.contractAddress, txHash: hash as string };
 }
