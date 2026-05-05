@@ -1,16 +1,12 @@
-import * as fhevmjs from "fhevmjs";
+import { createInstance, SepoliaConfig } from "@zama-fhe/relayer-sdk/web";
 
 let instance: any = null;
 
 export const initFhevm = async (signer: any, contractAddress: string): Promise<any> => {
   if (instance) return instance;
   
-  const network = await signer.provider.getNetwork();
-  const chainId = network.chainId;
-  
-  instance = await fhevmjs.createInstance({
-    chainId: Number(chainId),
-    network: "testnet",
+  instance = await createInstance({
+    ...SepoliaConfig,
   });
   
   return instance;
@@ -24,7 +20,8 @@ export interface EncryptedData {
 export const encryptSalary = async (amount: number, contractAddress: string, userAddress: string): Promise<EncryptedData> => {
   console.log("encryptSalary called with amount:", amount, "contract:", contractAddress, "user:", userAddress);
   
-  const input = fhevmjs.createEncryptedInput(contractAddress, userAddress);
+  const fhe = await initFhevm(null, contractAddress);
+  const input = fhe.createEncryptedInput(contractAddress, userAddress);
   input.add64(amount);
   const encrypted = await input.encrypt();
   
@@ -40,7 +37,8 @@ export const encryptSalary = async (amount: number, contractAddress: string, use
 export const encryptBonus = async (amount: number, contractAddress: string, userAddress: string): Promise<EncryptedData> => {
   console.log("encryptBonus called with amount:", amount, "contract:", contractAddress, "user:", userAddress);
   
-  const input = fhevmjs.createEncryptedInput(contractAddress, userAddress);
+  const fhe = await initFhevm(null, contractAddress);
+  const input = fhe.createEncryptedInput(contractAddress, userAddress);
   input.add64(amount);
   const encrypted = await input.encrypt();
   
@@ -56,7 +54,8 @@ export const encryptBonus = async (amount: number, contractAddress: string, user
 export const encryptAmount = async (amount: number, contractAddress: string, userAddress: string): Promise<EncryptedData> => {
   console.log("encryptAmount called with amount:", amount, "contract:", contractAddress, "user:", userAddress);
   
-  const input = fhevmjs.createEncryptedInput(contractAddress, userAddress);
+  const fhe = await initFhevm(null, contractAddress);
+  const input = fhe.createEncryptedInput(contractAddress, userAddress);
   input.add64(amount);
   const encrypted = await input.encrypt();
   
