@@ -377,9 +377,41 @@ const handleAddEmployee = async () => {
 
     setSavingEmployee(true);
     const empAddress = employeeForm.wallet_address.toLowerCase();
+    const empSalary = parseFloat(employeeForm.salary);
+
     try {
-      // Skip FHE contract calls for now - store everything in database
-      // The FHE contract integration needs more work to handle encrypted values properly
+      // Add employee to FHE contract and set encrypted salary
+      console.log("Adding employee to FHE contract:", empAddress);
+      console.log("FHE contract address:", fheContract?.getContractAddress());
+      console.log("Salary to encrypt:", empSalary);
+
+      try {
+        // Step 1: Add employee to contract (just takes address, no encryption needed)
+        console.log("Calling addEmployee...");
+        const tx1: any = await fheContract.addEmployee(empAddress);
+        console.log("addEmployee tx sent:", tx1.hash);
+        if (tx1?.wait) await tx1.wait();
+        console.log("addEmployee confirmed");
+
+        // Step 2: Encrypt salary and set on contract
+        console.log("Encrypting salary...");
+        const encryptedSalary = await fheContract.setEncryptedSalary(empAddress, empSalary);
+        console.log("setEncryptedSalary tx sent:", encryptedSalary.hash);
+        if (encryptedSalary?.wait) await encryptedSalary.wait();
+        console.log("setEncryptedSalary confirmed");
+
+      } catch (fheErr: any) {
+        console.error("FHE contract call failed:", fheErr);
+        const msg = String(fheErr?.shortMessage || fheErr?.message || fheErr);
+        // Check if employee already exists, that's ok
+        const alreadyEmployee = await fheContract.isEmployee(empAddress).catch(() => false);
+        if (!alreadyEmployee) {
+          throw new Error("FHE contract error: " + msg);
+        }
+        console.log("Employee already exists in contract, continuing...");
+      }
+
+      // Store employee in database as backup
       console.log("Storing employee in database with salary:", employeeForm.salary);
 
       // Store employee in database
