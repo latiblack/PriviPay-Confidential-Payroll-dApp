@@ -314,14 +314,56 @@ const handleMemberSelect = (memberId: string) => {
 const handleAddEmployee = async () => {
     if (!profile?.currentOrganization?.id) return;
 
+    const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
+    if (!orgContractAddress) {
+      toast({
+        title: "No contract deployed",
+        description:
+          "This organization has no FHE contract deployed. Please re-create the organization from the owner wallet to deploy one.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!fheContract || !fheInitialized) {
+      toast({
+        title: "Contract not ready",
+        description:
+          "FHE contract is not initialized. Make sure you are connected with the owner wallet on Sepolia.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!employeeForm.salary) {
+      toast({ title: "Salary required", description: "Enter a salary before adding the employee.", variant: "destructive" });
+      return;
+    }
+
     setSavingEmployee(true);
+    const empAddress = employeeForm.wallet_address.toLowerCase();
     try {
-      // Add to Supabase first
+      // 1) Onchain first — must succeed before any DB write
+      try {
+        const tx1: any = await fheContract.addEmployee(empAddress);
+        if (tx1?.wait) await tx1.wait();
+      } catch (fheErr: any) {
+        const msg = String(fheErr?.shortMessage || fheErr?.reason || fheErr?.message || fheErr);
+        // If already an employee onchain, continue to setting salary
+        if (!/already|NotEmployee|revert/i.test(msg) || /already/i.test(msg)) {
+          if (!/already/i.test(msg)) throw fheErr;
+        }
+      }
+
+      const tx2: any = await fheContract.setEncryptedSalary(empAddress, Number(employeeForm.salary));
+      if (tx2?.wait) await tx2.wait();
+
+      // 2) Only after onchain success, persist to Supabase
       const { error } = await supabase
         .from("employees")
         .insert({
           organization_id: profile.currentOrganization.id,
-          wallet_address: employeeForm.wallet_address,
+          wallet_address: empAddress,
           name: employeeForm.name || null,
           position: employeeForm.position || null,
           department: employeeForm.department || null,
@@ -331,26 +373,22 @@ const handleAddEmployee = async () => {
 
       if (error) throw error;
 
-      // Also set encrypted salary on FHE contract if available
-      if (fheContract && fheInitialized && employeeForm.salary) {
-        try {
-          const empAddress = employeeForm.wallet_address.toLowerCase();
-          await fheContract.addEmployee(empAddress);
-          await fheContract.setEncryptedSalary(empAddress, Number(employeeForm.salary));
-          console.log("FHE: Employee added with encrypted salary");
-        } catch (fheErr) {
-          console.error("FHE: Failed to set encrypted salary:", fheErr);
-        }
-      }
-
-      toast({ title: "Employee Added", description: "Employee has been added to payroll" });
-    setShowAddDialog(false);
-    setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
+      toast({ title: "Employee Added", description: "Employee added onchain and to payroll" });
+      setShowAddDialog(false);
+      setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
       setSelectedMemberId("");
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error adding employee:", err);
-      toast({ title: "Error", description: "Failed to add employee", variant: "destructive" });
+      const raw = String(err?.shortMessage || err?.reason || err?.message || err);
+      let description = raw;
+      if (/NotOwner|not.*owner|caller is not the owner/i.test(raw)) {
+        description =
+          "Your wallet is not the owner of this organization's FHE contract. Only the wallet that deployed the contract can add employees.";
+      } else if (/user rejected|denied/i.test(raw)) {
+        description = "Transaction was rejected in your wallet.";
+      }
+      toast({ title: "Failed to add employee", description, variant: "destructive" });
     } finally {
       setSavingEmployee(false);
     }
