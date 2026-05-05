@@ -8,6 +8,8 @@ const DEFAULT_PAYROLL_ADDRESS = "0x2f8457EA818590aaEc5DCCA155828bf691A0Ba84";
 const FHE_ABI = [
   "function addEmployee(address employee) external",
   "function removeEmployee(address employee) external",
+  "function owner() view returns (address)",
+  "function isEmployee(address employee) view returns (bool)",
   "function setEncryptedSalary(address employee, euint256 encryptedSalary) external",
   "function setEncryptedBonus(address employee, euint256 encryptedBonus) external",
   "function getEncryptedSalary(address employee) view returns (euint256)",
@@ -47,6 +49,14 @@ export class FHEContractService {
   async removeEmployee(employeeAddress: string): Promise<ethers.Transaction> {
     const tx = await this.contract.removeEmployee(employeeAddress);
     return tx;
+  }
+
+  async getOwner(): Promise<string> {
+    return await this.contract.owner();
+  }
+
+  async isEmployee(employeeAddress: string): Promise<boolean> {
+    return await this.contract.isEmployee(employeeAddress);
   }
 
   async setEncryptedSalary(employeeAddress: string, salaryUSD: number): Promise<ethers.Transaction> {
