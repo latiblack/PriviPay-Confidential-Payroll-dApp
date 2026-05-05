@@ -380,10 +380,9 @@ const handleAddEmployee = async () => {
     try {
       // Skip FHE contract calls for now - store everything in database
       // The FHE contract integration needs more work to handle encrypted values properly
-      console.log("Skipping FHE contract call - storing employee in database only");
-      console.log("Employee will be added to database, not on-chain FHE contract");
+      console.log("Storing employee in database with salary:", employeeForm.salary);
 
-      // 2) Only after onchain success, persist to Supabase
+      // Store employee in database
       const employeePayload = {
           organization_id: profile.currentOrganization.id,
           wallet_address: empAddress,
