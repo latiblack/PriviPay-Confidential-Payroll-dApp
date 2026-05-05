@@ -18,6 +18,9 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
+  etherscan: {
+    apiKey: "W44RFMQN6M8SMRV5WSN4GY9VB25Q7SHYHC",
+  },
   fhevm: {
     version: "0.3.0",
     aclContractAddress: "0xf0Ffdc93b7E186bC2f8CB3dAA75D86d1930A433D",

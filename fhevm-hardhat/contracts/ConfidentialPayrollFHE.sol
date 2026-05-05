@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.24;
 
-import {euint256, TFHE} from "fhevm/lib/TFHE.sol";
+import {FHE, euint64, euint128, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
 
 /// @title ConfidentialPayrollFHE
 /// @notice Fully confidential payroll contract using Zama FHE
@@ -9,9 +9,9 @@ contract ConfidentialPayrollFHE {
     address public owner;
     bytes32 public orgId;
     
-    mapping(address => euint256) internal encryptedSalaries;
-    mapping(address => euint256) internal encryptedBonuses;
-    mapping(address => euint256) internal encryptedBalances;
+    mapping(address => euint128) internal encryptedSalaries;
+    mapping(address => euint128) internal encryptedBonuses;
+    mapping(address => euint128) internal encryptedBalances;
     
     address[] internal employeeList;
     mapping(address => bool) public isEmployee;
@@ -54,7 +54,7 @@ contract ConfidentialPayrollFHE {
         employeeList.push(employee);
         
         // Initialize encrypted values to 0
-        euint256 zero = TFHE.asEuint256(0);
+        euint128 zero = FHE.asEuint128(0);
         encryptedSalaries[employee] = zero;
         encryptedBonuses[employee] = zero;
         encryptedBalances[employee] = zero;
@@ -72,7 +72,7 @@ contract ConfidentialPayrollFHE {
         isEmployee[employee] = false;
         
         // Clear salary and bonus
-        euint256 zero = TFHE.asEuint256(0);
+        euint128 zero = FHE.asEuint128(0);
         encryptedSalaries[employee] = zero;
         encryptedBonuses[employee] = zero;
         encryptedBalances[employee] = zero;
@@ -80,32 +80,40 @@ contract ConfidentialPayrollFHE {
         emit EmployeeRemoved(employee);
     }
 
-    /// @notice Set encrypted salary for an employee
-    function setEncryptedSalary(address employee, euint256 encryptedSalary) external onlyOwner {
+    /// @notice Set encrypted salary for an employee (accepts external encrypted input)
+    function setEncryptedSalary(address employee, externalEuint64 encryptedSalary, bytes calldata inputProof) external onlyOwner {
         if (!isEmployee[employee]) revert NotEmployee();
-        
-        encryptedSalaries[employee] = encryptedSalary;
-        
+
+        euint64 salary = FHE.fromExternal(encryptedSalary, inputProof);
+        FHE.allow(salary, employee);
+        FHE.allowThis(salary);
+
+        encryptedSalaries[employee] = FHE.asEuint128(salary);
+
         // Grant employee access to their own salary
         authorizedViewers[employee][employee] = true;
-        
+
         emit SalarySetEncrypted(employee);
     }
 
-    /// @notice Set encrypted bonus for an employee
-    function setEncryptedBonus(address employee, euint256 encryptedBonus) external onlyOwner {
+    /// @notice Set encrypted bonus for an employee (accepts external encrypted input)
+    function setEncryptedBonus(address employee, externalEuint64 encryptedBonus, bytes calldata inputProof) external onlyOwner {
         if (!isEmployee[employee]) revert NotEmployee();
-        
-        encryptedBonuses[employee] = encryptedBonus;
-        
+
+        euint64 bonus = FHE.fromExternal(encryptedBonus, inputProof);
+        FHE.allow(bonus, employee);
+        FHE.allowThis(bonus);
+
+        encryptedBonuses[employee] = FHE.asEuint128(bonus);
+
         // Grant employee access to their own bonus
         authorizedViewers[employee][employee] = true;
-        
+
         emit BonusDistributedEncrypted(employee);
     }
 
     /// @notice Get encrypted salary (only employee or authorized viewers)
-    function getEncryptedSalary(address employee) external view returns (euint256) {
+    function getEncryptedSalary(address employee) external view returns (euint128) {
         if (!isEmployee[employee]) revert NotEmployee();
         if (!authorizedViewers[employee][msg.sender]) revert NotAuthorized();
         
@@ -113,7 +121,7 @@ contract ConfidentialPayrollFHE {
     }
 
     /// @notice Get encrypted bonus
-    function getEncryptedBonus(address employee) external view returns (euint256) {
+    function getEncryptedBonus(address employee) external view returns (euint128) {
         if (!isEmployee[employee]) revert NotEmployee();
         if (!authorizedViewers[employee][msg.sender]) revert NotAuthorized();
         
@@ -121,7 +129,7 @@ contract ConfidentialPayrollFHE {
     }
 
     /// @notice Get encrypted balance (total received - withdrawn)
-    function getEncryptedBalance(address employee) external view returns (euint256) {
+    function getEncryptedBalance(address employee) external view returns (euint128) {
         if (!isEmployee[employee]) revert NotEmployee();
         if (!authorizedViewers[employee][msg.sender]) revert NotAuthorized();
         
@@ -147,34 +155,43 @@ contract ConfidentialPayrollFHE {
     }
 
     /// @notice Process payroll - add salary + bonus to employee balances
-    function processPayrollEncrypted() external onlyOwner returns (euint256) {
-        euint256 total = TFHE.asEuint256(0);
+    function processPayrollEncrypted() external onlyOwner returns (euint128) {
+        euint128 total = FHE.asEuint128(0);
         
         for (uint i = 0; i < employeeList.length; i++) {
             address emp = employeeList[i];
             
             // Calculate total compensation (salary + bonus)
-            euint256 compensation = TFHE.add(encryptedSalaries[emp], encryptedBonuses[emp]);
+            euint128 compensation = FHE.add(encryptedSalaries[emp], encryptedBonuses[emp]);
             
             // Add to employee balance
-            encryptedBalances[emp] = TFHE.add(encryptedBalances[emp], compensation);
+            encryptedBalances[emp] = FHE.add(encryptedBalances[emp], compensation);
             
             // Accumulate total
-            total = TFHE.add(total, compensation);
+            total = FHE.add(total, compensation);
             
             // Reset bonus after processing
-            encryptedBonuses[emp] = TFHE.asEuint256(0);
+            encryptedBonuses[emp] = FHE.asEuint128(0);
         }
         
         emit PayrollProcessedEncrypted(employeeList.length);
         return total;
     }
 
-    /// @notice Withdraw salary from encrypted balance
-    function withdrawSalary(euint256 encryptedAmount) external onlyEmployee {
-        // Subtract from balance (trusting caller for now - in production use encrypted comparison)
-        encryptedBalances[msg.sender] = TFHE.sub(encryptedBalances[msg.sender], encryptedAmount);
-        
+    /// @notice Withdraw salary from encrypted balance (accepts external encrypted input)
+    function withdrawSalary(externalEuint64 encryptedAmount, bytes calldata inputProof) external onlyEmployee {
+        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
+        euint128 balance = encryptedBalances[msg.sender];
+
+        // Check if employee has enough balance using encrypted comparison
+        ebool canWithdraw = FHE.le(amount, FHE.asEuint64(balance));
+
+        // Only withdraw if enough balance (using select to avoid revert)
+        encryptedBalances[msg.sender] = FHE.sub(
+            balance,
+            FHE.select(canWithdraw, FHE.asEuint128(amount), FHE.asEuint128(0))
+        );
+
         emit SalaryWithdrawn(msg.sender);
     }
 

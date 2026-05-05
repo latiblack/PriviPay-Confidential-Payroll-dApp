@@ -14,7 +14,7 @@ import { useAccount, useSwitchChain, useBalance, useWalletClient } from 'wagmi';
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import ethereumService from "@/lib/ethereum";
-import { createFHEContract } from "@/lib/fhe-contract-service";
+import { createFHEContract, FHEContractService } from "@/lib/fhe-contract-service";
 import { initFhevm, encryptSalary, encryptBonus } from "@/lib/fhe-service";
 import {
   DollarSign, Users, Send, Loader2, ArrowDownToLine,
@@ -379,13 +379,37 @@ const handleAddEmployee = async () => {
     const empAddress = employeeForm.wallet_address.toLowerCase();
 
     try {
-      // FHE contract integration is disabled for now.
-      // The FHE contract contains internal FHE operations (TFHE.asEuint256) which
-      // require Zama's coprocessor infrastructure to execute. Direct contract calls
-      // via viem/ethers fail with "third party contract execution error".
-      // 
-      // To properly integrate, we'd need to use Zama's gateway/relayer to route
-      // transactions through their FHE infrastructure. For now, store in DB.
+      // Initialize FHE and create contract instance
+      console.log("Initializing FHE contract for org:", profile.currentOrganization.contract_address);
+      
+      // Get ethers signer from provider
+      const ethersSigner = await provider.getSigner();
+      
+      const contractService = new FHEContractService(
+        ethersSigner,
+        profile.currentOrganization.contract_address
+      );
+
+      // Encrypt the salary
+      const userAddress = walletAddress.toLowerCase();
+      const salaryInCents = Math.round(parseFloat(employeeForm.salary) * 100);
+      const encryptedData = await encryptSalary(salaryInCents, profile.currentOrganization.contract_address, userAddress);
+      
+      console.log("Calling contract addEmployee with handle:", encryptedData.handle);
+      
+      // Call the FHE contract - first add employee, then set salary
+      const addTx = await contractService.addEmployee(empAddress);
+      console.log("addEmployee tx sent:", addTx.hash);
+      await addTx.wait();
+      console.log("addEmployee confirmed");
+      
+      // Now set encrypted salary
+      const tx = await contractService.setEncryptedSalary(empAddress, salaryInCents);
+      console.log("setEncryptedSalary tx sent:", tx.hash);
+      
+      await tx.wait();
+      console.log("setEncryptedSalary confirmed");
+
       console.log("Storing employee in database with salary:", employeeForm.salary);
 
       // Store employee in database
