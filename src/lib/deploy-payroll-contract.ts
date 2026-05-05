@@ -3,6 +3,8 @@ import { sepolia } from "viem/chains";
 import { publicActions } from "viem";
 import artifact from "./contracts/ConfidentialPayrollFHE.json";
 
+const DEPLOYMENT_GAS_LIMIT = 3_000_000n;
+
 /**
  * Deploys an org-specific ConfidentialPayrollFHE contract from the connected
  * wallet so the deployer becomes the contract owner. Returns the new contract
@@ -15,7 +17,6 @@ export async function deployPayrollContract(
   if (!walletClient) throw new Error("Wallet client not available");
   if (!walletClient.account) throw new Error("Wallet not connected");
 
-  // Derive a bytes32 org id from the supabase org UUID.
   const orgIdBytes32 = keccak256(toBytes(orgId));
 
   const hash = await walletClient.deployContract({
@@ -24,9 +25,9 @@ export async function deployPayrollContract(
     args: [orgIdBytes32],
     account: walletClient.account,
     chain: walletClient.chain ?? sepolia,
+    gas: DEPLOYMENT_GAS_LIMIT,
   });
 
-  // Wait for the receipt so we have the contract address.
   const publicClient = walletClient.extend(publicActions);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
