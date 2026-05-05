@@ -76,6 +76,7 @@ const [ethBalance, setEthBalance] = useState("0");
   const [loadingTotalReceived, setLoadingTotalReceived] = useState(false);
   const [fheContract, setFheContract] = useState<any>(null);
   const [fheInitialized, setFheInitialized] = useState(false);
+  const [contractOwnerAddress, setContractOwnerAddress] = useState<string | null>(null);
   const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
 const fetchData = async () => {
@@ -224,16 +225,19 @@ useEffect(() => {
           await initFhevm();
           const orgContractAddress = (profile?.currentOrganization as any)?.contract_address || undefined;
           const fhe = createFHEContract(walletClient as any, orgContractAddress);
+          const owner = await fhe.getOwner();
           setFheContract(fhe);
+          setContractOwnerAddress(owner?.toLowerCase?.() || null);
           setFheInitialized(true);
           console.log("FHE initialized successfully");
         } catch (err) {
           console.error("Failed to initialize FHE:", err);
+          setContractOwnerAddress(null);
         }
       }
     };
     initFHE();
-  }, [isOwner, walletClient]);
+  }, [isOwner, walletClient, profile?.currentOrganization?.contract_address]);
 
   useEffect(() => {
     const fetchEthPrice = async () => {
@@ -335,6 +339,30 @@ const handleAddEmployee = async () => {
       return;
     }
 
+    if (chainId !== SEPOLIA_CHAIN_ID_NUM) {
+      toast({
+        title: "Wrong network",
+        description: "Switch to Sepolia before adding employees.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const normalizedWallet = walletAddress?.toLowerCase() || null;
+    if (!normalizedWallet) {
+      toast({ title: "No wallet connected", description: "Reconnect the owner wallet and try again.", variant: "destructive" });
+      return;
+    }
+
+    if (contractOwnerAddress && normalizedWallet !== contractOwnerAddress) {
+      toast({
+        title: "Wrong owner wallet",
+        description: `This payroll contract is owned by ${contractOwnerAddress.slice(0, 6)}...${contractOwnerAddress.slice(-4)}. Connect that exact wallet to manage payroll.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!employeeForm.salary) {
       toast({ title: "Salary required", description: "Enter a salary before adding the employee.", variant: "destructive" });
       return;
@@ -343,25 +371,21 @@ const handleAddEmployee = async () => {
     setSavingEmployee(true);
     const empAddress = employeeForm.wallet_address.toLowerCase();
     try {
-      // 1) Onchain first — must succeed before any DB write
+      // 1) Onchain first — only add employee membership here.
+      // Salary encryption is not compatible with this contract's current ABI and
+      // would revert with a third-party execution error, so we keep salary in DB
+      // until the contract is upgraded to accept external ciphertext proofs.
       try {
         const tx1: any = await fheContract.addEmployee(empAddress);
         if (tx1?.wait) await tx1.wait();
       } catch (fheErr: any) {
         const msg = String(fheErr?.shortMessage || fheErr?.reason || fheErr?.message || fheErr);
-        // If already an employee onchain, continue to setting salary
-        if (!/already|NotEmployee|revert/i.test(msg) || /already/i.test(msg)) {
-          if (!/already/i.test(msg)) throw fheErr;
-        }
+        const alreadyEmployee = await fheContract.isEmployee(empAddress).catch(() => false);
+        if (!alreadyEmployee) throw fheErr;
       }
 
-      const tx2: any = await fheContract.setEncryptedSalary(empAddress, Number(employeeForm.salary));
-      if (tx2?.wait) await tx2.wait();
-
       // 2) Only after onchain success, persist to Supabase
-      const { error } = await supabase
-        .from("employees")
-        .insert({
+      const employeePayload = {
           organization_id: profile.currentOrganization.id,
           wallet_address: empAddress,
           name: employeeForm.name || null,
@@ -369,11 +393,22 @@ const handleAddEmployee = async () => {
           department: employeeForm.department || null,
           encrypted_salary: employeeForm.salary,
           status: "active",
-        });
+        };
+
+      const { data: existingEmployee } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("organization_id", profile.currentOrganization.id)
+        .eq("wallet_address", empAddress)
+        .maybeSingle();
+
+      const { error } = existingEmployee
+        ? await supabase.from("employees").update(employeePayload).eq("id", existingEmployee.id)
+        : await supabase.from("employees").insert(employeePayload);
 
       if (error) throw error;
 
-      toast({ title: "Employee Added", description: "Employee added onchain and to payroll" });
+      toast({ title: "Employee Added", description: "Employee was added onchain and saved to payroll." });
       setShowAddDialog(false);
       setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
       setSelectedMemberId("");
@@ -385,6 +420,9 @@ const handleAddEmployee = async () => {
       if (/NotOwner|not.*owner|caller is not the owner/i.test(raw)) {
         description =
           "Your wallet is not the owner of this organization's FHE contract. Only the wallet that deployed the contract can add employees.";
+      } else if (/third party contract execution error/i.test(raw)) {
+        description =
+          "This contract rejected the encrypted salary write. I’ve blocked that failing path, so retrying should now only require the owner wallet and a successful add-employee transaction.";
       } else if (/user rejected|denied/i.test(raw)) {
         description = "Transaction was rejected in your wallet.";
       }
