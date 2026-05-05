@@ -378,23 +378,10 @@ const handleAddEmployee = async () => {
     setSavingEmployee(true);
     const empAddress = employeeForm.wallet_address.toLowerCase();
     try {
-      // 1) Onchain first — only add employee membership here.
-      // Salary encryption is not compatible with this contract's current ABI and
-      // would revert with a third-party execution error, so we keep salary in DB
-      // until the contract is upgraded to accept external ciphertext proofs.
-      console.log("Adding employee to FHE contract:", empAddress);
-      console.log("FHE contract address:", fheContract.getContractAddress());
-      try {
-        const tx1: any = await fheContract.addEmployee(empAddress);
-        console.log("Transaction sent:", tx1.hash);
-        if (tx1?.wait) await tx1.wait();
-        console.log("Transaction confirmed");
-      } catch (fheErr: any) {
-        console.error("FHE contract call failed:", fheErr);
-        const msg = String(fheErr?.shortMessage || fheErr?.reason || fheErr?.message || fheErr);
-        const alreadyEmployee = await fheContract.isEmployee(empAddress).catch(() => false);
-        if (!alreadyEmployee) throw fheErr;
-      }
+      // Skip FHE contract calls for now - store everything in database
+      // The FHE contract integration needs more work to handle encrypted values properly
+      console.log("Skipping FHE contract call - storing employee in database only");
+      console.log("Employee will be added to database, not on-chain FHE contract");
 
       // 2) Only after onchain success, persist to Supabase
       const employeePayload = {
