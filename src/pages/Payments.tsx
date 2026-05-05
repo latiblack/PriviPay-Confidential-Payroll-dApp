@@ -222,18 +222,21 @@ useEffect(() => {
       if (isOwner && walletClient) {
         try {
           await initFhevm();
-          const orgContractAddress = (profile?.currentOrganization as any)?.contract_address || undefined;
+          const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
+          console.log("Org contract address:", orgContractAddress);
+          console.log("Full current org object:", profile?.currentOrganization);
+          console.log("Has contract_address field?", !!((profile?.currentOrganization as any)?.contract_address));
           const fhe = createFHEContract(walletClient as any, orgContractAddress);
           setFheContract(fhe);
           setFheInitialized(true);
-          console.log("FHE initialized successfully");
+          console.log("FHE initialized with address:", orgContractAddress || "DEFAULT");
         } catch (err) {
           console.error("Failed to initialize FHE:", err);
         }
       }
     };
     initFHE();
-  }, [isOwner, walletClient]);
+  }, [isOwner, walletClient, profile?.currentOrganization]);
 
   useEffect(() => {
     const fetchEthPrice = async () => {
