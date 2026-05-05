@@ -1,9 +1,24 @@
-import { keccak256, toBytes, type WalletClient } from "viem";
+import { keccak256, toBytes, type WalletClient, createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
-import { publicActions } from "viem";
 import artifact from "./contracts/ConfidentialPayrollFHE.json";
 
 const DEPLOYMENT_GAS_LIMIT = 3_000_000n;
+const DEPLOYMENT_TIMEOUT_MS = 120_000;
+
+const waitForReceipt = async (txHash: string, walletClient: WalletClient): Promise<any> => {
+  const pub = createPublicClient({
+    chain: walletClient.chain ?? sepolia,
+    transport: http(import.meta.env.VITE_SEPOLIA_RPC || "https://rpc.sepolia.org"),
+  });
+
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("Transaction confirmation timed out")), DEPLOYMENT_TIMEOUT_MS);
+  });
+
+  const receiptPromise = pub.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+
+  return Promise.race([receiptPromise, timeoutPromise]);
+};
 
 /**
  * Deploys an org-specific ConfidentialPayrollFHE contract from the connected
@@ -17,6 +32,8 @@ export async function deployPayrollContract(
   if (!walletClient) throw new Error("Wallet client not available");
   if (!walletClient.account) throw new Error("Wallet not connected");
 
+  console.log("Starting contract deployment...");
+
   const orgIdBytes32 = keccak256(toBytes(orgId));
 
   const hash = await walletClient.deployContract({
@@ -28,8 +45,11 @@ export async function deployPayrollContract(
     gas: DEPLOYMENT_GAS_LIMIT,
   });
 
-  const publicClient = walletClient.extend(publicActions);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  console.log("Transaction sent:", hash);
+
+  const receipt = await waitForReceipt(hash, walletClient);
+
+  console.log("Transaction receipt:", receipt);
 
   if (!receipt.contractAddress) {
     throw new Error("Deployment succeeded but no contract address returned");
