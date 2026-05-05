@@ -5,10 +5,12 @@ import artifact from "./contracts/ConfidentialPayrollFHE.json";
 const DEPLOYMENT_GAS_LIMIT = 3_000_000n;
 const DEPLOYMENT_TIMEOUT_MS = 180_000;
 
+const SEPOLIA_RPC = "https://sepolia.infura.io/v3/0e7918e5c02a4d3e9104131ba6d99ac2";
+
 const waitForReceipt = async (txHash: string, walletClient: WalletClient): Promise<any> => {
   const pub = createPublicClient({
-    chain: walletClient.chain ?? sepolia,
-    transport: http(import.meta.env.VITE_SEPOLIA_RPC || "https://rpc.sepolia.org"),
+    chain: sepolia,
+    transport: http(SEPOLIA_RPC),
   });
 
   console.log("Waiting for transaction receipt:", txHash);
