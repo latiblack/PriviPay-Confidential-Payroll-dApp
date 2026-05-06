@@ -1,35 +1,20 @@
+export { getFheInstance, resetFheInstance } from "./instance";
+export { encryptUint64, type EncryptedValue } from "./encrypt";
+export { decryptUint64 } from "./decrypt";
 export {
-  encryptSalary,
-  decryptSalary,
-  reencryptForUser,
-  decryptWithPrivateKey,
-  encryptVote,
-  
-  formatEncryptedAmount,
-  salaryToCents,
-  centsToSalary,
-  generateKeyPair,
-  isValidEncryptedData,
-  placeholderSalary,
-  isPlaceholder,
-  maskedSalary,
-  maskedAddress,
-  type EncryptedData,
-  type KeyPair,
-} from "./encryption";
-
-export {
-  fhePayrollService,
-  type PayrollEmployee,
-  type PayrollTransaction,
-  type FHEWalletKeys,
-} from "./payroll-service";
-
-export {
-  relayerService,
-  type RelayerConfig,
-  type DecryptRequest,
-  type DecryptResponse,
-  type WithdrawalRequest,
-  type WithdrawalResponse,
-} from "./relayer";
+  deployPayrollContract,
+  addEmployee,
+  removeEmployee,
+  setSalary,
+  setBonus,
+  processPayroll,
+  depositFunds,
+  withdrawFunds,
+  getBalance,
+  getSalary,
+  getFundPool,
+  getEmployeeCount,
+  getAllEmployees,
+  checkIsEmployee,
+  CONFIDENTIAL_PAYROLL_ABI,
+} from "./contract";

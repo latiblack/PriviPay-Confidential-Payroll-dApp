@@ -14,6 +14,38 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
+      name: "ZamaConfig",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ZamaConfig__factory>;
+    getContractFactory(
+      name: "ZamaEthereumConfig",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ZamaEthereumConfig__factory>;
+    getContractFactory(
+      name: "FhevmECDSA",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.FhevmECDSA__factory>;
+    getContractFactory(
+      name: "FHE",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.FHE__factory>;
+    getContractFactory(
+      name: "IKMSVerifier",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IKMSVerifier__factory>;
+    getContractFactory(
+      name: "IACL",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IACL__factory>;
+    getContractFactory(
+      name: "IFHEVMExecutor",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IFHEVMExecutor__factory>;
+    getContractFactory(
+      name: "IInputVerifier",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IInputVerifier__factory>;
+    getContractFactory(
       name: "ConfidentialPayrollFHE",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ConfidentialPayrollFHE__factory>;
@@ -27,6 +59,46 @@ declare module "hardhat/types/runtime" {
     ): Promise<Contracts.ITFHEExecutor__factory>;
 
     getContractAt(
+      name: "ZamaConfig",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ZamaConfig>;
+    getContractAt(
+      name: "ZamaEthereumConfig",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ZamaEthereumConfig>;
+    getContractAt(
+      name: "FhevmECDSA",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.FhevmECDSA>;
+    getContractAt(
+      name: "FHE",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.FHE>;
+    getContractAt(
+      name: "IKMSVerifier",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IKMSVerifier>;
+    getContractAt(
+      name: "IACL",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IACL>;
+    getContractAt(
+      name: "IFHEVMExecutor",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IFHEVMExecutor>;
+    getContractAt(
+      name: "IInputVerifier",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IInputVerifier>;
+    getContractAt(
       name: "ConfidentialPayrollFHE",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -43,6 +115,38 @@ declare module "hardhat/types/runtime" {
     ): Promise<Contracts.ITFHEExecutor>;
 
     deployContract(
+      name: "ZamaConfig",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ZamaConfig>;
+    deployContract(
+      name: "ZamaEthereumConfig",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ZamaEthereumConfig>;
+    deployContract(
+      name: "FhevmECDSA",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FhevmECDSA>;
+    deployContract(
+      name: "FHE",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FHE>;
+    deployContract(
+      name: "IKMSVerifier",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IKMSVerifier>;
+    deployContract(
+      name: "IACL",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IACL>;
+    deployContract(
+      name: "IFHEVMExecutor",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IFHEVMExecutor>;
+    deployContract(
+      name: "IInputVerifier",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IInputVerifier>;
+    deployContract(
       name: "ConfidentialPayrollFHE",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialPayrollFHE>;
@@ -55,6 +159,46 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ITFHEExecutor>;
 
+    deployContract(
+      name: "ZamaConfig",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ZamaConfig>;
+    deployContract(
+      name: "ZamaEthereumConfig",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ZamaEthereumConfig>;
+    deployContract(
+      name: "FhevmECDSA",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FhevmECDSA>;
+    deployContract(
+      name: "FHE",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FHE>;
+    deployContract(
+      name: "IKMSVerifier",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IKMSVerifier>;
+    deployContract(
+      name: "IACL",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IACL>;
+    deployContract(
+      name: "IFHEVMExecutor",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IFHEVMExecutor>;
+    deployContract(
+      name: "IInputVerifier",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IInputVerifier>;
     deployContract(
       name: "ConfidentialPayrollFHE",
       args: any[],

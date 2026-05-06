@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:docs.zama.ai)",
+      "WebFetch(domain:docs.zama.org)",
+      "WebFetch(domain:docs.z1labs.ai)"
+    ]
+  }
+}

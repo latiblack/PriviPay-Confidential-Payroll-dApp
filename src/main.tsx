@@ -1,13 +1,6 @@
 import { createRoot } from "react-dom/client";
-import { StrictMode, ReactNode, Component, useState, useEffect, useMemo } from "react";
-import { WagmiProvider, useAccount } from "wagmi";
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { StrictMode, ReactNode, Component } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { config } from "./lib/wagmi-config";
-import { ZamaProvider } from "@zama-fhe/react-sdk";
-import { IndexedDBStorage, RelayerWeb, SepoliaConfig } from "@zama-fhe/sdk";
-import { WagmiSigner } from "./lib/fhe/wagmiSigner";
-import "@rainbow-me/rainbowkit/styles.css";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -83,94 +76,12 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// Zama wrapper component that needs wagmi to be ready
-const ZamaWrapper = ({ children }: { children: ReactNode }) => {
-  const { isConnected } = useAccount();
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  
-  const signer = useMemo(() => {
-    if (!mounted) return null;
-    return new WagmiSigner({ config });
-  }, [mounted]);
-  
-  const relayer = useMemo(() => {
-    if (!signer || !isConnected) return null;
-    return new RelayerWeb({
-      getChainId: async () => {
-        try {
-          return await signer.getChainId();
-        } catch {
-          return 11155111; // Sepolia
-        }
-      },
-      transports: {
-        [SepoliaConfig.chainId]: SepoliaConfig,
-      },
-    });
-  }, [signer, isConnected]);
-  
-  if (!mounted || !relayer || !signer) {
-    return <>{children}</>;
-  }
-  
-  const storage = new IndexedDBStorage("KeypairStore", 1);
-  const sessionStorage = new IndexedDBStorage("SignatureStore", 1);
-  
-  return (
-    <ZamaProvider
-      relayer={relayer}
-      signer={signer}
-      storage={storage}
-      sessionStorage={sessionStorage}
-    >
-      {children}
-    </ZamaProvider>
-  );
-};
-
-const SafeWagmiProvider = ({ children }: { children: ReactNode }) => {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setReady(true);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (!ready) {
-    return <LoadingFallback />;
-  }
-
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={darkTheme({
-            accentColor: '#3498db',
-            accentColorForeground: 'white',
-            borderRadius: 'medium',
-          })}
-        >
-          <ZamaWrapper>
-            {children}
-          </ZamaWrapper>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
-};
-
 const AppWithProviders = () => {
   return (
     <ErrorBoundary>
-      <SafeWagmiProvider>
+      <QueryClientProvider client={queryClient}>
         <App />
-      </SafeWagmiProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };

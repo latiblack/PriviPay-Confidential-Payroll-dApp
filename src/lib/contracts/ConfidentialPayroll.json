@@ -1,0 +1,78 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AlreadyEmployee",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InsufficientFunds",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotEmployee",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotOwner",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": true, "name": "employee", "type": "address"}],
+      "name": "EmployeeAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": true, "name": "employee", "type": "address"}],
+      "name": "EmployeeRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": true, "name": "employee", "type": "address"}],
+      "name": "SalarySet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": true, "name": "employee", "type": "address"}],
+      "name": "BonusSet",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [{"indexed": false, "name": "employeeCount", "type": "uint256"}],
+      "name": "PayrollProcessed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": true, "name": "employee", "type": "address"},
+        {"indexed": false, "name": "amount", "type": "uint256"}
+      ],
+      "name": "Withdrawn",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": true, "name": "sender", "type": "address"},
+        {"indexed": false, "name": "amount", "type": "uint256"}
+      ],
+      "name": "FundsDeposited",
+      "type": "event"
+    }
+  ],
+  "bytecode": "0x"
+}

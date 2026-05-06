@@ -11,8 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
-import { ethereumService } from "@/lib/ethereum";
-import { FHEContractService } from "@/lib/fhe-contract-service";
+import { decryptUint64 } from "@/lib/fhe/decrypt";
+import { getBalance, withdrawFunds } from "@/lib/fhe/contract";
 import { useWalletClient } from "wagmi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
@@ -72,24 +72,28 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     const fetchFheBalance = async () => {
       if (!employee?.wallet_address || !walletClient) return;
+      const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
+      if (!orgContractAddress) return;
+
       setFheLoading(true);
       try {
-        const orgContractAddress = (profile?.currentOrganization as any)?.contract_address || undefined;
-        const fheService = new FHEContractService(walletClient as any, orgContractAddress);
-        const decryptedBalance = await fheService.getDecryptedBalance(employee.wallet_address);
-        setFheBalance(decryptedBalance);
-        console.log("FHE decrypted balance:", decryptedBalance);
-      } catch (e) {
-        console.log("FHE balance fetch error:", e);
-        setFheBalance(0);
+        const { createPublicClient, http } = await import("viem");
+        const { sepolia } = await import("viem/chains");
+        const publicClient = createPublicClient({ chain: sepolia, transport: http() });
+
+        const handle = await getBalance(publicClient, orgContractAddress as `0x${string}`, employee.wallet_address as `0x${string}`);
+        if (handle && handle !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+          const decrypted = await decryptUint64(handle, orgContractAddress, walletClient);
+          setFheBalance(decrypted);
+        }
+      } catch (err) {
+        console.error("Failed to fetch FHE balance:", err);
       } finally {
         setFheLoading(false);
       }
     };
-    if (employee?.wallet_address && walletClient) {
-      fetchFheBalance();
-    }
-  }, [employee?.wallet_address, walletClient]);
+    fetchFheBalance();
+  }, [employee?.wallet_address, walletClient, profile?.currentOrganization]);
 
   useEffect(() => {
     const fetchData = async () => {

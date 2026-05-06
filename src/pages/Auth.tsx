@@ -12,7 +12,7 @@ import { organizationService } from "@/lib/organization-service";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useWalletClient, useAccount, useSwitchChain } from "wagmi";
 import { supabase } from "@/integrations/supabase/client";
-import { deployPayrollContract } from "@/lib/deploy-payroll-contract";
+import { deployPayrollContract } from "@/lib/fhe/contract";
 
 type AuthStep = "select" | "create-org" | "join-org" | "success";
 
@@ -286,13 +286,12 @@ export const AuthPage = () => {
         console.warn("Balance precheck failed, continuing:", balErr);
       }
 
-      // 3. Generate a temp org id for the on-chain bytes32 (deploy FIRST, persist nothing yet)
+      // 3. Deploy the confidential payroll contract
       setDeployStatus("Deploying your payroll contract on Sepolia. Please confirm in your wallet...");
       console.log("Starting contract deployment...");
-      const tempOrgId = crypto.randomUUID();
       let deployed: { address: string; txHash: string };
       try {
-        deployed = await deployPayrollContract(walletClient, tempOrgId);
+        deployed = await deployPayrollContract(walletClient);
         console.log("Contract deployed successfully:", deployed);
       } catch (deployErr: any) {
         console.error("Contract deployment failed:", deployErr);
