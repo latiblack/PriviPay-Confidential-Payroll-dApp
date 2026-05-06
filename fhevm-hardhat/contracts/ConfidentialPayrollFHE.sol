@@ -1,35 +1,63 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.24;
 
-import {FHE, euint64, euint128, ebool, externalEuint64} from "@fhevm/solidity/lib/FHE.sol";
+import { FHE, euint64, euint128, ebool, externalEuint64 } from "@fhevm/solidity/lib/FHE.sol";
+import { ZamaEthereumConfig } from "@fhevm/solidity/config/ZamaConfig.sol";
 
 /// @title ConfidentialPayrollFHE
-/// @notice Fully confidential payroll contract using Zama FHE
-contract ConfidentialPayrollFHE {
+/// @notice Fully confidential payroll contract using Zama FHEVM
+/// @dev Deploy on Ethereum Sepolia testnet or Ethereum Mainnet.
+///      Inherits ZamaEthereumConfig to configure the FHEVM coprocessor endpoints.
+contract ConfidentialPayrollFHE is ZamaEthereumConfig {
+
+    // ─── State ───────────────────────────────────────────────────────────────
+
     address public owner;
     bytes32 public orgId;
-    
-    mapping(address => euint128) internal encryptedSalaries;
-    mapping(address => euint128) internal encryptedBonuses;
-    mapping(address => euint128) internal encryptedBalances;
-    
+
+    /// @dev All monetary encrypted values use euint64 consistently.
+    ///      euint128 was removed: mixing 64/128 caused silent truncation in comparisons.
+    mapping(address => euint64) internal encryptedSalaries;
+    mapping(address => euint64) internal encryptedBonuses;
+    mapping(address => euint64) internal encryptedBalances;
+
+    /// @dev Active employee list — only contains current employees.
+    ///      Removed employees are swapped out so processPayroll never touches them.
     address[] internal employeeList;
     mapping(address => bool) public isEmployee;
-    
+    /// @dev index+1 of each employee in employeeList (0 = not in list)
+    mapping(address => uint256) internal employeeIndex;
+
+    /// @dev ACL: who can call getEncrypted* for a given employee
     mapping(address => mapping(address => bool)) internal authorizedViewers;
 
-    event SalarySetEncrypted(address indexed employee);
-    event BonusDistributedEncrypted(address indexed employee);
-    event PayrollProcessedEncrypted(uint256 employeeCount);
+    // ─── Funding (for actual withdrawals) ────────────────────────────────────
+
+    /// @dev Plaintext ETH/token pool deposited by the org owner.
+    ///      In a real system this would be an ERC-20; we use ETH for simplicity.
+    uint256 public fundPool;
+
+    // ─── Events ──────────────────────────────────────────────────────────────
+
+    event SalarySet(address indexed employee);
+    event BonusSet(address indexed employee);
+    event PayrollProcessed(uint256 employeeCount);
     event EmployeeAdded(address indexed employee);
     event EmployeeRemoved(address indexed employee);
     event AccessGranted(address indexed employee, address indexed viewer);
     event AccessRevoked(address indexed employee, address indexed viewer);
-    event SalaryWithdrawn(address indexed employee);
+    event Withdrawn(address indexed employee, uint256 amount);
+    event FundsDeposited(address indexed sender, uint256 amount);
+
+    // ─── Errors ──────────────────────────────────────────────────────────────
 
     error NotOwner();
     error NotEmployee();
+    error AlreadyEmployee();
     error NotAuthorized();
+    error InsufficientFunds();
+
+    // ─── Modifiers ───────────────────────────────────────────────────────────
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -41,173 +69,216 @@ contract ConfidentialPayrollFHE {
         _;
     }
 
+    // ─── Constructor ─────────────────────────────────────────────────────────
+
     constructor(bytes32 _orgId) {
         owner = msg.sender;
         orgId = _orgId;
     }
 
-    /// @notice Add employee to organization
+    // ─── Funding ─────────────────────────────────────────────────────────────
+
+    /// @notice Org owner deposits ETH to fund payroll withdrawals.
+    function depositFunds() external payable onlyOwner {
+        fundPool += msg.value;
+        emit FundsDeposited(msg.sender, msg.value);
+    }
+
+    // ─── Employee Management ─────────────────────────────────────────────────
+
+    /// @notice Add a new employee to the organisation.
     function addEmployee(address employee) external onlyOwner {
-        if (isEmployee[employee]) revert NotEmployee();
-        
+        if (isEmployee[employee]) revert AlreadyEmployee();
+
         isEmployee[employee] = true;
+        employeeIndex[employee] = employeeList.length + 1; // 1-indexed
         employeeList.push(employee);
-        
-        // Initialize encrypted values to 0
-        euint128 zero = FHE.asEuint128(0);
+
+        euint64 zero = FHE.asEuint64(0);
         encryptedSalaries[employee] = zero;
         encryptedBonuses[employee] = zero;
         encryptedBalances[employee] = zero;
-        
-        // Grant owner access to employee's data
+
         authorizedViewers[employee][owner] = true;
-        
+        FHE.allow(zero, owner);
+        FHE.allowThis(zero);
+
         emit EmployeeAdded(employee);
     }
 
-    /// @notice Remove employee from organization
+    /// @notice Remove an employee. Cleans up the employeeList array correctly.
     function removeEmployee(address employee) external onlyOwner {
         if (!isEmployee[employee]) revert NotEmployee();
-        
+
         isEmployee[employee] = false;
-        
-        // Clear salary and bonus
-        euint128 zero = FHE.asEuint128(0);
+
+        uint256 idx = employeeIndex[employee] - 1;
+        uint256 lastIdx = employeeList.length - 1;
+        if (idx != lastIdx) {
+            address last = employeeList[lastIdx];
+            employeeList[idx] = last;
+            employeeIndex[last] = idx + 1;
+        }
+        employeeList.pop();
+        delete employeeIndex[employee];
+
+        euint64 zero = FHE.asEuint64(0);
         encryptedSalaries[employee] = zero;
         encryptedBonuses[employee] = zero;
         encryptedBalances[employee] = zero;
-        
+
         emit EmployeeRemoved(employee);
     }
 
-    /// @notice Set encrypted salary for an employee (accepts external encrypted input)
-    function setEncryptedSalary(address employee, externalEuint64 encryptedSalary, bytes calldata inputProof) external onlyOwner {
+    // ─── Salary / Bonus Management ───────────────────────────────────────────
+
+    function setEncryptedSalary(
+        address employee,
+        externalEuint64 encSalary,
+        bytes calldata inputProof
+    ) external onlyOwner {
         if (!isEmployee[employee]) revert NotEmployee();
 
-        euint64 salary = FHE.fromExternal(encryptedSalary, inputProof);
+        euint64 salary = FHE.fromExternal(encSalary, inputProof);
+
         FHE.allow(salary, employee);
+        FHE.allow(salary, owner);
         FHE.allowThis(salary);
 
-        encryptedSalaries[employee] = FHE.asEuint128(salary);
+        encryptedSalaries[employee] = salary;
 
-        // Grant employee access to their own salary
         authorizedViewers[employee][employee] = true;
 
-        emit SalarySetEncrypted(employee);
+        emit SalarySet(employee);
     }
 
-    /// @notice Set encrypted bonus for an employee (accepts external encrypted input)
-    function setEncryptedBonus(address employee, externalEuint64 encryptedBonus, bytes calldata inputProof) external onlyOwner {
+    function setEncryptedBonus(
+        address employee,
+        externalEuint64 encBonus,
+        bytes calldata inputProof
+    ) external onlyOwner {
         if (!isEmployee[employee]) revert NotEmployee();
 
-        euint64 bonus = FHE.fromExternal(encryptedBonus, inputProof);
+        euint64 bonus = FHE.fromExternal(encBonus, inputProof);
+
         FHE.allow(bonus, employee);
+        FHE.allow(bonus, owner);
         FHE.allowThis(bonus);
 
-        encryptedBonuses[employee] = FHE.asEuint128(bonus);
+        encryptedBonuses[employee] = bonus;
 
-        // Grant employee access to their own bonus
         authorizedViewers[employee][employee] = true;
 
-        emit BonusDistributedEncrypted(employee);
+        emit BonusSet(employee);
     }
 
-    /// @notice Get encrypted salary (only employee or authorized viewers)
-    function getEncryptedSalary(address employee) external view returns (euint128) {
+    // ─── Read Encrypted Values ───────────────────────────────────────────────
+
+    function getEncryptedSalary(address employee) external view returns (euint64) {
         if (!isEmployee[employee]) revert NotEmployee();
         if (!authorizedViewers[employee][msg.sender]) revert NotAuthorized();
-        
         return encryptedSalaries[employee];
     }
 
-    /// @notice Get encrypted bonus
-    function getEncryptedBonus(address employee) external view returns (euint128) {
+    function getEncryptedBonus(address employee) external view returns (euint64) {
         if (!isEmployee[employee]) revert NotEmployee();
         if (!authorizedViewers[employee][msg.sender]) revert NotAuthorized();
-        
         return encryptedBonuses[employee];
     }
 
-    /// @notice Get encrypted balance (total received - withdrawn)
-    function getEncryptedBalance(address employee) external view returns (euint128) {
+    function getEncryptedBalance(address employee) external view returns (euint64) {
         if (!isEmployee[employee]) revert NotEmployee();
         if (!authorizedViewers[employee][msg.sender]) revert NotAuthorized();
-        
         return encryptedBalances[employee];
     }
 
-    /// @notice Grant access to view encrypted data
+    // ─── ACL Management ─────────────────────────────────────────────────────
+
     function grantAccess(address viewer) external onlyEmployee {
         authorizedViewers[msg.sender][viewer] = true;
+
+        FHE.allow(encryptedSalaries[msg.sender], viewer);
+        FHE.allow(encryptedBonuses[msg.sender], viewer);
+        FHE.allow(encryptedBalances[msg.sender], viewer);
+
         emit AccessGranted(msg.sender, viewer);
     }
 
-    /// @notice Revoke access to view encrypted data
     function revokeAccess(address viewer) external onlyEmployee {
-        if (viewer == owner) revert NotAuthorized(); // Cannot revoke owner access
+        if (viewer == owner) revert NotAuthorized();
         authorizedViewers[msg.sender][viewer] = false;
         emit AccessRevoked(msg.sender, viewer);
     }
 
-    /// @notice Check if address can view employee data
     function canViewEmployeeData(address employee, address viewer) external view returns (bool) {
         return authorizedViewers[employee][viewer];
     }
 
-    /// @notice Process payroll - add salary + bonus to employee balances
-    function processPayrollEncrypted() external onlyOwner returns (euint128) {
-        euint128 total = FHE.asEuint128(0);
-        
-        for (uint i = 0; i < employeeList.length; i++) {
+    // ─── Payroll Processing ──────────────────────────────────────────────────
+
+    function processPayrollEncrypted() external onlyOwner {
+        uint256 count = employeeList.length;
+
+        for (uint256 i = 0; i < count; i++) {
             address emp = employeeList[i];
-            
-            // Calculate total compensation (salary + bonus)
-            euint128 compensation = FHE.add(encryptedSalaries[emp], encryptedBonuses[emp]);
-            
-            // Add to employee balance
-            encryptedBalances[emp] = FHE.add(encryptedBalances[emp], compensation);
-            
-            // Accumulate total
-            total = FHE.add(total, compensation);
-            
-            // Reset bonus after processing
-            encryptedBonuses[emp] = FHE.asEuint128(0);
+
+            euint64 compensation = FHE.add(encryptedSalaries[emp], encryptedBonuses[emp]);
+
+            euint64 newBalance = FHE.add(encryptedBalances[emp], compensation);
+            encryptedBalances[emp] = newBalance;
+
+            FHE.allow(newBalance, emp);
+            FHE.allow(newBalance, owner);
+            FHE.allowThis(newBalance);
+
+            euint64 zero = FHE.asEuint64(0);
+            encryptedBonuses[emp] = zero;
+            FHE.allowThis(zero);
         }
-        
-        emit PayrollProcessedEncrypted(employeeList.length);
-        return total;
+
+        emit PayrollProcessed(count);
     }
 
-    /// @notice Withdraw salary from encrypted balance (accepts external encrypted input)
-    function withdrawSalary(externalEuint64 encryptedAmount, bytes calldata inputProof) external onlyEmployee {
-        euint64 amount = FHE.fromExternal(encryptedAmount, inputProof);
-        euint128 balance = encryptedBalances[msg.sender];
+    // ─── Withdrawal ──────────────────────────────────────────────────────────
 
-        // Check if employee has enough balance using encrypted comparison
-        ebool canWithdraw = FHE.le(amount, FHE.asEuint64(balance));
+    function withdrawSalary(uint64 amount) external onlyEmployee {
+        euint64 requestedAmount = FHE.asEuint64(amount);
+        euint64 balance = encryptedBalances[msg.sender];
 
-        // Only withdraw if enough balance (using select to avoid revert)
-        encryptedBalances[msg.sender] = FHE.sub(
-            balance,
-            FHE.select(canWithdraw, FHE.asEuint128(amount), FHE.asEuint128(0))
-        );
+        ebool canWithdraw = FHE.le(requestedAmount, balance);
 
-        emit SalaryWithdrawn(msg.sender);
+        euint64 toSubtract = FHE.select(canWithdraw, requestedAmount, FHE.asEuint64(0));
+        euint64 newBalance = FHE.sub(balance, toSubtract);
+        encryptedBalances[msg.sender] = newBalance;
+
+        FHE.allow(newBalance, msg.sender);
+        FHE.allow(newBalance, owner);
+        FHE.allowThis(newBalance);
+
+        if (fundPool < amount) revert InsufficientFunds();
+        fundPool -= amount;
+        (bool ok, ) = msg.sender.call{ value: amount }("");
+        require(ok, "ETH transfer failed");
+
+        emit Withdrawn(msg.sender, amount);
     }
 
-    /// @notice Get employee count
+    // ─── View Helpers ────────────────────────────────────────────────────────
+
     function getEmployeeCount() external view returns (uint256) {
         return employeeList.length;
     }
 
-    /// @notice Get employee by index
     function getEmployee(uint256 index) external view returns (address) {
         if (index >= employeeList.length) revert NotAuthorized();
         return employeeList[index];
     }
 
-    /// @notice Get list of all employees
     function getAllEmployees() external view returns (address[] memory) {
         return employeeList;
+    }
+
+    function getFundPool() external view returns (uint256) {
+        return fundPool;
     }
 }
