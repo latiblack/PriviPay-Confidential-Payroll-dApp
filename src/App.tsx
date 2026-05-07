@@ -1,6 +1,9 @@
 import { useState, lazy, Suspense, Component, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { WagmiProvider } from "wagmi";
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +16,7 @@ import PendingRole from "./pages/PendingRole";
 import PendingInvitations from "./pages/PendingInvitations";
 import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { config } from "./lib/wagmi-config";
 
 // Retry lazy loading on failure
 const retryLazy = <T,>(importer: () => Promise<T>, retries = 3): Promise<T> => {
@@ -236,23 +240,27 @@ return (
 
 const App = () => {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="privipay-theme">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/*" element={<AppLayout />} />
-              </Routes>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <WagmiProvider config={config}>
+      <RainbowKitProvider>
+        <ThemeProvider defaultTheme="light" storageKey="privipay-theme">
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <AuthProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/*" element={<AppLayout />} />
+                  </Routes>
+                </BrowserRouter>
+              </AuthProvider>
+            </TooltipProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </RainbowKitProvider>
+    </WagmiProvider>
   );
 };
 

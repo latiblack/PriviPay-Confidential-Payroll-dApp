@@ -4,7 +4,11 @@
       "WebSearch",
       "WebFetch(domain:docs.zama.ai)",
       "WebFetch(domain:docs.zama.org)",
-      "WebFetch(domain:docs.z1labs.ai)"
+      "WebFetch(domain:docs.z1labs.ai)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\hp\\\\Desktop\\\\Privipay\\\\chat-buddy-ai-894\" -Depth 2)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")"
     ]
   }
 }
