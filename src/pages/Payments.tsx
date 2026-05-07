@@ -346,6 +346,7 @@ const handleAddEmployee = async () => {
       // BEFORE MetaMask attempts gas estimation (which produces the opaque
       // "third party contract execution error").
       if (!publicClient) throw new Error("RPC client not ready. Try again in a moment.");
+      const pc = publicClient as any;
 
       // 1. Confirm connected wallet is the contract owner
       const onchainOwner = (await (publicClient as any).readContract({
