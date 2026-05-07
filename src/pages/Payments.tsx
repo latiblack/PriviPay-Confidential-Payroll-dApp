@@ -348,7 +348,7 @@ const handleAddEmployee = async () => {
       if (!publicClient) throw new Error("RPC client not ready. Try again in a moment.");
 
       // 1. Confirm connected wallet is the contract owner
-      const onchainOwner = (await publicClient.readContract({
+      const onchainOwner = (await (publicClient as any).readContract({
         address: orgContractAddress as `0x${string}`,
         abi: CONFIDENTIAL_PAYROLL_ABI,
         functionName: "owner",
@@ -361,7 +361,7 @@ const handleAddEmployee = async () => {
       }
 
       // 2. Check if employee is already onchain
-      const alreadyEmployee = (await publicClient.readContract({
+      const alreadyEmployee = (await (publicClient as any).readContract({
         address: orgContractAddress as `0x${string}`,
         abi: CONFIDENTIAL_PAYROLL_ABI,
         functionName: "isEmployee",
@@ -373,7 +373,7 @@ const handleAddEmployee = async () => {
         console.log("Employee already onchain, skipping addEmployee tx");
       } else {
         // 3. Simulate addEmployee — surfaces real revert reason if any
-        await publicClient.simulateContract({
+        await (publicClient as any).simulateContract({
           address: orgContractAddress as `0x${string}`,
           abi: CONFIDENTIAL_PAYROLL_ABI,
           functionName: "addEmployee",
@@ -383,7 +383,7 @@ const handleAddEmployee = async () => {
 
         addTxHash = await addEmployeeToContract(walletClient, orgContractAddress as `0x${string}`, empAddress);
         console.log("addEmployee tx:", addTxHash);
-        await publicClient.waitForTransactionReceipt({ hash: addTxHash as `0x${string}` });
+        await (publicClient as any).waitForTransactionReceipt({ hash: addTxHash as `0x${string}` });
       }
 
       // 4. Encrypt salary and set it on-chain
@@ -391,7 +391,7 @@ const handleAddEmployee = async () => {
       const encrypted = await encryptUint64(salaryInCents, orgContractAddress, walletAddress!);
 
       // Simulate setSalary too
-      await publicClient.simulateContract({
+      await (publicClient as any).simulateContract({
         address: orgContractAddress as `0x${string}`,
         abi: CONFIDENTIAL_PAYROLL_ABI,
         functionName: "setSalary",
@@ -407,7 +407,7 @@ const handleAddEmployee = async () => {
         encrypted.inputProof
       );
       console.log("setSalary tx:", salaryTxHash);
-      await publicClient.waitForTransactionReceipt({ hash: salaryTxHash as `0x${string}` });
+      await (publicClient as any).waitForTransactionReceipt({ hash: salaryTxHash as `0x${string}` });
 
       // 5. Persist to Supabase only after onchain success
       const employeePayload = {
