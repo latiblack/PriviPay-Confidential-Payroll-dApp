@@ -10,7 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { useAccount, useSwitchChain, useBalance, useWalletClient } from 'wagmi';
+import { useAccount, useSwitchChain, useBalance, useWalletClient, usePublicClient } from 'wagmi';
+import { CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import {
