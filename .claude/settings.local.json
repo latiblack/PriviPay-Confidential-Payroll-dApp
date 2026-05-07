@@ -8,7 +8,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\hp\\\\Desktop\\\\Privipay\\\\chat-buddy-ai-894\" -Depth 2)",
       "Bash(Select-Object FullName, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
-      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")",
+      "Bash(node -e \"const artifact = require\\('./artifacts/contracts/ConfidentialPayroll.sol/ConfidentialPayroll.json'\\); console.log\\(artifact.bytecode.substring\\(0, 100\\)\\);\")"
     ]
   }
 }
