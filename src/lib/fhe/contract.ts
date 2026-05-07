@@ -181,7 +181,7 @@ export async function withdrawFunds(
 }
 
 export async function getBalance(
-  publicClient: PublicClient,
+  publicClient: any,
   contractAddress: Address,
   employee: Address
 ): Promise<string> {
@@ -195,7 +195,7 @@ export async function getBalance(
 }
 
 export async function getSalary(
-  publicClient: PublicClient,
+  publicClient: any,
   contractAddress: Address,
   employee: Address
 ): Promise<string> {
@@ -209,7 +209,7 @@ export async function getSalary(
 }
 
 export async function getFundPool(
-  publicClient: PublicClient,
+  publicClient: any,
   contractAddress: Address
 ): Promise<bigint> {
   const result = await publicClient.readContract({
@@ -222,7 +222,7 @@ export async function getFundPool(
 }
 
 export async function getEmployeeCount(
-  publicClient: PublicClient,
+  publicClient: any,
   contractAddress: Address
 ): Promise<number> {
   const result = await publicClient.readContract({
@@ -235,7 +235,7 @@ export async function getEmployeeCount(
 }
 
 export async function getAllEmployees(
-  publicClient: PublicClient,
+  publicClient: any,
   contractAddress: Address
 ): Promise<Address[]> {
   const result = await publicClient.readContract({
@@ -248,7 +248,7 @@ export async function getAllEmployees(
 }
 
 export async function checkIsEmployee(
-  publicClient: PublicClient,
+  publicClient: any,
   contractAddress: Address,
   employee: Address
 ): Promise<boolean> {
