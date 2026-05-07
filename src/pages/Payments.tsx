@@ -46,6 +46,7 @@ const PaymentsPage = () => {
     chainId: 11155111, // Sepolia
   });
   const { data: walletClient } = useWalletClient();
+  const publicClient = usePublicClient({ chainId: 11155111 });
   const { toast } = useToast();
   const { t } = useTranslation();
   const isOwner = profile?.currentRole === "owner";
