@@ -342,13 +342,63 @@ const handleAddEmployee = async () => {
     const empAddress = employeeForm.wallet_address.toLowerCase() as `0x${string}`;
 
     try {
-      // 1. Add employee to on-chain contract
-      const addTxHash = await addEmployeeToContract(walletClient, orgContractAddress as `0x${string}`, empAddress);
-      console.log("addEmployee tx:", addTxHash);
+      // Preflight checks via read-only calls to surface revert reasons
+      // BEFORE MetaMask attempts gas estimation (which produces the opaque
+      // "third party contract execution error").
+      if (!publicClient) throw new Error("RPC client not ready. Try again in a moment.");
 
-      // 2. Encrypt salary and set it on-chain
+      // 1. Confirm connected wallet is the contract owner
+      const onchainOwner = (await publicClient.readContract({
+        address: orgContractAddress as `0x${string}`,
+        abi: CONFIDENTIAL_PAYROLL_ABI,
+        functionName: "owner",
+      })) as `0x${string}`;
+
+      if (onchainOwner.toLowerCase() !== walletAddress!.toLowerCase()) {
+        throw new Error(
+          `Only the org owner wallet (${onchainOwner.slice(0, 6)}…${onchainOwner.slice(-4)}) can add employees. You are connected as ${walletAddress!.slice(0, 6)}…${walletAddress!.slice(-4)}.`
+        );
+      }
+
+      // 2. Check if employee is already onchain
+      const alreadyEmployee = (await publicClient.readContract({
+        address: orgContractAddress as `0x${string}`,
+        abi: CONFIDENTIAL_PAYROLL_ABI,
+        functionName: "isEmployee",
+        args: [empAddress],
+      })) as boolean;
+
+      let addTxHash: string | undefined;
+      if (alreadyEmployee) {
+        console.log("Employee already onchain, skipping addEmployee tx");
+      } else {
+        // 3. Simulate addEmployee — surfaces real revert reason if any
+        await publicClient.simulateContract({
+          address: orgContractAddress as `0x${string}`,
+          abi: CONFIDENTIAL_PAYROLL_ABI,
+          functionName: "addEmployee",
+          args: [empAddress],
+          account: walletAddress as `0x${string}`,
+        });
+
+        addTxHash = await addEmployeeToContract(walletClient, orgContractAddress as `0x${string}`, empAddress);
+        console.log("addEmployee tx:", addTxHash);
+        await publicClient.waitForTransactionReceipt({ hash: addTxHash as `0x${string}` });
+      }
+
+      // 4. Encrypt salary and set it on-chain
       const salaryInCents = Math.round(parseFloat(employeeForm.salary) * 100);
       const encrypted = await encryptUint64(salaryInCents, orgContractAddress, walletAddress!);
+
+      // Simulate setSalary too
+      await publicClient.simulateContract({
+        address: orgContractAddress as `0x${string}`,
+        abi: CONFIDENTIAL_PAYROLL_ABI,
+        functionName: "setSalary",
+        args: [empAddress, encrypted.handle as `0x${string}`, encrypted.inputProof as `0x${string}`],
+        account: walletAddress as `0x${string}`,
+      });
+
       const salaryTxHash = await setContractSalary(
         walletClient,
         orgContractAddress as `0x${string}`,
@@ -357,8 +407,9 @@ const handleAddEmployee = async () => {
         encrypted.inputProof
       );
       console.log("setSalary tx:", salaryTxHash);
+      await publicClient.waitForTransactionReceipt({ hash: salaryTxHash as `0x${string}` });
 
-      // 3. Store in database
+      // 5. Persist to Supabase only after onchain success
       const employeePayload = {
         organization_id: profile.currentOrganization.id,
         wallet_address: empAddress,
@@ -391,10 +442,16 @@ const handleAddEmployee = async () => {
       console.error("Error adding employee:", err);
       const raw = String(err?.shortMessage || err?.reason || err?.message || err);
       let description = raw;
-      if (/NotOwner|not.*owner/i.test(raw)) {
-        description = "Your wallet is not the owner of this contract.";
+      if (/NotOwner/i.test(raw)) {
+        description = "Your wallet is not the owner of this org's FHE contract.";
+      } else if (/AlreadyEmployee/i.test(raw)) {
+        description = "This wallet is already registered as an employee onchain.";
+      } else if (/NotEmployee/i.test(raw)) {
+        description = "Employee not found onchain. Add them first.";
       } else if (/user rejected|denied/i.test(raw)) {
         description = "Transaction was rejected in your wallet.";
+      } else if (/insufficient funds/i.test(raw)) {
+        description = "Insufficient Sepolia ETH for gas.";
       }
       toast({ title: "Failed to add employee", description, variant: "destructive" });
     } finally {
