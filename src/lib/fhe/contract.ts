@@ -58,9 +58,12 @@ export async function deployPayrollContract(
     chain: walletClient.chain,
   });
 
-  const publicClient = (await import("viem")).createPublicClient({
+  const rpcUrl = import.meta.env.VITE_SEPOLIA_RPC;
+  const { createPublicClient, http } = await import("viem");
+
+  const publicClient = createPublicClient({
     chain: walletClient.chain!,
-    transport: (await import("viem")).http(),
+    transport: rpcUrl ? http(rpcUrl) : http(),
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });

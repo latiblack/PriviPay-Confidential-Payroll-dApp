@@ -12,7 +12,8 @@
       "Bash(node -e \"const artifact = require\\('./artifacts/contracts/ConfidentialPayroll.sol/ConfidentialPayroll.json'\\); console.log\\(artifact.bytecode.substring\\(0, 100\\)\\);\")",
       "Bash(xargs grep -l \"deployPayrollContract\\\\|createOrganization\")",
       "Bash(node *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
