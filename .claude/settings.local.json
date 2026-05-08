@@ -16,7 +16,8 @@
       "Bash(npx tsc *)",
       "Read(//c//**)",
       "Bash(npx --yes supabase)",
-      "Bash(curl -s https://deginpwtznmdwnnnbwsj.supabase.co/rest/v1/employees -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlZ2lucHd0em5tZHdubm5id3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Nzc3NjUsImV4cCI6MjA5MTU1Mzc2NX0.OBSnAAwkKbvLxkV0WDupUhcxQKXPH4tREi4i64kqsAw' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Range: 0-10')"
+      "Bash(curl -s https://deginpwtznmdwnnnbwsj.supabase.co/rest/v1/employees -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlZ2lucHd0em5tZHdubm5id3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5Nzc3NjUsImV4cCI6MjA5MTU1Mzc2NX0.OBSnAAwkKbvLxkV0WDupUhcxQKXPH4tREi4i64kqsAw' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Range: 0-10')",
+      "Bash(npx vite *)"
     ]
   }
 }

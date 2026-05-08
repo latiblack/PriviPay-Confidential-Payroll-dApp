@@ -285,6 +285,7 @@ if (!isOwner) {
   const totalSalary = employee ? Number(employee.encrypted_salary || 0) + employeeBonus : 0;
   
   return (
+    <>
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">My Dashboard</h1>
@@ -517,6 +518,7 @@ if (!isOwner) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
   );
 }
 
