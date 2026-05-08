@@ -19,6 +19,7 @@ import {
   addEmployee as addEmployeeToContract,
   setSalary as setContractSalary,
   processPayroll as processContractPayroll,
+  withdrawFunds as withdrawFromContract,
 } from "@/lib/fhe";
 import {
   DollarSign, Users, Send, Loader2, ArrowDownToLine,
@@ -56,9 +57,9 @@ const PaymentsPage = () => {
   const [availableMembers, setAvailableMembers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [ownSalary, setOwnSalary] = useState<string>("$0");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Employee management state
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -98,6 +99,8 @@ const fetchData = async () => {
 
       if (error) throw error;
 
+      console.log("fetchData - raw employees:", data?.length, data?.map(e => ({ id: e.id, wallet: e.wallet_address?.slice(0,8), salary: e.encrypted_salary, salaryNum: Number(e.encrypted_salary) })));
+
       // Get all members from user_roles
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
@@ -115,7 +118,11 @@ const fetchData = async () => {
       if (bonusError) throw bonusError;
 
       // Filter to show employees in payroll (salary > 0)
-      const payrollEmployees = (data || []).filter(e => Number(e.encrypted_salary) > 0);
+      const payrollEmployees = (data || []).filter(e => {
+        const num = Number(e.encrypted_salary);
+        return num > 0;
+      });
+      console.log("fetchData - after filter:", payrollEmployees.length);
       
       // Add bonus to each employee
       const employeesWithBonus = payrollEmployees.map(emp => {
@@ -218,7 +225,14 @@ useEffect(() => {
       setEthConnected(true);
       refetchBalance();
     }
-  }, [profile?.currentOrganization?.id, profile?.walletAddress, chainId]);
+  }, [profile?.currentOrganization?.id, profile?.walletAddress, chainId, refreshKey]);
+
+  // Re-fetch on focus to keep data in sync
+  useEffect(() => {
+    const onFocus = () => setRefreshKey(k => k + 1);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
 // Mark FHE as ready when owner wallet is connected on Sepolia
   useEffect(() => {
@@ -292,12 +306,25 @@ useEffect(() => {
     }
   }, [isOwner, profile?.walletAddress, profile.currentOrganization?.id]);
 
-const handleMemberSelect = (memberId: string) => {
+const handleMemberSelect = async (memberId: string) => {
     setSelectedMemberId(memberId);
     const member = availableMembers.find(m => m.id === memberId);
     if (member) {
+      // Fetch display name from profiles table
+      let name = "";
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", member.user_id)
+          .maybeSingle();
+        if (profile?.display_name) name = profile.display_name;
+      } catch (e) {
+        console.warn("Could not fetch profile name:", e);
+      }
+
       setEmployeeForm({
-        name: "",
+        name,
         wallet_address: member.user_id || "",
         position: member.role || "staff",
         department: "",
@@ -387,30 +414,8 @@ const handleAddEmployee = async () => {
         await (publicClient as any).waitForTransactionReceipt({ hash: addTxHash as `0x${string}` });
       }
 
-      // 4. Encrypt salary and set it on-chain
+      // 4. Save to Supabase immediately so the employee shows up right away.
       const salaryInCents = Math.round(parseFloat(employeeForm.salary) * 100);
-      const encrypted = await encryptUint64(salaryInCents, orgContractAddress, walletAddress!);
-
-      // Simulate setSalary too
-      await (publicClient as any).simulateContract({
-        address: orgContractAddress as `0x${string}`,
-        abi: CONFIDENTIAL_PAYROLL_ABI,
-        functionName: "setSalary",
-        args: [empAddress, encrypted.handle as `0x${string}`, encrypted.inputProof as `0x${string}`],
-        account: walletAddress as `0x${string}`,
-      });
-
-      const salaryTxHash = await setContractSalary(
-        walletClient,
-        orgContractAddress as `0x${string}`,
-        empAddress,
-        encrypted.handle,
-        encrypted.inputProof
-      );
-      console.log("setSalary tx:", salaryTxHash);
-      await (publicClient as any).waitForTransactionReceipt({ hash: salaryTxHash as `0x${string}` });
-
-      // 5. Persist to Supabase only after onchain success
       const employeePayload = {
         organization_id: profile.currentOrganization.id,
         wallet_address: empAddress,
@@ -428,17 +433,48 @@ const handleAddEmployee = async () => {
         .eq("wallet_address", empAddress)
         .maybeSingle();
 
-      const { error } = existingEmployee
+      const { error: dbError } = existingEmployee
         ? await supabase.from("employees").update(employeePayload).eq("id", existingEmployee.id)
         : await supabase.from("employees").insert(employeePayload);
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
-      toast({ title: "Employee Added", description: "Employee added on-chain with encrypted salary." });
+      // Close dialog and stop spinner immediately — employee is already in the DB
       setShowAddDialog(false);
       setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
       setSelectedMemberId("");
-      fetchData();
+      setRefreshKey(k => k + 1);
+      toast({ title: "Employee Added", description: "Employee added to payroll." });
+
+      // 5. Encrypt salary and set it on-chain (best-effort — done in background after dialog closes)
+      encryptUint64(salaryInCents, orgContractAddress, walletAddress!)
+        .then(async (encrypted) => {
+          try {
+            await (publicClient as any).simulateContract({
+              address: orgContractAddress as `0x${string}`,
+              abi: CONFIDENTIAL_PAYROLL_ABI,
+              functionName: "setSalary",
+              args: [empAddress, encrypted.handle as `0x${string}`, encrypted.inputProof as `0x${string}`],
+              account: walletAddress as `0x${string}`,
+            });
+
+            const salaryTxHash = await setContractSalary(
+              walletClient!,
+              orgContractAddress as `0x${string}`,
+              empAddress,
+              encrypted.handle,
+              encrypted.inputProof
+            );
+            console.log("setSalary tx:", salaryTxHash);
+            await (publicClient as any).waitForTransactionReceipt({ hash: salaryTxHash as `0x${string}` });
+            console.log("Salary encrypted and set on-chain successfully");
+          } catch (err) {
+            console.error("Failed to set salary on-chain (employee already saved):", err);
+          }
+        })
+        .catch((err) => {
+          console.error("Salary encryption failed (employee already saved):", err);
+        });
     } catch (err: any) {
       console.error("Error adding employee:", err);
       const raw = String(err?.shortMessage || err?.reason || err?.message || err);
@@ -570,8 +606,8 @@ const handleProcessPayroll = async () => {
   };
 
 const handleWithdraw = async () => {
-  if (!amount || !recipient) {
-    toast({ title: "Error", description: "Please enter recipient address and amount", variant: "destructive" });
+  if (!amount) {
+    toast({ title: "Error", description: "Please enter an amount to withdraw", variant: "destructive" });
     return;
   }
   if (!walletClient) {
@@ -579,25 +615,26 @@ const handleWithdraw = async () => {
     return;
   }
 
-  const recipientAddress = recipient.trim() as `0x${string}`;
+  const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
+  if (!orgContractAddress) {
+    toast({ title: "No contract", description: "No FHE contract deployed for this org.", variant: "destructive" });
+    return;
+  }
+
   const amountValue = parseFloat(amount);
 
   setProcessing(true);
   try {
     const { parseEther } = await import("viem");
-    const txHash = await walletClient.sendTransaction({
-      to: recipientAddress,
-      value: parseEther(amountValue.toFixed(8)),
-      account: walletClient.account!,
-      chain: walletClient.chain,
-    });
+    const amountWei = parseEther(amountValue.toFixed(8));
+
+    const txHash = await withdrawFromContract(walletClient, orgContractAddress as `0x${string}`, amountWei);
 
     toast({
       title: "Withdrawal Complete",
-      description: `Sent ${amountValue} ETH to ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}. Tx: ${txHash.slice(0, 10)}...`,
+      description: `Withdrew ${amountValue} ETH. Tx: ${txHash.slice(0, 10)}...`,
     });
     setAmount("");
-    setRecipient("");
     try {
       await refreshBalance();
     } catch (e) {
@@ -998,15 +1035,7 @@ const handleWithdraw = async () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Recipient Address</Label>
-                <Input
-                  placeholder="0x..."
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                />
-              </div>
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label>Amount (ETH)</Label>
                 <Input
@@ -1015,13 +1044,16 @@ const handleWithdraw = async () => {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Funds are withdrawn to your connected wallet via the FHE contract.
+                </p>
               </div>
             </div>
 
             <Button
               className="w-full gap-2"
               size="lg"
-              disabled={!recipient || !amount || processing}
+              disabled={!amount || processing}
               onClick={handleWithdraw}
             >
               {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}

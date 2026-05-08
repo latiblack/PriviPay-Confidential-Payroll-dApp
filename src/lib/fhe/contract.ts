@@ -50,20 +50,31 @@ export async function deployPayrollContract(
 ): Promise<{ address: string; txHash: string }> {
   const bytecode = await getContractBytecode();
   const account = walletClient.account!;
+  const rpcUrl = import.meta.env.VITE_SEPOLIA_RPC;
+  const { createPublicClient, http } = await import("viem");
+
+  // Create a read client using the configured RPC
+  const publicClient = createPublicClient({
+    chain: walletClient.chain!,
+    transport: rpcUrl ? http(rpcUrl) : http(),
+  });
+
+  // Pre-fetch fee data to avoid MetaMask RPC issues
+  let feeData: { maxFeePerGas?: bigint; maxPriorityFeePerGas?: bigint } = {};
+  try {
+    feeData = await publicClient.estimateFeesPerGas();
+  } catch (e) {
+    console.warn("Fee estimation failed, sending without pre-fetched fees:", e);
+  }
 
   const txHash = await walletClient.deployContract({
     abi: CONFIDENTIAL_PAYROLL_ABI,
     bytecode,
     account,
     chain: walletClient.chain,
-  });
-
-  const rpcUrl = import.meta.env.VITE_SEPOLIA_RPC;
-  const { createPublicClient, http } = await import("viem");
-
-  const publicClient = createPublicClient({
-    chain: walletClient.chain!,
-    transport: rpcUrl ? http(rpcUrl) : http(),
+    gas: 6_000_000n,
+    ...(feeData.maxFeePerGas ? { maxFeePerGas: feeData.maxFeePerGas } : {}),
+    ...(feeData.maxPriorityFeePerGas ? { maxPriorityFeePerGas: feeData.maxPriorityFeePerGas } : {}),
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });

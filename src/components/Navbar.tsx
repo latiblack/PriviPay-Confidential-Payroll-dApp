@@ -16,7 +16,7 @@ export const Navbar = () => {
     { label: "Employer", path: "/employer" },
     { label: "Employee", path: "/employee" },
     { label: "Auditor", path: "/auditor" },
-    { label: "Bonus Voting", path: "/voting" },
+    { label: "Bonus", path: "/bonus" },
   ];
 
   const formatAddress = (address?: string) => {

@@ -11,6 +11,8 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
+import { encryptUint64, setBonus as setContractBonus } from "@/lib/fhe";
+import { useWalletClient, useAccount, useSwitchChain } from "wagmi";
 import { DollarSign, Users, Loader2, Plus, Gift, Calendar, Trash2, CheckCircle, XCircle, Send } from "lucide-react";
 
 type Employee = Database["public"]["Tables"]["employees"]["Row"];
@@ -36,6 +38,9 @@ interface BonusRequest {
 const BonusPage = () => {
   const { profile } = useAuth();
   const { walletAddress } = useWalletAuth();
+  const { data: walletClient } = useWalletClient();
+  const { chainId } = useAccount();
+  const { switchChain } = useSwitchChain();
   const { toast } = useToast();
   const isOwner = profile?.currentRole === "owner";
   const isManager = profile?.currentRole === "manager";
@@ -113,6 +118,45 @@ const BonusPage = () => {
     return employees.find(e => e.id === employeeId);
   };
 
+  const SEPOLIA_CHAIN_ID = 11155111;
+
+  const setBonusOnChain = async (employeeId: string, amountUsd: string) => {
+    const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
+    if (!walletClient || !orgContractAddress) {
+      console.warn("No wallet or contract — bonus saved to DB only");
+      return;
+    }
+
+    if (chainId !== SEPOLIA_CHAIN_ID) {
+      try {
+        await switchChain({ chainId: SEPOLIA_CHAIN_ID });
+      } catch {
+        console.warn("Could not switch to Sepolia — bonus saved to DB only");
+        return;
+      }
+    }
+
+    try {
+      const emp = getEmployee(employeeId);
+      if (!emp?.wallet_address) return;
+
+      const amountInCents = Math.round(parseFloat(amountUsd) * 100);
+      const encrypted = await encryptUint64(amountInCents, orgContractAddress, walletAddress!);
+
+      const txHash = await setContractBonus(
+        walletClient,
+        orgContractAddress as `0x${string}`,
+        emp.wallet_address as `0x${string}`,
+        encrypted.handle,
+        encrypted.inputProof
+      );
+      console.log("setBonus on-chain tx:", txHash);
+    } catch (err) {
+      console.error("Failed to set bonus on-chain (already saved in DB):", err);
+      // Not blocking — bonus record is already in Supabase
+    }
+  };
+
   const handleAddBonus = async () => {
     if (!profile?.currentOrganization?.id || !selectedEmployeeId || !bonusAmount || !bonusMonth) return;
 
@@ -142,6 +186,9 @@ const BonusPage = () => {
         user_id: selectedEmployee?.wallet_address,
         read: false,
       });
+
+      // Set bonus on-chain best-effort
+      setBonusOnChain(selectedEmployeeId, bonusAmount);
 
       toast({ title: "Bonus Added", description: `Bonus of ${formatCurrency(Number(bonusAmount))} added for ${bonusMonth}` });
       
@@ -228,6 +275,9 @@ const BonusPage = () => {
           read: false,
         });
       }
+
+      // Set bonus on-chain best-effort
+      setBonusOnChain(request.employee_id, String(request.amount));
 
       toast({ title: "Bonus Approved", description: `Bonus of ${formatCurrency(Number(request.amount))} approved` });
       

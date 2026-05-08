@@ -10,14 +10,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/components/ui/theme-provider";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Settings, Globe, Palette, Bell, Shield, Moon, Sun, Monitor, Building2, Loader2
+  Settings, User, Globe, Palette, Bell, Shield, Moon, Sun, Monitor, Building2, Loader2
 } from "lucide-react";
 
 const SettingsPage = () => {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, updateProfile } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const isOwner = profile?.currentRole === "owner";
+
+  const [displayName, setDisplayName] = useState("");
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
 
   const [orgName, setOrgName] = useState("");
   const [orgDescription, setOrgDescription] = useState("");
@@ -46,11 +49,28 @@ const SettingsPage = () => {
 
   // Load org data when profile changes
   useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName || "");
+    }
     if (profile?.currentOrganization) {
       setOrgName(profile.currentOrganization.name || "");
       setOrgDescription(profile.currentOrganization.description || "");
     }
-  }, [profile?.currentOrganization]);
+  }, [profile]);
+
+  const handleSaveDisplayName = async () => {
+    if (!displayName.trim()) return;
+    setSavingDisplayName(true);
+    try {
+      await updateProfile({ displayName: displayName.trim() });
+      toast({ title: "Display Name Updated", description: "Your display name has been saved" });
+    } catch (err) {
+      console.error("Error updating display name:", err);
+      toast({ title: "Error", description: "Failed to update display name", variant: "destructive" });
+    } finally {
+      setSavingDisplayName(false);
+    }
+  };
 
   const handleSaveOrg = async () => {
     if (!profile?.currentOrganization?.id) return;
@@ -94,6 +114,30 @@ const SettingsPage = () => {
   </div>
 
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Profile */}
+    <Card className="border shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" /> Profile
+        </CardTitle>
+        <CardDescription>Your display name shown across the app</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label>Display Name</Label>
+          <Input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Enter your display name"
+          />
+        </div>
+        <Button onClick={handleSaveDisplayName} disabled={savingDisplayName || !displayName.trim()} className="w-full">
+          {savingDisplayName ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Save Display Name
+        </Button>
+      </CardContent>
+    </Card>
+
     {/* Organization Details - Only for owners */}
     {isOwner && (
     <Card className="border shadow-sm">

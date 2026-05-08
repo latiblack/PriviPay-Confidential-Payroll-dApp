@@ -17,7 +17,7 @@ export const AppSidebar = () => {
     { icon: LayoutGrid, label: "Admin", path: "/admin" },
     { icon: Users, label: "Employees", path: "/employees" },
     { icon: DollarSign, label: "Treasury", path: "/payments" },
-    { icon: Gift, label: "Bonus", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/bonus" },
     { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
@@ -27,7 +27,7 @@ export const AppSidebar = () => {
   const employeeNavItems = [
     { icon: LayoutGrid, label: "My Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
-    { icon: Gift, label: "Bonus", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/bonus" },
     { icon: BarChart3, label: "Audit", path: "/auditor" },
     { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
@@ -38,7 +38,7 @@ export const AppSidebar = () => {
   const managerNavItems = [
     { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
-    { icon: Gift, label: "Bonus", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/bonus" },
     { icon: BarChart3, label: "Audit", path: "/auditor" },
     { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
@@ -48,7 +48,7 @@ export const AppSidebar = () => {
   const auditorNavItems = [
     { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
     { icon: DollarSign, label: "Payments", path: "/payments" },
-    { icon: Gift, label: "Bonus", path: "/voting" },
+    { icon: Gift, label: "Bonus", path: "/bonus" },
     { icon: BarChart3, label: "Audit", path: "/auditor" },
     { icon: MailPlus, label: "Invitations", path: "/invitations" },
     { icon: Bell, label: "Notifications", path: "/notifications" },

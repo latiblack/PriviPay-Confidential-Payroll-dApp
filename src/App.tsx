@@ -109,7 +109,7 @@ const pageTitles: Record<string, string> = {
   "/employees": "",
   "/employee": "",
   "/auditor": "",
-  "/voting": "",
+  "/bonus": "",
   "/notifications": "",
 };
 
@@ -220,7 +220,7 @@ return (
               <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><AuditorDashboard /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>
           } />
-          <Route path="/voting" element={
+          <Route path="/bonus" element={
             <ProtectedRoute>
               <ModuleErrorBoundary><Suspense fallback={<PageLoader />}><BonusVoting /></Suspense></ModuleErrorBoundary>
             </ProtectedRoute>

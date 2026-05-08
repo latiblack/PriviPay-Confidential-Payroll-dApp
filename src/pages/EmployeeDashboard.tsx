@@ -12,7 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { decryptUint64 } from "@/lib/fhe/decrypt";
-import { getBalance, withdrawFunds } from "@/lib/fhe/contract";
+import { getBalance } from "@/lib/fhe/contract";
 import { useWalletClient } from "wagmi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { DollarSign, Users, Wallet, History, Loader2, TrendingUp, Calendar, ArrowUpRight, BarChart3, User, Edit, ExternalLink } from "lucide-react";
@@ -43,6 +43,7 @@ const EmployeeDashboard = () => {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [bonuses, setBonuses] = useState<any[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [ethPrice, setEthPrice] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
@@ -50,10 +51,21 @@ const EmployeeDashboard = () => {
   const [savingName, setSavingName] = useState(false);
   const [fheBalance, setFheBalance] = useState<number>(0);
   const [fheLoading, setFheLoading] = useState(false);
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [namePromptInput, setNamePromptInput] = useState("");
+  const [savingNamePrompt, setSavingNamePrompt] = useState(false);
 
   useEffect(() => {
     console.log("Debug - isOwner:", isOwner, "role:", profile?.currentRole, "hasEmployee:", !!employee);
   }, [isOwner, profile?.currentRole, employee]);
+
+  // Prompt for display name on first connect if not set
+  useEffect(() => {
+    if (!isLoading && walletAddress && !profile?.displayName) {
+      setNamePromptInput("");
+      setShowNamePrompt(true);
+    }
+  }, [walletAddress, profile?.displayName, isLoading]);
 
   useEffect(() => {
     const fetchEthPrice = async () => {
@@ -146,7 +158,14 @@ const EmployeeDashboard = () => {
     };
 
     fetchData();
-  }, [profile?.currentOrganization?.id, isOwner, isManager, walletAddress]);
+  }, [profile?.currentOrganization?.id, isOwner, isManager, walletAddress, refreshKey]);
+
+  // Re-fetch on focus to keep data in sync
+  useEffect(() => {
+    const onFocus = () => setRefreshKey(k => k + 1);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Fetch payment history from payroll_records for the relevant employee
   useEffect(() => {
@@ -233,6 +252,19 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const handleSaveNamePrompt = async () => {
+    if (!namePromptInput.trim()) return;
+    setSavingNamePrompt(true);
+    try {
+      await updateProfile({ displayName: namePromptInput.trim() });
+      setShowNamePrompt(false);
+    } catch (err) {
+      console.error("Failed to save display name:", err);
+    } finally {
+      setSavingNamePrompt(false);
+    }
+  };
+
   const targetEmployeeId = (isOwner || isManager) ? selectedEmployeeId : employee?.id;
   const employeeBonus = targetEmployeeId ? bonuses.filter(b => b.employee_id === targetEmployeeId).reduce((sum, b) => sum + Number(b.amount), 0) : 0;
   const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0) + employeeBonus;
@@ -274,7 +306,8 @@ if (!isOwner) {
               <User className="h-10 w-10 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold capitalize">{getMemberRole(walletAddress || "")}</p>
+              <p className="text-2xl font-bold capitalize">{profile?.displayName || "User"}</p>
+              <p className="text-lg capitalize text-muted-foreground">{getMemberRole(walletAddress || "")}</p>
               <p className="text-muted-foreground font-mono">
                 {walletAddress?.slice(0, 12)}...{walletAddress?.slice(-4)}
               </p>
@@ -455,9 +488,35 @@ if (!isOwner) {
               )}
             </CardContent>
           </Card>
-        </>
+
+          </>
       )}
     </div>
+
+      {/* First-connect display name prompt */}
+      <Dialog open={showNamePrompt} onOpenChange={setShowNamePrompt}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Welcome! Set your display name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Display Name</Label>
+              <Input
+                value={namePromptInput}
+                onChange={(e) => setNamePromptInput(e.target.value)}
+                placeholder="Enter your name"
+                onKeyDown={(e) => { if (e.key === "Enter") handleSaveNamePrompt(); }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveNamePrompt} disabled={savingNamePrompt || !namePromptInput.trim()}>
+              {savingNamePrompt ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
   );
 }
 
