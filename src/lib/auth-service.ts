@@ -179,13 +179,14 @@ return {
 
   // Update user profile
   async updateProfile(walletAddress: string, updates: { displayName?: string }): Promise<Profile> {
+    const lowerAddress = walletAddress.toLowerCase();
     const { data, error } = await supabase
       .from("profiles")
       .update({
         display_name: updates.displayName,
         updated_at: new Date().toISOString(),
       })
-      .eq("wallet_address", walletAddress)
+      .eq("wallet_address", lowerAddress)
       .select()
       .single();
 

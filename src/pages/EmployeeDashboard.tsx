@@ -30,7 +30,7 @@ interface PaymentData {
 }
 
 const EmployeeDashboard = () => {
-  const { profile } = useAuth();
+  const { profile, isLoading } = useAuth();
   const { walletAddress } = useWalletAuth();
   const { data: walletClient } = useWalletClient();
   const { t } = useTranslation();
