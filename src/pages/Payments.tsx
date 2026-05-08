@@ -19,6 +19,7 @@ import {
   addEmployee as addEmployeeToContract,
   setSalary as setContractSalary,
   processPayroll as processContractPayroll,
+  depositFunds as depositToContract,
   withdrawFunds as withdrawFromContract,
 } from "@/lib/fhe";
 import {
@@ -81,6 +82,8 @@ const [ethBalance, setEthBalance] = useState("0");
   const [totalReceived, setTotalReceived] = useState<string>("$0.00");
   const [loadingTotalReceived, setLoadingTotalReceived] = useState(false);
   const [fheInitialized, setFheInitialized] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [fundPool, setFundPool] = useState("0");
   const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
 const fetchData = async () => {
@@ -571,9 +574,25 @@ const handleProcessPayroll = async () => {
       return;
     }
 
+    const depositValue = parseFloat(depositAmount);
+    if (!depositAmount || isNaN(depositValue) || depositValue <= 0) {
+      toast({ title: "Enter deposit amount", description: "Enter the amount of ETH to fund the contract pool for this payroll.", variant: "destructive" });
+      return;
+    }
+
     setProcessing(true);
     try {
-      // Process payroll on-chain (adds salary+bonus to each employee's encrypted balance)
+      const { parseEther } = await import("viem");
+      const amountWei = parseEther(depositValue.toFixed(8));
+
+      // 1. Deposit ETH into the contract so the fundPool has funds
+      toast({ title: "Step 1/2", description: `Depositing ${depositValue} ETH to contract pool...` });
+      const depositTx = await depositToContract(walletClient, orgContractAddress as `0x${string}`, amountWei);
+      console.log("depositFunds tx:", depositTx);
+      await (publicClient as any).waitForTransactionReceipt({ hash: depositTx as `0x${string}` });
+
+      // 2. Process payroll on-chain (adds salary+bonus to each employee's encrypted balance)
+      toast({ title: "Step 2/2", description: "Processing payroll on-chain..." });
       const txHash = await processContractPayroll(walletClient, orgContractAddress as `0x${string}`);
       console.log("processPayroll tx:", txHash);
 
@@ -591,9 +610,10 @@ const handleProcessPayroll = async () => {
         });
       }
 
+      setDepositAmount("");
       toast({
         title: "Payroll Processed",
-        description: `Processed payroll for ${employees.length} employees on-chain (encrypted).`,
+        description: `Deposited ${depositValue} ETH and processed payroll for ${employees.length} employees.`,
       });
       fetchData();
     } catch (err: any) {
@@ -628,6 +648,43 @@ const handleWithdraw = async () => {
     const { parseEther } = await import("viem");
     const amountWei = parseEther(amountValue.toFixed(8));
 
+    // Check fundPool first so we can surface a clear error
+    let poolBalance = 0n;
+    try {
+      poolBalance = await (publicClient as any).readContract({
+        address: orgContractAddress as `0x${string}`,
+        abi: CONFIDENTIAL_PAYROLL_ABI,
+        functionName: "fundPool",
+      });
+    } catch (_) {}
+    if (poolBalance < amountWei) {
+      throw new Error(
+        `Insufficient funds in contract pool. Pool has ${parseFloat(poolBalance.toString()) / 1e18} ETH, you requested ${amountValue} ETH. Ask the owner to deposit funds first.`
+      );
+    }
+
+    // Check if caller is an employee on the contract
+    try {
+      const isEmp = await (publicClient as any).readContract({
+        address: orgContractAddress as `0x${string}`,
+        abi: CONFIDENTIAL_PAYROLL_ABI,
+        functionName: "isEmployee",
+        args: [walletAddress as `0x${string}`],
+      });
+      if (!isEmp) {
+        throw new Error("You are not registered as an employee in the contract. Ask the owner to add you on-chain.");
+      }
+    } catch (_) {}
+
+    // Simulate the contract call to surface revert reason before sending
+    await (publicClient as any).simulateContract({
+      address: orgContractAddress as `0x${string}`,
+      abi: CONFIDENTIAL_PAYROLL_ABI,
+      functionName: "withdraw",
+      args: [amountWei],
+      account: walletAddress as `0x${string}`,
+    });
+
     const txHash = await withdrawFromContract(walletClient, orgContractAddress as `0x${string}`, amountWei);
 
     toast({
@@ -642,8 +699,15 @@ const handleWithdraw = async () => {
     }
   } catch (err: any) {
     console.error("Error withdrawing:", err);
-    const errorMsg = err?.shortMessage || err?.message || "Failed to withdraw";
-    toast({ title: "Error", description: errorMsg, variant: "destructive" });
+    let errorMsg = "Failed to withdraw";
+    if (err?.shortMessage) {
+      errorMsg = err.shortMessage;
+    } else if (err?.message) {
+      const match = err.message.match(/reverted with reason: (.+)/);
+      errorMsg = match ? match[1] : err.message;
+    }
+    if (errorMsg.length > 200) errorMsg = errorMsg.slice(0, 200);
+    toast({ title: "Withdrawal Failed", description: errorMsg, variant: "destructive" });
   } finally {
     setProcessing(false);
   }
@@ -963,7 +1027,7 @@ const handleWithdraw = async () => {
                 Process Payroll
               </CardTitle>
               <CardDescription>
-                Send payments to all active employees
+                Fund the contract pool and process payroll for all active employees
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -979,9 +1043,27 @@ const handleWithdraw = async () => {
                       <Badge variant="default">{employees.length}</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total amount</span>
+                      <span className="text-sm text-muted-foreground">Total amount (fiat)</span>
                       <span className="text-xl font-bold">{formatCurrency(totalPayroll)}</span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Contract Pool</span>
+                      <span className="font-semibold">{parseFloat(fundPool) / 1e18} ETH</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>ETH to deposit into contract pool</Label>
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      disabled={processing}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This sends ETH to the contract so employees can withdraw. Then processes payroll on-chain.
+                    </p>
                   </div>
 
                   {processing && (
@@ -1000,7 +1082,7 @@ const handleWithdraw = async () => {
                     size="lg"
                   >
                     {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {processing ? "Processing Payments..." : "Process Payroll"}
+                    {processing ? "Processing Payments..." : "Deposit & Process Payroll"}
                   </Button>
                 </div>
               )}
