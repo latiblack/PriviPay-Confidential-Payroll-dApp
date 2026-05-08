@@ -5,7 +5,6 @@
     "": {
       "name": "vite_react_shadcn_ts",
       "dependencies": {
-        "@fhevm/solidity": "^0.11.1",
         "@hookform/resolvers": "^3.10.0",
         "@radix-ui/react-accordion": "^1.2.11",
         "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -44,8 +43,6 @@
         "cmdk": "^1.1.1",
         "date-fns": "^3.6.0",
         "embla-carousel-react": "^8.6.0",
-        "ethers": "^6.16.0",
-        "fhevmjs": "^0.6.2",
         "input-otp": "^1.4.2",
         "lucide-react": "^1.8.0",
         "next-themes": "^0.3.0",
@@ -194,8 +191,6 @@
 
     "@ethereumjs/util": ["@ethereumjs/util@8.1.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@ethereumjs/util/-/util-8.1.0.tgz", { "dependencies": { "@ethereumjs/rlp": "^4.0.1", "ethereum-cryptography": "^2.0.0", "micro-ftch": "^0.3.1" } }, ""],
 
-    "@fhevm/solidity": ["@fhevm/solidity@0.11.1", "", { "dependencies": { "encrypted-types": "^0.0.4" }, "optionalDependencies": { "solidity-comments-darwin-arm64": "0.1.1", "solidity-comments-linux-x64-gnu": "0.1.1" } }, "sha512-KBHCF0an1sOqoABJ30p5foldSHy14F3jaQmYX+BKogpUJ1OFhNMzYfRkmPkJkwetyDcYg/euXcYQncYgHRT9aQ=="],
-
     "@floating-ui/core": ["@floating-ui/core@1.7.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@floating-ui/core/-/core-1.7.5.tgz", { "dependencies": { "@floating-ui/utils": "^0.2.11" } }, ""],
 
     "@floating-ui/dom": ["@floating-ui/dom@1.7.6", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@floating-ui/dom/-/dom-1.7.6.tgz", { "dependencies": { "@floating-ui/core": "^1.7.5", "@floating-ui/utils": "^0.2.11" } }, ""],
@@ -260,9 +255,9 @@
 
     "@noble/ciphers": ["@noble/ciphers@1.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/ciphers/-/ciphers-1.3.0.tgz", {}, ""],
 
-    "@noble/curves": ["@noble/curves@1.2.0", "", { "dependencies": { "@noble/hashes": "1.3.2" } }, "sha512-oYclrNgRaM9SsBUBVbb8M6DTV7ZHRTKugureoYEncY5c65HOmRzvSiTE3y5CYaPYJA/GVkrhXEoF0M3Ya9PMnw=="],
+    "@noble/curves": ["@noble/curves@1.9.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/curves/-/curves-1.9.1.tgz", { "dependencies": { "@noble/hashes": "1.8.0" } }, ""],
 
-    "@noble/hashes": ["@noble/hashes@1.3.2", "", {}, "sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ=="],
+    "@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, ""],
 
@@ -650,8 +645,6 @@
 
     "@types/estree-jsx": ["@types/estree-jsx@1.0.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/estree-jsx/-/estree-jsx-1.0.5.tgz", { "dependencies": { "@types/estree": "*" } }, ""],
 
-    "@types/glob-to-regexp": ["@types/glob-to-regexp@0.4.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/glob-to-regexp/-/glob-to-regexp-0.4.4.tgz", {}, "sha512-nDKoaKJYbnn1MZxUY0cA1bPmmgZbg0cTq7Rh13d0KWYNOiKbqoR+2d89SnRPszGh7ROzSwZ/GOjZ4jPbmmZ6Eg=="],
-
     "@types/hast": ["@types/hast@3.0.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/hast/-/hast-3.0.4.tgz", { "dependencies": { "@types/unist": "*" } }, ""],
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/json-schema/-/json-schema-7.0.15.tgz", {}, ""],
@@ -836,11 +829,7 @@
 
     "big.js": ["big.js@6.2.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/big.js/-/big.js-6.2.2.tgz", {}, ""],
 
-    "bigint-buffer": ["bigint-buffer@1.1.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/bigint-buffer/-/bigint-buffer-1.1.5.tgz", { "dependencies": { "bindings": "^1.3.0" } }, "sha512-trfYco6AoZ+rKhKnxA0hgX0HAbVP/s808/EuDSe2JDzUnCp/xAsli35Orvk67UrTEcwuxZqYZDmfA2RXJgxVvA=="],
-
     "binary-extensions": ["binary-extensions@2.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/binary-extensions/-/binary-extensions-2.3.0.tgz", {}, ""],
-
-    "bindings": ["bindings@1.5.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/bindings/-/bindings-1.5.0.tgz", { "dependencies": { "file-uri-to-path": "1.0.0" } }, "sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ=="],
 
     "bn.js": ["bn.js@5.2.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/bn.js/-/bn.js-5.2.3.tgz", {}, ""],
 
@@ -1040,8 +1029,6 @@
 
     "encode-utf8": ["encode-utf8@1.0.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/encode-utf8/-/encode-utf8-1.0.3.tgz", {}, ""],
 
-    "encrypted-types": ["encrypted-types@0.0.4", "", {}, "sha512-f55ccBBUwvqWqr3ymAVOLZ6bzjsSQZlDN0GcKFmzkvTpml4Vm3Y6BCaHhCuW/ctrabTJJ3DFnUsjtFOpokJUaQ=="],
-
     "end-of-stream": ["end-of-stream@1.4.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/end-of-stream/-/end-of-stream-1.4.5.tgz", { "dependencies": { "once": "^1.4.0" } }, ""],
 
     "engine.io-client": ["engine.io-client@6.6.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/engine.io-client/-/engine.io-client-6.6.4.tgz", { "dependencies": { "@socket.io/component-emitter": "~3.1.0", "debug": "~4.4.1", "engine.io-parser": "~5.2.1", "ws": "~8.18.3", "xmlhttprequest-ssl": "~2.1.1" } }, ""],
@@ -1136,15 +1123,9 @@
 
     "fdir": ["fdir@6.5.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/fdir/-/fdir-6.5.0.tgz", { "peerDependencies": { "picomatch": "^3 || ^4" } }, ""],
 
-    "fetch-mock": ["fetch-mock@11.1.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/fetch-mock/-/fetch-mock-11.1.5.tgz", { "dependencies": { "@types/glob-to-regexp": "^0.4.4", "dequal": "^2.0.3", "glob-to-regexp": "^0.4.1", "is-subset": "^0.1.1", "regexparam": "^3.0.0" } }, "sha512-KHmZDnZ1ry0pCTrX4YG5DtThHi0MH+GNI9caESnzX/nMJBrvppUHMvLx47M0WY9oAtKOMiPfZDRpxhlHg89BOA=="],
-
     "fetch-retry": ["fetch-retry@6.0.0", "", {}, "sha512-BUFj1aMubgib37I3v4q78fYo63Po7t4HUPTpQ6/QE6yK6cIQrP+W43FYToeTEyg5m2Y7eFUtijUuAv/PDlWuag=="],
 
-    "fhevmjs": ["fhevmjs@0.6.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/fhevmjs/-/fhevmjs-0.6.2.tgz", { "dependencies": { "bigint-buffer": "^1.1.5", "commander": "^11.0.0", "fetch-mock": "^11.1.3", "keccak": "^3.0.4", "node-tfhe": "^0.9.1", "node-tkms": "^0.9.0", "tfhe": "^0.9.1", "tkms": "^0.9.0", "wasm-feature-detect": "^1.8.0" }, "bin": { "fhevm": "bin/fhevm.js" } }, "sha512-Kiq59DiqusavaCft8AzSVF2G92ZrNyf3u2dmu3zqlOxK5TGXAIY7PNICrV4xvT+pVxiAF88auNP+tH/dFqx1iA=="],
-
     "file-entry-cache": ["file-entry-cache@8.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/file-entry-cache/-/file-entry-cache-8.0.0.tgz", { "dependencies": { "flat-cache": "^4.0.0" } }, ""],
-
-    "file-uri-to-path": ["file-uri-to-path@1.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/file-uri-to-path/-/file-uri-to-path-1.0.0.tgz", {}, "sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw=="],
 
     "fill-range": ["fill-range@7.1.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/fill-range/-/fill-range-7.1.1.tgz", { "dependencies": { "to-regex-range": "^5.0.1" } }, ""],
 
@@ -1179,8 +1160,6 @@
     "get-proto": ["get-proto@1.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/get-proto/-/get-proto-1.0.1.tgz", { "dependencies": { "dunder-proto": "^1.0.1", "es-object-atoms": "^1.0.0" } }, ""],
 
     "glob-parent": ["glob-parent@6.0.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/glob-parent/-/glob-parent-6.0.2.tgz", { "dependencies": { "is-glob": "^4.0.3" } }, ""],
-
-    "glob-to-regexp": ["glob-to-regexp@0.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/glob-to-regexp/-/glob-to-regexp-0.4.1.tgz", {}, "sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw=="],
 
     "globals": ["globals@15.15.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/globals/-/globals-15.15.0.tgz", {}, ""],
 
@@ -1277,8 +1256,6 @@
     "is-retry-allowed": ["is-retry-allowed@2.2.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/is-retry-allowed/-/is-retry-allowed-2.2.0.tgz", {}, "sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg=="],
 
     "is-stream": ["is-stream@2.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/is-stream/-/is-stream-2.0.1.tgz", {}, ""],
-
-    "is-subset": ["is-subset@0.1.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/is-subset/-/is-subset-0.1.1.tgz", {}, "sha512-6Ybun0IkarhmEqxXCNw/C0bna6Zb/TkfUX9UbwJtK6ObwAVCxmAP308WWTHviM/zAqXk05cdhYsUsZeGQh99iw=="],
 
     "is-typed-array": ["is-typed-array@1.1.15", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/is-typed-array/-/is-typed-array-1.1.15.tgz", { "dependencies": { "which-typed-array": "^1.1.16" } }, ""],
 
@@ -1622,8 +1599,6 @@
 
     "redux-thunk": ["redux-thunk@3.1.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/redux-thunk/-/redux-thunk-3.1.0.tgz", { "peerDependencies": { "redux": "^5.0.0" } }, ""],
 
-    "regexparam": ["regexparam@3.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/regexparam/-/regexparam-3.0.0.tgz", {}, "sha512-RSYAtP31mvYLkAHrOlh25pCNQ5hWnT106VukGaaFfuJrZFkGRX5GhUAdPqpSDXxOhA2c4akmRuplv1mRqnBn6Q=="],
-
     "remark-parse": ["remark-parse@11.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/remark-parse/-/remark-parse-11.0.0.tgz", { "dependencies": { "@types/mdast": "^4.0.0", "mdast-util-from-markdown": "^2.0.0", "micromark-util-types": "^2.0.0", "unified": "^11.0.0" } }, ""],
 
     "remark-rehype": ["remark-rehype@11.1.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/remark-rehype/-/remark-rehype-11.1.2.tgz", { "dependencies": { "@types/hast": "^3.0.0", "@types/mdast": "^4.0.0", "mdast-util-to-hast": "^13.0.0", "unified": "^11.0.0", "vfile": "^6.0.0" } }, ""],
@@ -1675,10 +1650,6 @@
     "socket.io-client": ["socket.io-client@4.8.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/socket.io-client/-/socket.io-client-4.8.3.tgz", { "dependencies": { "@socket.io/component-emitter": "~3.1.0", "debug": "~4.4.1", "engine.io-client": "~6.6.1", "socket.io-parser": "~4.2.4" } }, ""],
 
     "socket.io-parser": ["socket.io-parser@4.2.6", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/socket.io-parser/-/socket.io-parser-4.2.6.tgz", { "dependencies": { "@socket.io/component-emitter": "~3.1.0", "debug": "~4.4.1" } }, ""],
-
-    "solidity-comments-darwin-arm64": ["solidity-comments-darwin-arm64@0.1.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-ze1+YboHm8tRJXCoFEsxtU1gpvQ3rCH55xMtBH6dtyh1/gz4qrKCOUBaAP+IHplbzCacZBn+Pz3UmMDOoGshRw=="],
-
-    "solidity-comments-linux-x64-gnu": ["solidity-comments-linux-x64-gnu@0.1.1", "", { "os": "linux", "cpu": "x64" }, "sha512-oiU4yhh1Q9SeGXQ+/sogfTNoOkU8I8IvlIeotBQziTOonUHrxQk4E63kNiYGPDn5ZbB3BhKFmGHNRNrkufsxcQ=="],
 
     "sonic-boom": ["sonic-boom@2.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/sonic-boom/-/sonic-boom-2.8.0.tgz", { "dependencies": { "atomic-sleep": "^1.0.0" } }, ""],
 
@@ -1776,7 +1747,7 @@
 
     "ts-interface-checker": ["ts-interface-checker@0.1.13", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ts-interface-checker/-/ts-interface-checker-0.1.13.tgz", {}, ""],
 
-    "tslib": ["tslib@2.7.0", "", {}, "sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA=="],
+    "tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
 
     "type-check": ["type-check@0.4.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/type-check/-/type-check-0.4.0.tgz", { "dependencies": { "prelude-ls": "^1.2.1" } }, ""],
 
@@ -1948,8 +1919,6 @@
 
     "@metamask/sdk-communication-layer/debug": ["debug@4.3.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/debug/-/debug-4.3.4.tgz", { "dependencies": { "ms": "2.1.2" } }, "sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ=="],
 
-    "@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
-
     "@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
 
     "@radix-ui/react-alert-dialog/@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@radix-ui/react-slot/-/react-slot-1.2.3.tgz", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" } }, ""],
@@ -1997,10 +1966,6 @@
     "@reown/appkit-wallet/zod": ["zod@3.22.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/zod/-/zod-3.22.4.tgz", {}, ""],
 
     "@scure/bip32/@noble/curves": ["@noble/curves@1.9.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/curves/-/curves-1.9.4.tgz", { "dependencies": { "@noble/hashes": "1.8.0" } }, ""],
-
-    "@scure/bip32/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
-
-    "@scure/bip39/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "@solana/errors/chalk": ["chalk@5.6.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/chalk/-/chalk-5.6.2.tgz", {}, ""],
 
@@ -2068,8 +2033,6 @@
 
     "anymatch/picomatch": ["picomatch@2.3.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/picomatch/-/picomatch-2.3.2.tgz", {}, ""],
 
-    "aria-hidden/tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
-
     "async-mutex/tslib": ["tslib@2.8.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.8.1.tgz", {}, ""],
 
     "cbw-sdk/clsx": ["clsx@1.2.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/clsx/-/clsx-1.2.1.tgz", {}, ""],
@@ -2081,8 +2044,6 @@
     "cssstyle/cssom": ["cssom@0.3.8", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cssom/-/cssom-0.3.8.tgz", {}, ""],
 
     "eciesjs/@noble/curves": ["@noble/curves@1.9.7", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/curves/-/curves-1.9.7.tgz", { "dependencies": { "@noble/hashes": "1.8.0" } }, ""],
-
-    "eciesjs/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "engine.io-client/ws": ["ws@8.18.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ws/-/ws-8.18.3.tgz", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" } }, ""],
 
@@ -2100,21 +2061,17 @@
 
     "ethereum-cryptography/@scure/bip39": ["@scure/bip39@1.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@scure/bip39/-/bip39-1.3.0.tgz", { "dependencies": { "@noble/hashes": "~1.4.0", "@scure/base": "~1.1.6" } }, ""],
 
+    "ethers/@noble/curves": ["@noble/curves@1.2.0", "", { "dependencies": { "@noble/hashes": "1.3.2" } }, "sha512-oYclrNgRaM9SsBUBVbb8M6DTV7ZHRTKugureoYEncY5c65HOmRzvSiTE3y5CYaPYJA/GVkrhXEoF0M3Ya9PMnw=="],
+
+    "ethers/@noble/hashes": ["@noble/hashes@1.3.2", "", {}, "sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ=="],
+
     "ethers/@types/node": ["@types/node@22.7.5", "", { "dependencies": { "undici-types": "~6.19.2" } }, "sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ=="],
+
+    "ethers/tslib": ["tslib@2.7.0", "", {}, "sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA=="],
 
     "ethers/ws": ["ws@8.17.1", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" } }, "sha512-6XQFvXTkbfUOZOKKILFG1PDK2NDQs4azKQl26T0YS5CxqWLgXajbPZ+h4gZekJyRqFU8pvnbAbbs/3TgRPy+GQ=="],
 
     "fast-glob/glob-parent": ["glob-parent@5.1.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/glob-parent/-/glob-parent-5.1.2.tgz", { "dependencies": { "is-glob": "^4.0.1" } }, ""],
-
-    "fhevmjs/commander": ["commander@11.1.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/commander/-/commander-11.1.0.tgz", {}, "sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ=="],
-
-    "fhevmjs/node-tfhe": ["node-tfhe@0.9.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/node-tfhe/-/node-tfhe-0.9.1.tgz", {}, "sha512-M2CbUVX4DQneaaK/4fygy9lW0zjOOzM8yGWAgbKGRt/Gd07zaloFEGGHW7dbmUaHo022q1uo7nzxyYhe4UgqCw=="],
-
-    "fhevmjs/node-tkms": ["node-tkms@0.9.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/node-tkms/-/node-tkms-0.9.0.tgz", {}, "sha512-ulhV23okeMW3WYnxzhvf9u87tcXqe64JqUFlvdgu64uKteG8re+zwOjzkOdxvF0xSWQbMtEU96dvcrvQM10PEg=="],
-
-    "fhevmjs/tfhe": ["tfhe@0.9.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tfhe/-/tfhe-0.9.1.tgz", {}, "sha512-kmtl7KfCCZJaFhm9lUYsTtat+yT0qzOiO6bOidM2Pt7/7jptkbS2/myeGHxb9qi2/aJ30g2joo1euKZPa207tg=="],
-
-    "fhevmjs/tkms": ["tkms@0.9.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tkms/-/tkms-0.9.0.tgz", {}, "sha512-dSzorTHvIXTYZtn6ACV/iz0GhO/kMRjqGbo3o7JJ3GNbFhsPzbIEtAQ/x+h9nJdwn//VRdsStnOAE0fxUVIGrQ=="],
 
     "json-rpc-engine/@metamask/safe-event-emitter": ["@metamask/safe-event-emitter@2.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metamask/safe-event-emitter/-/safe-event-emitter-2.0.0.tgz", {}, "sha512-/kSXhY692qiV1MXu6EeOZvg5nECLclxNXcKCxJ3cXQgYuRymRHpdx/t7JXfsK+JLjwA1e1c1/SBrlQYpusC29Q=="],
 
@@ -2125,10 +2082,6 @@
     "obj-multiplex/readable-stream": ["readable-stream@2.3.8", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/readable-stream/-/readable-stream-2.3.8.tgz", { "dependencies": { "core-util-is": "~1.0.0", "inherits": "~2.0.3", "isarray": "~1.0.0", "process-nextick-args": "~2.0.0", "safe-buffer": "~5.1.1", "string_decoder": "~1.1.1", "util-deprecate": "~1.0.1" } }, ""],
 
     "ox/@adraffy/ens-normalize": ["@adraffy/ens-normalize@1.11.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@adraffy/ens-normalize/-/ens-normalize-1.11.1.tgz", {}, ""],
-
-    "ox/@noble/curves": ["@noble/curves@1.9.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/curves/-/curves-1.9.1.tgz", { "dependencies": { "@noble/hashes": "1.8.0" } }, ""],
-
-    "ox/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "parse-entities/@types/unist": ["@types/unist@2.0.11", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@types/unist/-/unist-2.0.11.tgz", {}, ""],
 
@@ -2146,12 +2099,6 @@
 
     "pretty-format/react-is": ["react-is@17.0.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/react-is/-/react-is-17.0.2.tgz", {}, ""],
 
-    "react-remove-scroll/tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
-
-    "react-remove-scroll-bar/tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
-
-    "react-style-singleton/tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
-
     "readdirp/picomatch": ["picomatch@2.3.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/picomatch/-/picomatch-2.3.2.tgz", {}, ""],
 
     "strip-literal/js-tokens": ["js-tokens@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/js-tokens/-/js-tokens-9.0.1.tgz", {}, ""],
@@ -2166,15 +2113,7 @@
 
     "unstorage/lru-cache": ["lru-cache@11.3.5", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/lru-cache/-/lru-cache-11.3.5.tgz", {}, ""],
 
-    "use-callback-ref/tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
-
-    "use-sidecar/tslib": ["tslib@2.4.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/tslib/-/tslib-2.4.1.tgz", {}, ""],
-
     "valtio/use-sync-external-store": ["use-sync-external-store@1.2.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0" } }, ""],
-
-    "viem/@noble/curves": ["@noble/curves@1.9.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/curves/-/curves-1.9.1.tgz", { "dependencies": { "@noble/hashes": "1.8.0" } }, ""],
-
-    "viem/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "viem/ws": ["ws@8.18.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/ws/-/ws-8.18.3.tgz", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" } }, ""],
 
@@ -2202,17 +2141,11 @@
 
     "@metamask/json-rpc-engine/@metamask/rpc-errors/@metamask/utils": ["@metamask/utils@9.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metamask/utils/-/utils-9.3.0.tgz", { "dependencies": { "@ethereumjs/tx": "^4.2.0", "@metamask/superstruct": "^3.1.0", "@noble/hashes": "^1.3.1", "@scure/base": "^1.1.3", "@types/debug": "^4.1.7", "debug": "^4.3.4", "pony-cause": "^2.1.10", "semver": "^7.5.4", "uuid": "^9.0.1" } }, ""],
 
-    "@metamask/json-rpc-engine/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
-
     "@metamask/json-rpc-engine/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
-
-    "@metamask/json-rpc-middleware-stream/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "@metamask/json-rpc-middleware-stream/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
 
     "@metamask/providers/@metamask/rpc-errors/@metamask/utils": ["@metamask/utils@9.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metamask/utils/-/utils-9.3.0.tgz", { "dependencies": { "@ethereumjs/tx": "^4.2.0", "@metamask/superstruct": "^3.1.0", "@noble/hashes": "^1.3.1", "@scure/base": "^1.1.3", "@types/debug": "^4.1.7", "debug": "^4.3.4", "pony-cause": "^2.1.10", "semver": "^7.5.4", "uuid": "^9.0.1" } }, ""],
-
-    "@metamask/providers/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "@metamask/providers/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
 
@@ -2274,10 +2207,6 @@
 
     "porto/ox/@adraffy/ens-normalize": ["@adraffy/ens-normalize@1.11.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@adraffy/ens-normalize/-/ens-normalize-1.11.1.tgz", {}, ""],
 
-    "porto/ox/@noble/curves": ["@noble/curves@1.9.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/curves/-/curves-1.9.1.tgz", { "dependencies": { "@noble/hashes": "1.8.0" } }, ""],
-
-    "porto/ox/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
-
     "porto/ox/abitype": ["abitype@1.2.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/abitype/-/abitype-1.2.4.tgz", { "peerDependencies": { "typescript": ">=5.0.4", "zod": "^3.22.0 || ^4.0.0" } }, ""],
 
     "unstorage/chokidar/readdirp": ["readdirp@5.0.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/readdirp/-/readdirp-5.0.0.tgz", {}, ""],
@@ -2332,15 +2261,9 @@
 
     "@metamask/eth-json-rpc-provider/@metamask/json-rpc-engine/@metamask/rpc-errors/@metamask/utils": ["@metamask/utils@9.3.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@metamask/utils/-/utils-9.3.0.tgz", { "dependencies": { "@ethereumjs/tx": "^4.2.0", "@metamask/superstruct": "^3.1.0", "@noble/hashes": "^1.3.1", "@scure/base": "^1.1.3", "@types/debug": "^4.1.7", "debug": "^4.3.4", "pony-cause": "^2.1.10", "semver": "^7.5.4", "uuid": "^9.0.1" } }, ""],
 
-    "@metamask/eth-json-rpc-provider/@metamask/json-rpc-engine/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
-
     "@metamask/eth-json-rpc-provider/@metamask/json-rpc-engine/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
 
-    "@metamask/json-rpc-engine/@metamask/rpc-errors/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
-
     "@metamask/json-rpc-engine/@metamask/rpc-errors/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
-
-    "@metamask/providers/@metamask/rpc-errors/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "@metamask/providers/@metamask/rpc-errors/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
 
@@ -2377,8 +2300,6 @@
     "@typescript-eslint/typescript-estree/minimatch/brace-expansion/balanced-match": ["balanced-match@4.0.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/balanced-match/-/balanced-match-4.0.4.tgz", {}, ""],
 
     "yargs/find-up/locate-path/p-locate": ["p-locate@4.1.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/p-locate/-/p-locate-4.1.0.tgz", { "dependencies": { "p-limit": "^2.2.0" } }, ""],
-
-    "@metamask/eth-json-rpc-provider/@metamask/json-rpc-engine/@metamask/rpc-errors/@metamask/utils/@noble/hashes": ["@noble/hashes@1.8.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@noble/hashes/-/hashes-1.8.0.tgz", {}, ""],
 
     "@metamask/eth-json-rpc-provider/@metamask/json-rpc-engine/@metamask/rpc-errors/@metamask/utils/uuid": ["uuid@9.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/uuid/-/uuid-9.0.1.tgz", { "bin": "dist/bin/uuid" }, ""],
 
