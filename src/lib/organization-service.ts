@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { getAddress } from "viem";
 
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 type OrganizationInsert = Database["public"]["Tables"]["organizations"]["Insert"];
@@ -97,7 +98,7 @@ export const organizationService = {
     const { error } = await supabase
       .from("organizations")
       .update({
-        contract_address: contractAddress.toLowerCase(),
+        contract_address: getAddress(contractAddress),
         contract_tx_hash: txHash,
         contract_deployed_at: new Date().toISOString(),
       } as any)

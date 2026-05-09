@@ -11,6 +11,7 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useAccount, useSwitchChain, useBalance, useWalletClient, usePublicClient } from 'wagmi';
+import { getAddress } from "viem";
 import { CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
@@ -349,6 +350,8 @@ const handleAddEmployee = async () => {
       return;
     }
 
+    const contractAddress = getAddress(orgContractAddress);
+
     if (!fheInitialized || !walletClient) {
       toast({
         title: "Not ready",
@@ -450,11 +453,11 @@ const handleAddEmployee = async () => {
       toast({ title: "Employee Added", description: "Employee added to payroll." });
 
       // 5. Encrypt salary and set it on-chain (best-effort — done in background after dialog closes)
-      encryptUint64(salaryInCents, orgContractAddress, walletAddress!)
+      encryptUint64(salaryInCents, contractAddress, walletAddress!)
         .then(async (encrypted) => {
           try {
             await (publicClient as any).simulateContract({
-              address: orgContractAddress as `0x${string}`,
+              address: contractAddress,
               abi: CONFIDENTIAL_PAYROLL_ABI,
               functionName: "setSalary",
               args: [empAddress, encrypted.handle as `0x${string}`, encrypted.inputProof as `0x${string}`],
@@ -463,7 +466,7 @@ const handleAddEmployee = async () => {
 
             const salaryTxHash = await setContractSalary(
               walletClient!,
-              orgContractAddress as `0x${string}`,
+              contractAddress,
               empAddress,
               encrypted.handle,
               encrypted.inputProof

@@ -11,6 +11,7 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
+import { getAddress } from "viem";
 import { encryptUint64, setBonus as setContractBonus } from "@/lib/fhe";
 import { useWalletClient, useAccount, useSwitchChain } from "wagmi";
 import { DollarSign, Users, Loader2, Plus, Gift, Calendar, Trash2, CheckCircle, XCircle, Send } from "lucide-react";
@@ -120,40 +121,50 @@ const BonusPage = () => {
 
   const SEPOLIA_CHAIN_ID = 11155111;
 
-  const setBonusOnChain = async (employeeId: string, amountUsd: string) => {
-    const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
-    if (!walletClient || !orgContractAddress) {
-      console.warn("No wallet or contract — bonus saved to DB only");
-      return;
+  const setBonusOnChain = async (employeeId: string, amountUsd: string): Promise<boolean> => {
+    const rawAddress = (profile?.currentOrganization as any)?.contract_address;
+    if (!walletClient || !rawAddress) {
+      console.warn("No wallet or contract — cannot set bonus on-chain");
+      return false;
+    }
+
+    let orgContractAddress: `0x${string}`;
+    try {
+      orgContractAddress = getAddress(rawAddress);
+    } catch {
+      console.warn("Invalid contract address — cannot set bonus on-chain");
+      return false;
     }
 
     if (chainId !== SEPOLIA_CHAIN_ID) {
       try {
         await switchChain({ chainId: SEPOLIA_CHAIN_ID });
       } catch {
-        console.warn("Could not switch to Sepolia — bonus saved to DB only");
-        return;
+        console.warn("Could not switch to Sepolia — cannot set bonus on-chain");
+        return false;
       }
     }
 
     try {
       const emp = getEmployee(employeeId);
-      if (!emp?.wallet_address) return;
+      if (!emp?.wallet_address) return false;
+      const employeeAddress = getAddress(emp.wallet_address);
 
       const amountInCents = Math.round(parseFloat(amountUsd) * 100);
       const encrypted = await encryptUint64(amountInCents, orgContractAddress, walletAddress!);
 
       const txHash = await setContractBonus(
         walletClient,
-        orgContractAddress as `0x${string}`,
-        emp.wallet_address as `0x${string}`,
+        orgContractAddress,
+        employeeAddress,
         encrypted.handle,
         encrypted.inputProof
       );
       console.log("setBonus on-chain tx:", txHash);
+      return true;
     } catch (err) {
-      console.error("Failed to set bonus on-chain (already saved in DB):", err);
-      // Not blocking — bonus record is already in Supabase
+      console.error("Failed to set bonus on-chain:", err);
+      return false;
     }
   };
 
@@ -162,6 +173,14 @@ const BonusPage = () => {
 
     setSaving(true);
     try {
+      // 1. Set bonus on-chain first
+      const onChainSuccess = await setBonusOnChain(selectedEmployeeId, bonusAmount);
+      if (!onChainSuccess) {
+        toast({ title: "Failed", description: "Could not set bonus on-chain. Please try again.", variant: "destructive" });
+        return;
+      }
+
+      // 2. Save to DB after on-chain success
       const { error } = await supabase
         .from("bonuses")
         .insert({
@@ -186,9 +205,6 @@ const BonusPage = () => {
         user_id: selectedEmployee?.wallet_address,
         read: false,
       });
-
-      // Set bonus on-chain best-effort
-      setBonusOnChain(selectedEmployeeId, bonusAmount);
 
       toast({ title: "Bonus Added", description: `Bonus of ${formatCurrency(Number(bonusAmount))} added for ${bonusMonth}` });
       
@@ -245,7 +261,14 @@ const BonusPage = () => {
 
   const handleApproveRequest = async (request: BonusRequest) => {
     try {
-      // Add the bonus
+      // 1. Set bonus on-chain first
+      const onChainSuccess = await setBonusOnChain(request.employee_id, String(request.amount));
+      if (!onChainSuccess) {
+        toast({ title: "Failed", description: "Could not set bonus on-chain. Please try again.", variant: "destructive" });
+        return;
+      }
+
+      // 2. Add the bonus to DB
       const { error } = await supabase
         .from("bonuses")
         .insert({
@@ -275,9 +298,6 @@ const BonusPage = () => {
           read: false,
         });
       }
-
-      // Set bonus on-chain best-effort
-      setBonusOnChain(request.employee_id, String(request.amount));
 
       toast({ title: "Bonus Approved", description: `Bonus of ${formatCurrency(Number(request.amount))} approved` });
       
