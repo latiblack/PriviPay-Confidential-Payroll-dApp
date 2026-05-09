@@ -1,3 +1,0 @@
--- Migration: Add pending role to user_roles
--- Run this separately in your Supabase SQL editor first:
--- ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'pending';

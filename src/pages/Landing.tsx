@@ -1,135 +1,41 @@
-import { Shield, Lock, Users, ArrowRight, Zap, TrendingUp, DollarSign, CheckCircle2, EyeOff, Swords, UserX, Globe, Fingerprint } from "lucide-react";
+import { Shield, Lock, Users, ArrowRight, Zap, TrendingUp, DollarSign, CheckCircle2, Swords, UserX, Globe, EyeOff, Fingerprint, Wallet } from "lucide-react";
 import Logo from "../components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 
-const DashboardMockup = () => (
-  <div className="relative w-full max-w-4xl mx-auto mt-16">
-    <div className="absolute -inset-4 bg-primary/10 rounded-3xl blur-2xl" />
-    <div className="relative rounded-2xl border border-border/50 bg-card shadow-2xl shadow-primary/5 overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/40">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-destructive/50" />
-          <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
-          <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
-        </div>
-        <div className="flex-1 mx-4">
-          <div className="h-6 rounded-lg bg-muted max-w-xs mx-auto flex items-center justify-center">
-            <span className="text-[10px] text-muted-foreground">privipay/dashboard</span>
-          </div>
-        </div>
-      </div>
-      <div className="p-6 grid grid-cols-3 gap-4">
-        <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Total Payroll</span>
-          </div>
-          <p className="text-xl font-bold text-foreground">$847,290</p>
-          <div className="flex items-center gap-1 mt-1">
-            <TrendingUp className="h-3 w-3 text-primary" />
-            <span className="text-[10px] text-primary font-medium">+12.5%</span>
-          </div>
-        </div>
-        <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Employees</span>
-          </div>
-          <p className="text-xl font-bold text-foreground">1,247</p>
-          <div className="flex items-center gap-1 mt-1">
-            <CheckCircle2 className="h-3 w-3 text-primary" />
-            <span className="text-[10px] text-primary font-medium">All encrypted</span>
-          </div>
-        </div>
-        <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="h-4 w-4 text-primary" />
-            <span className="text-xs text-muted-foreground">Security</span>
-          </div>
-          <p className="text-xl font-bold text-foreground">100%</p>
-          <div className="flex items-center gap-1 mt-1">
-            <Lock className="h-3 w-3 text-primary" />
-            <span className="text-[10px] text-primary font-medium">FHE Protected</span>
-          </div>
-        </div>
-        <div className="col-span-2 rounded-xl bg-muted/30 border border-border/40 p-4 h-32">
-          <p className="text-xs text-muted-foreground mb-3">Monthly Payroll Distribution</p>
-          <div className="flex items-end gap-1.5 h-16">
-            {[40, 55, 35, 65, 50, 75, 60, 80, 70, 90, 85, 95].map((h, i) => (
-              <div key={i} className="flex-1 rounded-t-sm bg-primary" style={{ height: `${h}%`, opacity: 0.4 + (h / 100) * 0.6 }} />
-            ))}
-          </div>
-        </div>
-        <div className="rounded-xl bg-muted/30 border border-border/40 p-4 h-32">
-          <p className="text-xs text-muted-foreground mb-3">Encryption Status</p>
-          <div className="relative w-16 h-16 mx-auto mt-2">
-            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-              <circle cx="18" cy="18" r="14" fill="none" strokeWidth="3" className="stroke-muted" />
-              <circle cx="18" cy="18" r="14" fill="none" strokeWidth="3" strokeDasharray="88 88" strokeLinecap="round" className="stroke-primary" />
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">100%</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 const Landing = () => {
   const { isAuthenticated } = useWalletAuth();
 
-  const features = [
-    { icon: Lock, title: "Fully Encrypted Salaries", description: "Every salary and bonus is encrypted client-side before touching the blockchain. Nobody — not validators, not network operators, not even the contract — ever sees a plaintext number." },
-    { icon: EyeOff, title: "No Internal Payroll Leaks", description: "Sensitive payroll files don't get forwarded, screenshotted, or gossiped. Only the employee and the contract can decrypt a balance. Internal conflict over pay differences disappears." },
-    { icon: Fingerprint, title: "Employee-Controlled Decryption", description: "Balances are encrypted on-chain. Employees decrypt only their own data with their wallet — no admin panel, no HR spreadsheet, no accidental exposure." },
-    { icon: Globe, title: "Works Anywhere, No Backend", description: "No servers, no database, no API keys. Deploy a contract, share the address. Your payroll runs on Sepolia. Anyone with a wallet can join." },
-  ];
-
-  const stats = [
-    { value: "On-chain", label: "Verifiable Payroll" },
-    { value: "FHE", label: "Encrypted End-to-End" },
-    { value: "0", label: "Plaintext Salaries Exposed" },
-    { value: "$0", label: "Infrastructure Cost" },
-  ];
-
-  const steps = [
-    { step: "01", title: "Encrypt", desc: "Salaries and bonuses are encrypted in the browser using Zama's FHE SDK before being written on-chain. The raw numbers never leave your machine unprotected." },
-    { step: "02", title: "Compute", desc: "The contract processes payroll entirely on encrypted data. It adds salaries and bonuses, accumulates balances — all without ever decrypting anything." },
-    { step: "03", title: "Withdraw", desc: "Employees decrypt only their own balance with a wallet signature, then withdraw ETH. No admin panel, no HR spreadsheet, no leaked pay data." },
-  ];
-
-  const benefits = [
-    { icon: Swords, title: "Eliminates Internal Conflict", desc: "When everyone can see everyone's salary, resentment is inevitable. PriviPay removes the source of conflict — pay differences stay invisible." },
-    { icon: UserX, title: "Stops Competitor Exploitation", desc: "Competitors can't scout your talent costs from a block explorer. Your pay structure is your competitive advantage — keep it private." },
-    { icon: Shield, title: "Protects Negotiation Leverage", desc: "Candidates can't see what current employees make. You negotiate from strength, not from a public baseline." },
-    { icon: Lock, title: "Personal Security for Employees", desc: "Public salaries make employees targets — for scams, for targeting, for social engineering. Encrypted payroll protects your people." },
+  const problems = [
+    { icon: Swords, title: "Internal Conflict", desc: "Visible pay differences breed resentment. When everyone can see what everyone else makes, teams fracture." },
+    { icon: UserX, title: "Competitor Exploitation", desc: "Public salary data is a goldmine for competitors. They can map your entire team cost structure from a block explorer." },
+    { icon: Globe, title: "Lost Negotiation Power", desc: "Candidates see your current salaries before making an ask. You negotiate from a public baseline, not from strength." },
+    { icon: Shield, title: "Personal Safety Risk", desc: "Public salaries make employees targets for phishing, social engineering, and real-world targeting." },
   ];
 
   return (
-    <div className="min-h-screen font-sans bg-background">
+    <div className="min-h-screen bg-background">
       {/* Nav */}
-      <nav className="border-b border-border/50 bg-background/90 backdrop-blur-lg sticky top-0 z-50">
+      <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2.5">
-            <Logo size={28} alt="Privapay" />
-            <span className="text-lg font-semibold text-foreground tracking-tight">PriviPay</span>
+            <Logo size={28} alt="PriviPay" />
+            <span className="text-lg font-semibold tracking-tight">PriviPay</span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-            <a href="#benefits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
+            <a href="#problem" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Why</a>
+            <a href="#solution" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How</a>
             <Link to="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Docs</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/auth">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-muted-foreground">
+              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
                 {isAuthenticated ? "Dashboard" : "Sign In"}
               </Button>
             </Link>
             <Link to="/auth">
-              <Button size="sm" className="gap-2 rounded-lg px-5">
+              <Button size="sm" className="gap-2">
                 Get Started <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -138,51 +44,102 @@ const Landing = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden pt-20 pb-8 sm:pt-28 sm:pb-16">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-background to-background" />
-          <div className="absolute top-0 right-1/4 w-[600px] h-[600px] rounded-full bg-primary/6 blur-3xl" />
-        </div>
-
+      <section className="relative overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-primary/3 blur-3xl" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1.5 text-sm text-primary font-medium mb-8">
-              <Zap className="h-3.5 w-3.5" />
-              Confidential on-chain payroll for crypto teams
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-4 py-1.5 text-sm text-primary font-medium mb-8">
+              <Zap className="h-3.5 w-3.5" /> Confidential on-chain payroll
             </div>
-
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] text-foreground">
-              Pay your team on-chain.{" "}
+            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
+              Pay your team on-chain.
+              <br />
               <span className="text-primary">Keep salaries private.</span>
             </h1>
-
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              PriviPay encrypts every salary and bonus before it hits the blockchain.
-              No public pay data, no leaked spreadsheets, no competitor intelligence.
-              Just on-chain payroll that actually protects your people.
+              PriviPay encrypts every salary and bonus before it touches the blockchain. No public pay data, no leaked spreadsheets, no competitor intelligence.
             </p>
-
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth">
-                <Button size="lg" className="gap-2 rounded-lg px-8 h-12 text-base">
-                  Launch Dashboard <ArrowRight className="h-5 w-5" />
-                </Button>
+                <Button size="lg" className="gap-2 px-8 h-12 text-base">Launch App <ArrowRight className="h-5 w-5" /></Button>
               </Link>
-              <a href="#how-it-works">
-                <Button size="lg" variant="outline" className="rounded-lg px-8 h-12 text-base">
-                  See How It Works
-                </Button>
+              <a href="#problem">
+                <Button size="lg" variant="outline" className="px-8 h-12 text-base">Learn More</Button>
               </a>
             </div>
           </div>
 
-          <DashboardMockup />
+          {/* Dashboard preview */}
+          <div className="relative mt-20 max-w-4xl mx-auto">
+            <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-2xl" />
+            <div className="relative rounded-2xl border bg-card shadow-2xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b bg-muted/40">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-400/60" />
+                  <div className="w-3 h-3 rounded-full bg-amber-400/60" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-400/60" />
+                </div>
+                <div className="flex-1 text-center">
+                  <span className="text-[10px] text-muted-foreground font-mono">privipay/dashboard</span>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-3 gap-4">
+                <div className="rounded-xl bg-muted/40 border p-4"><DollarSign className="h-4 w-4 text-primary mb-2" /><p className="text-xl font-bold">$847,290</p><p className="text-[10px] text-muted-foreground">Total Payroll · <TrendingUp className="h-3 w-3 text-emerald-500 inline" /> +12.5%</p></div>
+                <div className="rounded-xl bg-muted/40 border p-4"><Users className="h-4 w-4 text-primary mb-2" /><p className="text-xl font-bold">1,247</p><p className="text-[10px] text-muted-foreground">Employees · <CheckCircle2 className="h-3 w-3 text-emerald-500 inline" /> All encrypted</p></div>
+                <div className="rounded-xl bg-muted/40 border p-4"><Shield className="h-4 w-4 text-primary mb-2" /><p className="text-xl font-bold">100%</p><p className="text-[10px] text-muted-foreground">FHE Protected · <Lock className="h-3 w-3 text-primary inline" /> euint64</p></div>
+                <div className="col-span-3 rounded-xl bg-muted/30 border p-4 h-28 flex items-end gap-1.5">
+                  {[40, 55, 35, 65, 50, 75, 60, 80, 70, 90, 85, 95].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t bg-primary/70" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center p-4 rounded-xl bg-card border border-border/50">
-                <p className="text-2xl sm:text-3xl font-bold text-foreground">{stat.value}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">{stat.label}</p>
+      {/* Problem */}
+      <section id="problem" className="py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold">Why payroll must be private</h2>
+            <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-lg">Public salary data doesn't just violate privacy — it creates real operational damage.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto">
+            {problems.map((p) => (
+              <div key={p.title} className="flex gap-4 p-6 rounded-xl border bg-card hover:border-primary/20 transition-colors">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <p.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Solution */}
+      <section id="solution" className="py-24 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold">How PriviPay solves it</h2>
+            <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-lg">Fully Homomorphic Encryption keeps data encrypted end-to-end.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { step: "01", title: "Encrypt", icon: Lock, desc: "Salaries and bonuses are encrypted in the browser using Zama's FHE SDK before touching the chain. Raw numbers never leave your machine." },
+              { step: "02", title: "Compute", icon: Shield, desc: "The contract processes payroll entirely on encrypted data using FHE arithmetic — adding salaries, accumulating balances — without ever decrypting." },
+              { step: "03", title: "Withdraw", icon: Wallet, desc: "Employees decrypt only their own balance with their wallet, then withdraw ETH. No admin panel, no HR spreadsheet, no exposed data." },
+            ].map((s) => (
+              <div key={s.step} className="p-6 rounded-xl border bg-card">
+                <div className="h-11 w-11 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold mb-4">{s.step}</div>
+                <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -190,85 +147,26 @@ const Landing = () => {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24">
+      <section className="py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Core Features</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-              Payroll Privacy Without Compromise
-            </h2>
-            <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
-              FHE ensures salary data is never exposed — not during storage, not during computation.
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold">Built different</h2>
+            <p className="mt-4 text-muted-foreground max-w-xl mx-auto text-lg">No database. No backend. Just a smart contract and a browser.</p>
           </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {features.map((f) => (
-              <div key={f.title} className="group p-6 rounded-xl bg-card border border-border/60 hover:border-primary/25 transition-all duration-200 hover:shadow-md">
-                <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center mb-5">
+          <div className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+            {[
+              { icon: Lock, title: "End-to-end encrypted", desc: "Every salary and bonus is encrypted client-side via FHE before writing on-chain. No plaintext anywhere." },
+              { icon: EyeOff, title: "No admin visibility", desc: "Even the contract owner cannot read employee salaries. Only the employee can decrypt their own balance." },
+              { icon: Fingerprint, title: "Wallet-gated decryption", desc: "Decryption requires the employee's wallet signature via EIP-712. No credentials, no passwords." },
+              { icon: Globe, title: "Zero infrastructure", desc: "No servers, no databases, no API keys. Deploy the contract, share the address, run payroll." },
+            ].map((f) => (
+              <div key={f.title} className="flex gap-4 p-6 rounded-xl border bg-card hover:border-primary/20 transition-colors">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <f.icon className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">{f.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{f.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="how-it-works" className="py-24 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">How It Works</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-              Three steps to private payroll
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {steps.map((s, i) => (
-              <div key={s.step} className="relative">
-                {i < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-6 left-[60%] w-[80%] h-px bg-border" />
-                )}
-                <div className="flex flex-col items-start p-6 rounded-xl bg-card border border-border/60">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="h-11 w-11 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                      {s.step}
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground">{s.title}</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section id="benefits" className="py-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Why PriviPay</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-              Why payroll must be private
-            </h2>
-            <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
-              Public salary data doesn't just violate privacy — it creates real operational damage.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto">
-            {benefits.map((b) => (
-              <div key={b.title} className="flex gap-4 p-6 rounded-xl bg-card border border-border/60 hover:border-primary/20 transition-colors">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <b.icon className="h-5 w-5 text-primary" />
-                </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-1">{b.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
+                  <h3 className="font-semibold mb-1">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -280,22 +178,14 @@ const Landing = () => {
       <section className="py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="rounded-2xl bg-primary p-12 sm:p-16 text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
-              Ready to protect your payroll?
-            </h2>
-            <p className="text-primary-foreground/80 max-w-lg mx-auto mb-8 text-lg">
-              Deploy a contract, add your team, and run payroll — all on-chain, all encrypted.
-            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">Ready to protect your payroll?</h2>
+            <p className="text-primary-foreground/80 max-w-lg mx-auto mb-8 text-lg">Deploy a contract, add your team, and run payroll — all on-chain, all encrypted.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth">
-                <Button size="lg" variant="secondary" className="gap-2 rounded-lg px-8 h-12 text-base font-semibold">
-                  Get Started <ArrowRight className="h-5 w-5" />
-                </Button>
+                <Button size="lg" variant="secondary" className="gap-2 px-8 h-12 text-base font-semibold">Get Started <ArrowRight className="h-5 w-5" /></Button>
               </Link>
-              <a href="#features">
-                <Button size="lg" variant="ghost" className="rounded-lg px-8 h-12 text-base text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">
-                  Learn More
-                </Button>
+              <a href="/docs">
+                <Button size="lg" variant="ghost" className="px-8 h-12 text-base text-primary-foreground border border-primary-foreground/20 hover:bg-primary-foreground/10">Read Docs</Button>
               </a>
             </div>
           </div>
@@ -303,21 +193,19 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-12">
+      <footer className="border-t py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
-              <Logo size={28} alt="Privapay" />
-              <span className="font-semibold text-foreground">PriviPay</span>
+              <Logo size={24} alt="PriviPay" />
+              <span className="font-semibold">PriviPay</span>
             </div>
             <div className="flex items-center gap-8">
-              <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
-              <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-              <a href="#benefits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
+              <a href="#problem" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Why</a>
+              <a href="#solution" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How</a>
+              <Link to="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Docs</Link>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Powered by Zama Protocol & FHE
-            </p>
+            <p className="text-sm text-muted-foreground">Powered by Zama FHE</p>
           </div>
         </div>
       </footer>
