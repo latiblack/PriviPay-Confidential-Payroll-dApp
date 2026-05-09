@@ -4,1225 +4,233 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
-import { useAccount, useSwitchChain, useBalance, useWalletClient, usePublicClient } from 'wagmi';
-import { getAddress } from "viem";
-import { CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
-import { useTranslation } from "@/hooks/useTranslation";
-import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
-import {
-  getFheInstance,
-  encryptUint64,
-  addEmployee as addEmployeeToContract,
-  setSalary as setContractSalary,
-  processPayroll as processContractPayroll,
-  depositFunds as depositToContract,
-  withdrawFunds as withdrawFromContract,
-} from "@/lib/fhe";
-import {
-  DollarSign, Users, Send, Loader2, ArrowDownToLine,
-  Plus, Trash2, Edit, UserPlus, CheckCircle2, AlertCircle, Wallet, RefreshCw
-} from "lucide-react";
+import { useWalletClient, useAccount, useSwitchChain, useBalance, usePublicClient } from "wagmi";
+import { encryptUint64 } from "@/lib/fhe/encrypt";
+import { getEmployeeCount, getAllEmployees, getFundPool, getSalary, getBalance, addEmployee, setSalary, processPayroll, depositFunds, withdrawFunds, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
+import { getAddress, parseEther, formatEther } from "viem";
+import { Wallet, DollarSign, Loader2, ArrowDownToLine, Plus, Send, Users, RefreshCw, ExternalLink } from "lucide-react";
 
-type EmployeeRow = Database["public"]["Tables"]["employees"]["Row"];
-type UserRole = Database["public"]["Tables"]["user_roles"]["Row"];
+const SEPOLIA = 11155111;
 
-interface EmployeeFormData {
-  name: string;
-  wallet_address: string;
-  position: string;
-  department: string;
-  salary: string;
+interface Employee {
+  address: string;
+  salaryCents: number;
+  balanceCents: number;
 }
 
-const PaymentsPage = () => {
-  const { profile } = useAuth();
+const Payments = () => {
+  const { state } = useAuth();
   const { walletAddress } = useWalletAuth();
+  const { data: walletClient } = useWalletClient();
   const { chainId } = useAccount();
   const { switchChain } = useSwitchChain();
-  const { data: balanceData, refetch: refetchBalance } = useBalance({
-    address: walletAddress as `0x${string}`,
-    chainId: 11155111, // Sepolia
-  });
-  const { data: walletClient } = useWalletClient();
-  const publicClient = usePublicClient({ chainId: 11155111 });
+  const publicClient = usePublicClient({ chainId: SEPOLIA });
   const { toast } = useToast();
-  const { t } = useTranslation();
-  const isOwner = profile?.currentRole === "owner";
-  const isStaff = profile?.currentRole === "staff";
+  const { data: balanceData, refetch: refetchBalance } = useBalance({ address: walletAddress as `0x${string}`, chainId: SEPOLIA });
+  const isOwner = state.isOwner;
 
-  const [employees, setEmployees] = useState<EmployeeRow[]>([]);
-  const [availableMembers, setAvailableMembers] = useState<UserRole[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [fundPool, setFundPool] = useState("0");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [ownSalary, setOwnSalary] = useState<string>("$0");
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Employee management state
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<EmployeeRow | null>(null);
-  const [employeeForm, setEmployeeForm] = useState<EmployeeFormData>({
-    name: "",
-    wallet_address: "",
-    position: "",
-    department: "",
-    salary: "",
-  });
-  const [savingEmployee, setSavingEmployee] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState("");
-const [ethBalance, setEthBalance] = useState("0");
-  const [ethConnected, setEthConnected] = useState(false);
-  const [loadingBalance, setLoadingBalance] = useState(false);
-  const [ethPrice, setEthPrice] = useState<number>(0);
-  const [totalReceived, setTotalReceived] = useState<string>("$0.00");
-  const [loadingTotalReceived, setLoadingTotalReceived] = useState(false);
-  const [fheInitialized, setFheInitialized] = useState(false);
+  // Add employee form
+  const [showAdd, setShowAdd] = useState(false);
+  const [newAddress, setNewAddress] = useState("");
+  const [newSalary, setNewSalary] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    getFheInstance().then(() => setFheInitialized(true)).catch(() => {});
-  }, []);
+  // Deposit form
   const [depositAmount, setDepositAmount] = useState("");
-  const [fundPool, setFundPool] = useState("0");
-  const SEPOLIA_CHAIN_ID_NUM = 11155111;
 
-const fetchData = async () => {
-  if (!profile?.currentOrganization?.id || !profile?.walletAddress) {
-    setLoading(false);
-    return;
-  }
+  // Withdraw form
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
+  const fetchData = async () => {
+    if (!state.contractAddress || !publicClient) return;
+    setLoading(true);
     try {
-      // Get employees in payroll
-      const { data, error } = await supabase
-        .from("employees")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id)
-        .order("created_at", { ascending: false });
+      const addr = state.contractAddress as `0x${string}`;
+      const count = await getEmployeeCount(publicClient as any, addr);
+      const pool = await getFundPool(publicClient as any, addr);
+      setFundPool(formatEther(pool));
 
-      if (error) throw error;
-
-      console.log("fetchData - raw employees:", data?.length, data?.map(e => ({ id: e.id, wallet: e.wallet_address?.slice(0,8), salary: e.encrypted_salary, salaryNum: Number(e.encrypted_salary) })));
-
-      // Get all members from user_roles
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id);
-
-      if (roleError) throw roleError;
-
-      // Get bonuses
-      const { data: bonusData, error: bonusError } = await supabase
-        .from("bonuses")
-        .select("*")
-        .eq("organization_id", profile.currentOrganization.id);
-
-      if (bonusError) throw bonusError;
-
-      // Filter to show employees in payroll (salary > 0)
-      const payrollEmployees = (data || []).filter(e => {
-        const num = Number(e.encrypted_salary);
-        return num > 0;
-      });
-      console.log("fetchData - after filter:", payrollEmployees.length);
-      
-      // Add bonus to each employee
-      const employeesWithBonus = payrollEmployees.map(emp => {
-        const empBonuses = (bonusData || []).filter(b => b.employee_id === emp.id);
-        const totalBonus = empBonuses.reduce((sum, b) => sum + b.amount, 0);
-        return { ...emp, bonus: totalBonus };
-      });
-      
-      setEmployees(employeesWithBonus);
-
-      // Get all addresses in employees table (including those with $0)
-      const employeeAddresses = new Set((data || []).map(e => e.wallet_address?.toLowerCase()));
-
-      // Available = members NOT in employees table OR in employees with $0 salary
-      const employeesWithZero = new Set(
-        (data || [])
-          .filter(e => Number(e.encrypted_salary) === 0)
-          .map(e => e.wallet_address?.toLowerCase())
-      );
-
-      const available = (roleData || []).filter(m => 
-        m.user_id && (!employeeAddresses.has(m.user_id.toLowerCase()) || employeesWithZero.has(m.user_id.toLowerCase()))
-      );
-      setAvailableMembers(available);
-
-      // Get own salary with bonus - lowercase comparison
-      const mySalary = data?.find(e => e.wallet_address?.toLowerCase() === profile.walletAddress?.toLowerCase());
-      const myBonus = (bonusData || [])
-        .filter(b => {
-          const emp = data?.find(e => e.wallet_address?.toLowerCase() === profile.walletAddress?.toLowerCase());
-          return emp && b.employee_id === emp.id;
-        })
-        .reduce((sum, b) => sum + b.amount, 0);
-      const sal = Number(mySalary?.encrypted_salary || 0) + myBonus;
-      setOwnSalary(formatCurrency(sal));
-
+      const chainEmployees = await getAllEmployees(publicClient as any, addr);
+      const empData: Employee[] = [];
+      for (const empAddr of chainEmployees) {
+        const sal = await getSalary(publicClient as any, addr, empAddr).catch(() => "0");
+        const bal = await getBalance(publicClient as any, addr, empAddr).catch(() => "0");
+        empData.push({ address: empAddr, salaryCents: Number(sal || 0), balanceCents: Number(bal || 0) });
+      }
+      setEmployees(empData);
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("Failed to fetch data:", err);
     } finally {
-setLoading(false);
-  }
-};
-
-const handleSwitchToSepolia = async () => {
-    if (!walletAddress) {
-      toast({ title: "No wallet connected", variant: "destructive" });
-      return;
+      setLoading(false);
     }
+  };
+
+  useEffect(() => { fetchData(); }, [state.contractAddress, publicClient]);
+
+  const handleAddEmployee = async () => {
+    if (!walletClient || !state.contractAddress || !newAddress || !newSalary) return;
+    setSaving(true);
     try {
-      await switchChain({ chainId: SEPOLIA_CHAIN_ID_NUM });
-      toast({ title: "Switched to Sepolia", description: "You're now on the Sepolia testnet." });
-      await refreshBalance();
-    } catch (err: any) {
-      console.error("Failed to switch network:", err);
-      toast({
-        title: "Switch failed",
-        description: err?.message || "Please switch to Sepolia manually in your wallet.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  };
+      const empAddr = getAddress(newAddress);
+      const addr = state.contractAddress as `0x${string}`;
+      const salaryCents = Math.round(parseFloat(newSalary) * 100);
 
-const connectToEth = async () => {
-    if (!walletAddress) return;
-    await refreshBalance();
-  };
+      if (chainId !== SEPOLIA) await switchChain({ chainId: SEPOLIA });
 
-const refreshBalance = async () => {
-    if (!walletAddress) return;
-    setLoadingBalance(true);
-    try {
-      if (chainId !== SEPOLIA_CHAIN_ID_NUM) {
-        toast({
-          title: "Wrong Network",
-          description: "Please switch to Sepolia to see your balance",
-          duration: 3000,
-        });
-        setEthConnected(false);
-        setEthBalance("0");
-        setLoadingBalance(false);
-        return;
-      }
+      await addEmployee(walletClient, addr, empAddr);
+      const encrypted = await encryptUint64(salaryCents, state.contractAddress, walletAddress!);
+      await setSalary(walletClient, addr, empAddr, encrypted.handle, encrypted.inputProof);
 
-      await refetchBalance();
-      if (balanceData) {
-        setEthBalance(balanceData.formatted);
-        setEthConnected(true);
-      }
-    } catch (err) {
-      console.error("Failed to get balance:", err);
-    } finally {
-      setLoadingBalance(false);
-    }
-  };
-
-useEffect(() => {
-    fetchData();
-    if (walletAddress && chainId === SEPOLIA_CHAIN_ID_NUM) {
-      setEthConnected(true);
-      refetchBalance();
-    }
-  }, [profile?.currentOrganization?.id, profile?.walletAddress, chainId, refreshKey]);
-
-  // Re-fetch on focus to keep data in sync
-  useEffect(() => {
-    const onFocus = () => setRefreshKey(k => k + 1);
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
-
-// Mark FHE as ready when owner wallet is connected on Sepolia
-  useEffect(() => {
-    if (isOwner && walletClient && chainId === SEPOLIA_CHAIN_ID_NUM) {
-      const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
-      if (orgContractAddress) {
-        setFheInitialized(true);
-      }
-    }
-  }, [isOwner, walletClient, chainId, profile?.currentOrganization]);
-
-  useEffect(() => {
-    const fetchEthPrice = async () => {
-      try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-        const data = await response.json();
-        if (data.ethereum?.usd) {
-          setEthPrice(data.ethereum.usd);
-        }
-      } catch (err) {
-        console.error("Failed to fetch ETH price:", err);
-      }
-    };
-    fetchEthPrice();
-    const interval = setInterval(fetchEthPrice, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!isOwner && profile?.walletAddress && profile.currentOrganization?.id) {
-      const fetchTotalReceived = async () => {
-        setLoadingTotalReceived(true);
-        try {
-          // Find employee's wallet address in employees table
-          const { data: empData } = await supabase
-            .from("employees")
-            .select("id")
-            .eq("organization_id", profile.currentOrganization.id)
-            .eq("wallet_address", profile.walletAddress.toLowerCase())
-            .single();
-          
-          if (empData) {
-            // Get all payroll records for this employee
-            const { data: payData } = await supabase
-              .from("payroll_records")
-              .select("encrypted_amount, status")
-              .eq("employee_id", empData.id);
-            
-            // Also get bonuses for this employee
-            const { data: bonusData } = await supabase
-              .from("bonuses")
-              .select("amount")
-              .eq("employee_id", empData.id);
-            
-            const employeeBonus = (bonusData || []).reduce((sum, b) => sum + Number(b.amount), 0);
-            const total = (payData || [])
-              .filter(p => p.status === "completed")
-              .reduce((sum, p) => sum + Number(p.encrypted_amount || 0), 0) + employeeBonus;
-            setTotalReceived(formatCurrency(total));
-          } else {
-            setTotalReceived("$0.00");
-          }
-        } catch (err) {
-          console.error("Failed to fetch total received:", err);
-          setTotalReceived("$0.00");
-        } finally {
-          setLoadingTotalReceived(false);
-        }
-      };
-      fetchTotalReceived();
-    }
-  }, [isOwner, profile?.walletAddress, profile.currentOrganization?.id]);
-
-const handleMemberSelect = async (memberId: string) => {
-    setSelectedMemberId(memberId);
-    const member = availableMembers.find(m => m.id === memberId);
-    if (member) {
-      // Fetch display name from profiles table
-      let name = "";
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("user_id", member.user_id)
-          .maybeSingle();
-        if (profile?.display_name) name = profile.display_name;
-      } catch (e) {
-        console.warn("Could not fetch profile name:", e);
-      }
-
-      setEmployeeForm({
-        name,
-        wallet_address: member.user_id || "",
-        position: member.role || "staff",
-        department: "",
-        salary: "",
-      });
-    }
-  };
-
-const handleAddEmployee = async () => {
-    if (!profile?.currentOrganization?.id) return;
-
-    const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
-    if (!orgContractAddress) {
-      toast({
-        title: "No contract deployed",
-        description: "This organization has no FHE contract deployed. Please re-create the organization.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const contractAddress = getAddress(orgContractAddress);
-
-    if (!fheInitialized || !walletClient) {
-      toast({
-        title: "Not ready",
-        description: "Connect your wallet on Sepolia to manage payroll.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (chainId !== SEPOLIA_CHAIN_ID_NUM) {
-      toast({ title: "Wrong network", description: "Switch to Sepolia.", variant: "destructive" });
-      return;
-    }
-
-    if (!employeeForm.salary) {
-      toast({ title: "Salary required", description: "Enter a salary before adding the employee.", variant: "destructive" });
-      return;
-    }
-
-    setSavingEmployee(true);
-    const empAddress = employeeForm.wallet_address.toLowerCase() as `0x${string}`;
-
-    try {
-      // Preflight checks via read-only calls to surface revert reasons
-      // BEFORE MetaMask attempts gas estimation (which produces the opaque
-      // "third party contract execution error").
-      if (!publicClient) throw new Error("RPC client not ready. Try again in a moment.");
-      const pc = publicClient as any;
-
-      // 1. Confirm connected wallet is the contract owner
-      const onchainOwner = (await (publicClient as any).readContract({
-        address: orgContractAddress as `0x${string}`,
-        abi: CONFIDENTIAL_PAYROLL_ABI,
-        functionName: "owner",
-      })) as `0x${string}`;
-
-      if (onchainOwner.toLowerCase() !== walletAddress!.toLowerCase()) {
-        throw new Error(
-          `Only the org owner wallet (${onchainOwner.slice(0, 6)}…${onchainOwner.slice(-4)}) can add employees. You are connected as ${walletAddress!.slice(0, 6)}…${walletAddress!.slice(-4)}.`
-        );
-      }
-
-      // 2. Check if employee is already onchain
-      const alreadyEmployee = (await (publicClient as any).readContract({
-        address: orgContractAddress as `0x${string}`,
-        abi: CONFIDENTIAL_PAYROLL_ABI,
-        functionName: "isEmployee",
-        args: [empAddress],
-      })) as boolean;
-
-      let addTxHash: string | undefined;
-      if (alreadyEmployee) {
-        console.log("Employee already onchain, skipping addEmployee tx");
-      } else {
-        // 3. Simulate addEmployee — surfaces real revert reason if any
-        await (publicClient as any).simulateContract({
-          address: orgContractAddress as `0x${string}`,
-          abi: CONFIDENTIAL_PAYROLL_ABI,
-          functionName: "addEmployee",
-          args: [empAddress],
-          account: walletAddress as `0x${string}`,
-        });
-
-        addTxHash = await addEmployeeToContract(walletClient, orgContractAddress as `0x${string}`, empAddress);
-        console.log("addEmployee tx:", addTxHash);
-        await (publicClient as any).waitForTransactionReceipt({ hash: addTxHash as `0x${string}` });
-      }
-
-      // 4. Save to Supabase immediately so the employee shows up right away.
-      const salaryInCents = Math.round(parseFloat(employeeForm.salary) * 100);
-      const employeePayload = {
-        organization_id: profile.currentOrganization.id,
-        wallet_address: empAddress,
-        name: employeeForm.name || null,
-        position: employeeForm.position || null,
-        department: employeeForm.department || null,
-        encrypted_salary: employeeForm.salary,
-        status: "active",
-      };
-
-      const { data: existingEmployee } = await supabase
-        .from("employees")
-        .select("id")
-        .eq("organization_id", profile.currentOrganization.id)
-        .eq("wallet_address", empAddress)
-        .maybeSingle();
-
-      const { error: dbError } = existingEmployee
-        ? await supabase.from("employees").update(employeePayload).eq("id", existingEmployee.id)
-        : await supabase.from("employees").insert(employeePayload);
-
-      if (dbError) throw dbError;
-
-      // Close dialog and stop spinner immediately — employee is already in the DB
-      setShowAddDialog(false);
-      setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
-      setSelectedMemberId("");
-      setRefreshKey(k => k + 1);
-      toast({ title: "Employee Added", description: "Employee added to payroll." });
-
-      // 5. Encrypt salary and set it on-chain (best-effort — done in background after dialog closes)
-      encryptUint64(salaryInCents, contractAddress, walletAddress!)
-        .then(async (encrypted) => {
-          try {
-            await (publicClient as any).simulateContract({
-              address: contractAddress,
-              abi: CONFIDENTIAL_PAYROLL_ABI,
-              functionName: "setSalary",
-              args: [empAddress, encrypted.handle as `0x${string}`, encrypted.inputProof as `0x${string}`],
-              account: walletAddress as `0x${string}`,
-            });
-
-            const salaryTxHash = await setContractSalary(
-              walletClient!,
-              contractAddress,
-              empAddress,
-              encrypted.handle,
-              encrypted.inputProof
-            );
-            console.log("setSalary tx:", salaryTxHash);
-            await (publicClient as any).waitForTransactionReceipt({ hash: salaryTxHash as `0x${string}` });
-            console.log("Salary encrypted and set on-chain successfully");
-          } catch (err) {
-            console.error("Failed to set salary on-chain (employee already saved):", err);
-          }
-        })
-        .catch((err) => {
-          console.error("Salary encryption failed (employee already saved):", err);
-        });
-    } catch (err: any) {
-      console.error("Error adding employee:", err);
-      const raw = String(err?.shortMessage || err?.reason || err?.message || err);
-      let description = raw;
-      if (/NotOwner/i.test(raw)) {
-        description = "Your wallet is not the owner of this org's FHE contract.";
-      } else if (/AlreadyEmployee/i.test(raw)) {
-        description = "This wallet is already registered as an employee onchain.";
-      } else if (/NotEmployee/i.test(raw)) {
-        description = "Employee not found onchain. Add them first.";
-      } else if (/user rejected|denied/i.test(raw)) {
-        description = "Transaction was rejected in your wallet.";
-      } else if (/insufficient funds/i.test(raw)) {
-        description = "Insufficient Sepolia ETH for gas.";
-      }
-      toast({ title: "Failed to add employee", description, variant: "destructive" });
-    } finally {
-      setSavingEmployee(false);
-    }
-  };
-
-  const handleEditEmployee = async () => {
-    if (!editingEmployee || !profile?.currentOrganization?.id) return;
-
-    setSavingEmployee(true);
-    try {
-      const { error } = await supabase
-        .from("employees")
-        .update({
-          name: employeeForm.name || null,
-          position: employeeForm.position || null,
-          department: employeeForm.department || null,
-          encrypted_salary: employeeForm.salary,
-        })
-        .eq("id", editingEmployee.id);
-
-      if (error) throw error;
-
-      toast({ title: "Employee Updated", description: "Employee details have been updated" });
-      setShowEditDialog(false);
-      setEditingEmployee(null);
-      setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
+      toast({ title: "Employee Added", description: `${empAddr.slice(0, 6)}…${empAddr.slice(-4)} added with salary $${newSalary}` });
+      setShowAdd(false);
+      setNewAddress("");
+      setNewSalary("");
       fetchData();
-    } catch (err) {
-      console.error("Error updating employee:", err);
-      toast({ title: "Error", description: "Failed to update employee", variant: "destructive" });
-    } finally {
-      setSavingEmployee(false);
-    }
+    } catch (err: any) {
+      const msg = err?.shortMessage || err?.message || "Failed";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
-  const handleDeleteEmployee = async (employeeId: string) => {
-    if (!confirm("Remove from payroll? Employee will stay in organization but with $0 salary.")) return;
-
-    try {
-      // Set salary to 0 instead of deleting - keeps them in org
-      const { error } = await supabase
-        .from("employees")
-        .update({ encrypted_salary: "0" })
-        .eq("id", employeeId);
-
-      if (error) throw error;
-
-      toast({ title: "Removed from Payroll", description: "Employee kept in organization with $0 salary" });
-      fetchData();
-    } catch (err) {
-      console.error("Error deleting employee:", err);
-      toast({ title: "Error", description: "Failed to remove employee", variant: "destructive" });
-    }
-  };
-
-  const openEditDialog = (employee: EmployeeRow) => {
-    setEditingEmployee(employee);
-    setEmployeeForm({
-      name: (employee as any).name || "",
-      wallet_address: employee.wallet_address,
-      position: employee.position || "",
-      department: employee.department || "",
-      salary: employee.encrypted_salary || "",
-    });
-    setShowEditDialog(true);
-  };
-
-const handleProcessPayroll = async () => {
-    if (employees.length === 0) return;
-    if (!walletClient) {
-      toast({ title: "Wallet not connected", description: "Please connect your wallet to process payroll", variant: "destructive" });
-      return;
-    }
-
-    const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
-    if (!orgContractAddress) {
-      toast({ title: "No contract", description: "No FHE contract deployed for this org.", variant: "destructive" });
-      return;
-    }
-
-    const depositValue = parseFloat(depositAmount);
-    if (!depositAmount || isNaN(depositValue) || depositValue <= 0) {
-      toast({ title: "Enter deposit amount", description: "Enter the amount of ETH to fund the contract pool for this payroll.", variant: "destructive" });
-      return;
-    }
-
+  const handleProcessPayroll = async () => {
+    if (!walletClient || !state.contractAddress || !depositAmount) return;
     setProcessing(true);
     try {
-      const { parseEther } = await import("viem");
-      const amountWei = parseEther(depositValue.toFixed(8));
+      const addr = state.contractAddress as `0x${string}`;
+      if (chainId !== SEPOLIA) await switchChain({ chainId: SEPOLIA });
 
-      // 1. Deposit ETH into the contract so the fundPool has funds
-      toast({ title: "Step 1/2", description: `Depositing ${depositValue} ETH to contract pool...` });
-      const depositTx = await depositToContract(walletClient, orgContractAddress as `0x${string}`, amountWei);
-      console.log("depositFunds tx:", depositTx);
-      await (publicClient as any).waitForTransactionReceipt({ hash: depositTx as `0x${string}` });
+      const wei = parseEther(depositAmount);
+      toast({ title: "Step 1/2", description: "Depositing ETH..." });
+      const depositTx = await depositFunds(walletClient, addr, wei);
+      await publicClient!.waitForTransactionReceipt({ hash: depositTx as `0x${string}` });
 
-      // 2. Process payroll on-chain (adds salary+bonus to each employee's encrypted balance)
-      toast({ title: "Step 2/2", description: "Processing payroll on-chain..." });
-      const txHash = await processContractPayroll(walletClient, orgContractAddress as `0x${string}`);
-      console.log("processPayroll tx:", txHash);
+      toast({ title: "Step 2/2", description: "Processing payroll..." });
+      const txHash = await processPayroll(walletClient, addr);
+      await publicClient!.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
 
-      // Record in database
-      const orgId = profile!.currentOrganization!.id;
-      for (const emp of employees) {
-        const salaryAmount = Number(emp.encrypted_salary) + ((emp as any).bonus || 0);
-        await supabase.from("payroll_records").insert({
-          organization_id: orgId,
-          employee_id: emp.id,
-          encrypted_amount: String(salaryAmount),
-          tx_hash: txHash,
-          status: "completed",
-          paid_at: new Date().toISOString(),
-        });
-      }
-
+      toast({ title: "Payroll Processed", description: `${depositAmount} ETH deposited & payroll processed` });
       setDepositAmount("");
-      toast({
-        title: "Payroll Processed",
-        description: `Deposited ${depositValue} ETH and processed payroll for ${employees.length} employees.`,
-      });
       fetchData();
     } catch (err: any) {
-      console.error("Error processing payroll:", err);
-      const msg = err?.shortMessage || err?.message || "Failed to process payroll";
-      toast({ title: "Error", description: msg, variant: "destructive" });
-    } finally {
-      setProcessing(false);
-    }
+      toast({ title: "Error", description: err?.shortMessage || err?.message || "Failed", variant: "destructive" });
+    } finally { setProcessing(false); }
   };
 
-const handleWithdraw = async () => {
-  if (!amount) {
-    toast({ title: "Error", description: "Please enter an amount to withdraw", variant: "destructive" });
-    return;
-  }
-  if (!walletClient) {
-    toast({ title: "Error", description: "Please connect your wallet to withdraw", variant: "destructive" });
-    return;
-  }
-
-  const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
-  if (!orgContractAddress) {
-    toast({ title: "No contract", description: "No FHE contract deployed for this org.", variant: "destructive" });
-    return;
-  }
-
-  const amountValue = parseFloat(amount);
-
-  setProcessing(true);
-  try {
-    const { parseEther } = await import("viem");
-    const amountWei = parseEther(amountValue.toFixed(8));
-
-    // Check fundPool first so we can surface a clear error
-    let poolBalance = 0n;
+  const handleWithdraw = async () => {
+    if (!walletClient || !state.contractAddress || !withdrawAmount) return;
+    setProcessing(true);
     try {
-      poolBalance = await (publicClient as any).readContract({
-        address: orgContractAddress as `0x${string}`,
-        abi: CONFIDENTIAL_PAYROLL_ABI,
-        functionName: "fundPool",
-      });
-    } catch (_) {}
-    if (poolBalance < amountWei) {
-      throw new Error(
-        `Insufficient funds in contract pool. Pool has ${parseFloat(poolBalance.toString()) / 1e18} ETH, you requested ${amountValue} ETH. Ask the owner to deposit funds first.`
-      );
-    }
+      const addr = state.contractAddress as `0x${string}`;
+      if (chainId !== SEPOLIA) await switchChain({ chainId: SEPOLIA });
 
-    // Check if caller is an employee on the contract
-    try {
-      const isEmp = await (publicClient as any).readContract({
-        address: orgContractAddress as `0x${string}`,
-        abi: CONFIDENTIAL_PAYROLL_ABI,
-        functionName: "isEmployee",
-        args: [walletAddress as `0x${string}`],
-      });
-      if (!isEmp) {
-        throw new Error("You are not registered as an employee in the contract. Ask the owner to add you on-chain.");
-      }
-    } catch (_) {}
+      const wei = parseEther(withdrawAmount);
+      const txHash = await withdrawFunds(walletClient, addr, wei);
+      await publicClient!.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
 
-    // Simulate the contract call to surface revert reason before sending
-    await (publicClient as any).simulateContract({
-      address: orgContractAddress as `0x${string}`,
-      abi: CONFIDENTIAL_PAYROLL_ABI,
-      functionName: "withdraw",
-      args: [amountWei],
-      account: walletAddress as `0x${string}`,
-    });
-
-    const txHash = await withdrawFromContract(walletClient, orgContractAddress as `0x${string}`, amountWei);
-
-    toast({
-      title: "Withdrawal Complete",
-      description: `Withdrew ${amountValue} ETH. Tx: ${txHash.slice(0, 10)}...`,
-    });
-    setAmount("");
-    try {
-      await refreshBalance();
-    } catch (e) {
-      console.log("Balance refresh failed, but transaction succeeded");
-    }
-  } catch (err: any) {
-    console.error("Error withdrawing:", err);
-    let errorMsg = "Failed to withdraw";
-    if (err?.shortMessage) {
-      errorMsg = err.shortMessage;
-    } else if (err?.message) {
-      const match = err.message.match(/reverted with reason: (.+)/);
-      errorMsg = match ? match[1] : err.message;
-    }
-    if (errorMsg.length > 200) errorMsg = errorMsg.slice(0, 200);
-    toast({ title: "Withdrawal Failed", description: errorMsg, variant: "destructive" });
-  } finally {
-    setProcessing(false);
-  }
-};
-
-  const totalPayroll = employees.reduce((sum, e) => {
-    const sal = e.encrypted_salary;
-    const bonus = (e as any).bonus || 0;
-    return sum + (Number(sal) || 0) + bonus;
-  }, 0);
-
-  useEffect(() => {
-    if (totalPayroll > 0 && ethPrice > 0) {
-      const ethNeeded = totalPayroll / ethPrice;
-      setDepositAmount(ethNeeded.toFixed(6));
-    }
-  }, [totalPayroll, ethPrice]);
-
-  const openAddDialog = () => {
-    setSelectedMemberId("");
-    setEmployeeForm({ name: "", wallet_address: "", position: "", department: "", salary: "" });
-    setShowAddDialog(true);
+      toast({ title: "Withdrawn", description: `${withdrawAmount} ETH withdrawn` });
+      setWithdrawAmount("");
+      fetchData();
+      refetchBalance();
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.shortMessage || err?.message || "Failed", variant: "destructive" });
+    } finally { setProcessing(false); }
   };
 
-  if (!profile?.currentOrganization) {
-    return <div className="p-6">No organization found</div>;
-  }
+  const totalPayroll = employees.reduce((s, e) => s + e.salaryCents, 0) / 100;
 
   return (
-    <div className="space-y-6">
-      {chainId !== SEPOLIA_CHAIN_ID_NUM && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium">Wrong Network Detected</p>
-            <p className="text-sm">Please switch to Sepolia network to use payroll features.</p>
-          </div>
-          <Button
-            size="sm"
-            className="bg-yellow-600 hover:bg-yellow-700 text-white"
-            onClick={handleSwitchToSepolia}
-          >
-            Switch to Sepolia
-          </Button>
-        </div>
-      )}
-
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Payments</h1>
-          <p className="text-muted-foreground">Manage payroll and employee compensation</p>
+          <h1 className="text-3xl font-bold tracking-tight">{isOwner ? "Treasury" : "My Pay"}</h1>
+          <p className="text-muted-foreground mt-1">
+            Contract: {state.contractAddress?.slice(0, 8)}…{state.contractAddress?.slice(-6)}
+            <a href={`https://sepolia.etherscan.io/address/${state.contractAddress}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 ml-2 text-xs text-primary hover:underline">
+              <ExternalLink className="h-3 w-3" /> Etherscan
+            </a>
+          </p>
         </div>
         {isOwner && (
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button className="gap-2" onClick={openAddDialog}>
-                <UserPlus className="h-4 w-4" />
-                Add Employee
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Employee to Payroll</DialogTitle>
-                <DialogDescription>
-                  Select a member who has joined via invite code or email invitation
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                {availableMembers.length > 0 ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Select Member</Label>
-                      <select 
-                        className="w-full p-2 border rounded-md bg-background"
-                        value={selectedMemberId}
-                        onChange={(e) => handleMemberSelect(e.target.value)}
-                      >
-                        <option value="">-- Select a member --</option>
-                        {availableMembers.map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.user_id?.slice(0, 10)}...{member.user_id?.slice(-4)} ({member.role})
-                          </option>
-                        ))}
-</select>
-</div>
-
-<div className="space-y-2">
-  <Label>Name</Label>
-  <Input
-    placeholder="John Doe"
-    value={employeeForm.name}
-    onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
-  />
-</div>
-<div className="space-y-2">
-  <Label>Wallet Address</Label>
-  <Input
-    placeholder="0x..."
-    value={employeeForm.wallet_address}
-    onChange={(e) => setEmployeeForm({ ...employeeForm, wallet_address: e.target.value })}
-  />
-</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Position</Label>
-                        <Input
-                          placeholder="Software Engineer"
-                          value={employeeForm.position}
-                          onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Department</Label>
-                        <Input
-                          placeholder="Engineering"
-                          value={employeeForm.department}
-                          onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Monthly Salary (USD)</Label>
-                      <Input
-                        type="number"
-                        placeholder="5000"
-                        value={employeeForm.salary}
-                        onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No members available to add.</p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Employees must join via invite code or email invitation first.
-                    </p>
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
-                <Button 
-                  onClick={handleAddEmployee} 
-                  disabled={savingEmployee || !employeeForm.wallet_address || !employeeForm.salary || availableMembers.length === 0}
-                >
-                  {savingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add to Payroll"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button onClick={() => setShowAdd(!showAdd)} variant="outline" className="gap-2">
+            <Plus className="h-4 w-4" /> Add Employee
+          </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className={isOwner ? "bg-gradient-to-br from-green-500 to-green-600 text-white" : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              {isOwner ? "Total Payroll" : "Your Salary"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isOwner ? (
-              <>
-                <div className="text-3xl font-bold">{formatCurrency(totalPayroll)}</div>
-                <p className="text-xs opacity-75 mt-1">
-                  {employees.length} employee{employees.length !== 1 ? "s" : ""}
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="text-3xl font-bold">{ownSalary}</div>
-                <p className="text-xs opacity-75 mt-1">USDC/month</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-<Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                {isOwner ? "Organization Wallet" : "My Wallet"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-mono truncate">
-                {profile.walletAddress?.slice(0, 10)}...{profile.walletAddress?.slice(-4)}
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                  {profile.currentRole}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/20 h-7 px-2"
-                  onClick={ethConnected ? refreshBalance : connectToEth}
-                  disabled={loadingBalance}
-                >
-                {loadingBalance ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                <span className="ml-1 text-xs">
-                  {balanceData ? parseFloat(balanceData.formatted).toFixed(4) : parseFloat(ethBalance).toFixed(4)} ETH
-                </span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {!isOwner && (
-          <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90 flex items-center gap-2">
-                <ArrowDownToLine className="h-4 w-4" />
-                Total Received
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingTotalReceived ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm">Loading...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="text-3xl font-bold">{totalReceived}</div>
-                  <p className="text-xs opacity-75 mt-1">From payroll</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {isOwner && (
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">
-                Employee Count
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{employees.length}</div>
-              <p className="text-xs opacity-75 mt-1">Active employees</p>
-            </CardContent>
-          </Card>
-        )}
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Monthly Payroll</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">${totalPayroll.toLocaleString()}</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
       </div>
 
-      {isOwner && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Employee Management
-              </CardTitle>
-              <CardDescription>Manage employees in payroll</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : employees.length === 0 ? (
-                <div className="text-center py-8">
-                  <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">No employees in payroll yet</p>
-                  <Button onClick={openAddDialog} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add First Employee
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {employees.map((emp) => (
-<div key={emp.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium flex items-center gap-2">
-                {(emp as any).name || emp.wallet_address?.slice(0, 8) + "..." + emp.wallet_address?.slice(-4)}
-                <Badge variant="secondary" className="text-xs">{emp.status}</Badge>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {emp.position || "Staff"} {emp.department && `• ${emp.department}`}
-              </p>
-            </div>
-          </div>
-<div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(Number(emp.encrypted_salary || 0) + ((emp as any).bonus || 0))}</p>
-                        <p className="text-xs text-muted-foreground">
-{formatCurrency(Number(emp.encrypted_salary || 0))} salary
-                  {((emp as any).bonus || 0) > 0 && <span className="text-green-600"> + {formatCurrency((emp as any).bonus || 0)} bonus</span>}
-                        </p>
-                      </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => openEditDialog(emp)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteEmployee(emp.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5" />
-                Process Payroll
-              </CardTitle>
-              <CardDescription>
-                Fund the contract pool and process payroll for all active employees
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {employees.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  No employees with salary configured. Add employees first.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-muted p-4 rounded-lg space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Employees to pay</span>
-                      <Badge variant="default">{employees.length}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total amount (fiat)</span>
-                      <span className="text-xl font-bold">{formatCurrency(totalPayroll)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Contract Pool</span>
-                      <span className="font-semibold">{parseFloat(fundPool) / 1e18} ETH</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>ETH to deposit into contract pool</Label>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      disabled={processing}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      This sends ETH to the contract so employees can withdraw. Then processes payroll on-chain.
-                    </p>
-                  </div>
-
-                  {processing && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <span className="text-sm font-medium">Processing Payments...</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button
-                    onClick={handleProcessPayroll}
-                    disabled={processing}
-                    className="w-full gap-2"
-                    size="lg"
-                  >
-                    {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {processing ? "Processing Payments..." : "Deposit & Process Payroll"}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
+      {/* Add Employee Dialog */}
+      {showAdd && (
+        <Card className="border-primary/20">
+          <CardHeader><CardTitle className="text-base">Add Employee</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1"><Label>Wallet Address</Label><Input value={newAddress} onChange={e => setNewAddress(e.target.value)} placeholder="0x..." /></div>
+            <div className="space-y-1"><Label>Monthly Salary (USD)</Label><Input type="number" value={newSalary} onChange={e => setNewSalary(e.target.value)} placeholder="2500" /></div>
+            <Button onClick={handleAddEmployee} disabled={saving} className="w-full gap-2">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{saving ? "Adding…" : "Add to Payroll"}</Button>
+          </CardContent>
+        </Card>
       )}
 
+      {/* Process Payroll - Owner only */}
+      {isOwner && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Process Payroll</CardTitle><CardDescription>Deposit ETH and distribute salaries + bonuses</CardDescription></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1"><Label>ETH to Deposit</Label><Input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} placeholder="0.01" /></div>
+            <Button onClick={handleProcessPayroll} disabled={processing || !depositAmount} className="w-full gap-2">{processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{processing ? "Processing…" : "Deposit & Process Payroll"}</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Withdraw - Non-owner */}
       {!isOwner && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowDownToLine className="h-5 w-5" />
-              Withdraw Funds
-            </CardTitle>
-            <CardDescription>
-              Withdraw your salary to your wallet
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted p-4 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-1">Available Balance</div>
-              <div className="text-2xl font-bold flex items-center gap-2">
-                {(() => {
-                  const eth = balanceData ? parseFloat(balanceData.formatted) : parseFloat(ethBalance);
-                  const usd = eth * ethPrice;
-                  return `$${usd.toFixed(2)}`;
-                })()}
-                <Badge variant="default" className="text-xs gap-1">
-                  <CheckCircle2 className="h-3 w-3" /> Available
-                </Badge>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label>Amount (ETH)</Label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Funds are withdrawn to your connected wallet via the FHE contract.
-                </p>
-              </div>
-            </div>
-
-            <Button
-              className="w-full gap-2"
-              size="lg"
-              disabled={!amount || processing}
-              onClick={handleWithdraw}
-            >
-              {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}
-              {processing ? "Processing..." : "Withdraw"}
-            </Button>
+          <CardHeader><CardTitle className="text-base">Withdraw Funds</CardTitle><CardDescription>Withdraw your earned salary from the contract pool</CardDescription></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1"><Label>ETH Amount</Label><Input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="0.001" /></div>
+            <Button onClick={handleWithdraw} disabled={processing || !withdrawAmount} className="w-full gap-2">{processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}{processing ? "Withdrawing…" : "Withdraw"}</Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Edit Employee Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Employee</DialogTitle>
-            <DialogDescription>Update employee details and salary</DialogDescription>
-          </DialogHeader>
-<div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input
-              placeholder="John Doe"
-              value={employeeForm.name}
-              onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Wallet Address</Label>
-            <Input
-              placeholder="0x..."
-              value={employeeForm.wallet_address}
-              disabled
-              className="bg-muted"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Position</Label>
-              <Input
-                placeholder="Software Engineer"
-                value={employeeForm.position}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Department</Label>
-              <Input
-                placeholder="Engineering"
-                value={employeeForm.department}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Monthly Salary (USD)</Label>
-            <Input
-              type="number"
-              placeholder="5000"
-              value={employeeForm.salary}
-              onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
-          <Button onClick={handleEditEmployee} disabled={savingEmployee || !employeeForm.salary}>
-              {savingEmployee ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Employee List */}
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" />Employees</CardTitle></CardHeader>
+        <CardContent>
+          {loading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> :
+           employees.length === 0 ? <p className="text-center py-8 text-muted-foreground">No employees yet.</p> :
+           <div className="space-y-2">
+            {employees.map((emp, i) => (
+              <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">{i + 1}</div>
+                  <div>
+                    <p className="text-sm font-mono">{emp.address.slice(0, 8)}…{emp.address.slice(-6)}</p>
+                    <p className="text-xs text-muted-foreground">Salary: ${(emp.salaryCents / 100).toLocaleString()}</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs">Active</Badge>
+              </div>
+            ))}
+          </div>}
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default PaymentsPage;
+export default Payments;

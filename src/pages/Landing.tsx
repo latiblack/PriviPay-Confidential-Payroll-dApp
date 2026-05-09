@@ -1,16 +1,13 @@
-import { Shield, Lock, Eye, Users, ArrowRight, Zap, BarChart3, Globe, ChevronRight, TrendingUp, DollarSign, CheckCircle2, FileText } from "lucide-react";
+import { Shield, Lock, Users, ArrowRight, Zap, TrendingUp, DollarSign, CheckCircle2, EyeOff, Swords, UserX, Globe, Fingerprint } from "lucide-react";
 import Logo from "../components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { useAuth } from "@/hooks/useAuth";
 
 const DashboardMockup = () => (
   <div className="relative w-full max-w-4xl mx-auto mt-16">
     <div className="absolute -inset-4 bg-primary/10 rounded-3xl blur-2xl" />
-    
     <div className="relative rounded-2xl border border-border/50 bg-card shadow-2xl shadow-primary/5 overflow-hidden">
-      {/* Browser chrome */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/40">
         <div className="flex gap-1.5">
           <div className="w-3 h-3 rounded-full bg-destructive/50" />
@@ -19,12 +16,10 @@ const DashboardMockup = () => (
         </div>
         <div className="flex-1 mx-4">
           <div className="h-6 rounded-lg bg-muted max-w-xs mx-auto flex items-center justify-center">
-            <span className="text-[10px] text-muted-foreground">app.privipay.io/dashboard</span>
+            <span className="text-[10px] text-muted-foreground">privipay/dashboard</span>
           </div>
         </div>
       </div>
-      
-      {/* Dashboard content */}
       <div className="p-6 grid grid-cols-3 gap-4">
         <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -59,7 +54,6 @@ const DashboardMockup = () => (
             <span className="text-[10px] text-primary font-medium">FHE Protected</span>
           </div>
         </div>
-
         <div className="col-span-2 rounded-xl bg-muted/30 border border-border/40 p-4 h-32">
           <p className="text-xs text-muted-foreground mb-3">Monthly Payroll Distribution</p>
           <div className="flex items-end gap-1.5 h-16">
@@ -85,31 +79,32 @@ const DashboardMockup = () => (
 
 const Landing = () => {
   const { isAuthenticated } = useWalletAuth();
+
   const features = [
-    { icon: Lock, title: "Encrypted Salaries & Bonuses", description: "Compensation is stored as encrypted integers (euint) on-chain. Raw salary and bonus figures are never exposed — not to validators, not to the public." },
-    { icon: Eye, title: "Auditor-Ready Transparency", description: "Regulators and auditors get verifiable aggregates, totals and proofs they need for compliance — without ever decrypting an individual employee's pay." },
-    { icon: FileText, title: "Exportable Audit Reports", description: "Auditors can export compliance-ready reports — payroll totals, tax bases and verifiable summaries — straight from the platform, with no individual salaries leaked. (Coming soon)" },
-    { icon: BarChart3, title: "Compliant Computation", description: "Run payroll, tax and reporting computations directly on encrypted data via FHE. Satisfy disclosure requirements while honoring data protection laws." },
+    { icon: Lock, title: "Fully Encrypted Salaries", description: "Every salary and bonus is encrypted client-side before touching the blockchain. Nobody — not validators, not network operators, not even the contract — ever sees a plaintext number." },
+    { icon: EyeOff, title: "No Internal Payroll Leaks", description: "Sensitive payroll files don't get forwarded, screenshotted, or gossiped. Only the employee and the contract can decrypt a balance. Internal conflict over pay differences disappears." },
+    { icon: Fingerprint, title: "Employee-Controlled Decryption", description: "Balances are encrypted on-chain. Employees decrypt only their own data with their wallet — no admin panel, no HR spreadsheet, no accidental exposure." },
+    { icon: Globe, title: "Works Anywhere, No Backend", description: "No servers, no database, no API keys. Deploy a contract, share the address. Your payroll runs on Sepolia. Anyone with a wallet can join." },
   ];
 
   const stats = [
-    { value: "B2B", label: "Built for Crypto Companies" },
-    { value: "GDPR", label: "Privacy-Law Aligned" },
     { value: "On-chain", label: "Verifiable Payroll" },
+    { value: "FHE", label: "Encrypted End-to-End" },
     { value: "0", label: "Plaintext Salaries Exposed" },
+    { value: "$0", label: "Infrastructure Cost" },
   ];
 
   const steps = [
-    { step: "01", title: "Encrypt", desc: "Salaries and bonuses are encrypted client-side before being written on-chain as euint256. Employee pay data leaves your org already protected." },
-    { step: "02", title: "Compute", desc: "Smart contracts run payroll, tax and reporting logic directly on encrypted data using FHE — no decryption required to operate." },
-    { step: "03", title: "Disclose & Export", desc: "Auditors and regulators receive the aggregates and proofs they're entitled to, and can export compliance-ready reports — while individual employee pay stays encrypted." },
+    { step: "01", title: "Encrypt", desc: "Salaries and bonuses are encrypted in the browser using Zama's FHE SDK before being written on-chain. The raw numbers never leave your machine unprotected." },
+    { step: "02", title: "Compute", desc: "The contract processes payroll entirely on encrypted data. It adds salaries and bonuses, accumulates balances — all without ever decrypting anything." },
+    { step: "03", title: "Withdraw", desc: "Employees decrypt only their own balance with a wallet signature, then withdraw ETH. No admin panel, no HR spreadsheet, no leaked pay data." },
   ];
 
   const benefits = [
-    { icon: Shield, title: "Built for Crypto Companies", desc: "Purpose-built for teams running on-chain payroll who face growing pressure to disclose without exposing employees to risk." },
-    { icon: FileText, title: "One-Click Audit Exports", desc: "Give auditors and regulators the reports they need — payroll totals, tax bases, period summaries — exportable on demand, with employee data still encrypted." },
-    { icon: Lock, title: "Honor Data Protection Laws", desc: "Stay aligned with GDPR and similar privacy regimes. Employee compensation is never disclosed beyond what the law actually requires." },
-    { icon: Globe, title: "Reduce Legal & Reputational Risk", desc: "Avoid the legal exposure that comes with publicly visible on-chain salaries — wrongful disclosure, discrimination claims, and talent poaching." },
+    { icon: Swords, title: "Eliminates Internal Conflict", desc: "When everyone can see everyone's salary, resentment is inevitable. PriviPay removes the source of conflict — pay differences stay invisible." },
+    { icon: UserX, title: "Stops Competitor Exploitation", desc: "Competitors can't scout your talent costs from a block explorer. Your pay structure is your competitive advantage — keep it private." },
+    { icon: Shield, title: "Protects Negotiation Leverage", desc: "Candidates can't see what current employees make. You negotiate from strength, not from a public baseline." },
+    { icon: Lock, title: "Personal Security for Employees", desc: "Public salaries make employees targets — for scams, for targeting, for social engineering. Encrypted payroll protects your people." },
   ];
 
   return (
@@ -121,7 +116,7 @@ const Landing = () => {
             <Logo size={28} alt="Privapay" />
             <span className="text-lg font-semibold text-foreground tracking-tight">PriviPay</span>
           </Link>
-<div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
             <a href="#benefits" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Benefits</a>
@@ -153,22 +148,21 @@ const Landing = () => {
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1.5 text-sm text-primary font-medium mb-8">
               <Zap className="h-3.5 w-3.5" />
-              Compliance-grade onchain payroll for crypto companies
-              <ChevronRight className="h-3.5 w-3.5" />
+              Confidential on-chain payroll for crypto teams
             </div>
 
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] text-foreground">
-              Transparent to auditors.{" "}
-              <span className="text-primary">Private for employees.</span>
+              Pay your team on-chain.{" "}
+              <span className="text-primary">Keep salaries private.</span>
             </h1>
 
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              PriviPay is the B2B onchain payroll platform that lets crypto companies meet
-              audit, regulatory and disclosure requirements — without exposing employee
-              salaries, bonuses, or breaching data protection laws.
+              PriviPay encrypts every salary and bonus before it hits the blockchain.
+              No public pay data, no leaked spreadsheets, no competitor intelligence.
+              Just on-chain payroll that actually protects your people.
             </p>
 
-<div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth">
                 <Button size="lg" className="gap-2 rounded-lg px-8 h-12 text-base">
                   Launch Dashboard <ArrowRight className="h-5 w-5" />
@@ -184,7 +178,6 @@ const Landing = () => {
 
           <DashboardMockup />
 
-          {/* Stats bar */}
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center p-4 rounded-xl bg-card border border-border/50">
@@ -202,14 +195,14 @@ const Landing = () => {
           <div className="text-center mb-16">
             <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Core Features</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-              Privacy + Compliance, Not Secrecy
+              Payroll Privacy Without Compromise
             </h2>
             <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
-              FHE ensures salary data is never exposed — even during computation.
+              FHE ensures salary data is never exposed — not during storage, not during computation.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {features.map((f) => (
               <div key={f.title} className="group p-6 rounded-xl bg-card border border-border/60 hover:border-primary/25 transition-all duration-200 hover:shadow-md">
                 <div className="h-11 w-11 rounded-lg bg-primary/10 flex items-center justify-center mb-5">
@@ -260,10 +253,10 @@ const Landing = () => {
           <div className="text-center mb-16">
             <p className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">Why PriviPay</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-              Why confidential payroll matters
+              Why payroll must be private
             </h2>
             <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
-              Public salary data creates real operational and strategic problems for organizations.
+              Public salary data doesn't just violate privacy — it creates real operational damage.
             </p>
           </div>
 
@@ -291,12 +284,12 @@ const Landing = () => {
               Ready to protect your payroll?
             </h2>
             <p className="text-primary-foreground/80 max-w-lg mx-auto mb-8 text-lg">
-              Join organizations that trust PriviPay for confidential, compliant, and verifiable payroll management.
+              Deploy a contract, add your team, and run payroll — all on-chain, all encrypted.
             </p>
-<div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth">
                 <Button size="lg" variant="secondary" className="gap-2 rounded-lg px-8 h-12 text-base font-semibold">
-                  Get Started Free <ArrowRight className="h-5 w-5" />
+                  Get Started <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
               <a href="#features">
@@ -313,7 +306,7 @@ const Landing = () => {
       <footer className="border-t border-border/50 py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5">
               <Logo size={28} alt="Privapay" />
               <span className="font-semibold text-foreground">PriviPay</span>
             </div>

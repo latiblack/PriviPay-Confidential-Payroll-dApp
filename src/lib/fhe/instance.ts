@@ -15,7 +15,7 @@ export async function getFheInstance(): Promise<FheInstance> {
         import.meta.env.VITE_RELAYER_URL || SepoliaConfig.relayerUrl;
 
       const sepoliaRpc =
-        import.meta.env.VITE_SEPOLIA_RPC || "https://sepolia.infura.io/v3/0e7918e5c02a4d3e9104131ba6d99ac2";
+        import.meta.env.VITE_SEPOLIA_RPC || "";
 
       const config = {
         ...SepoliaConfig,

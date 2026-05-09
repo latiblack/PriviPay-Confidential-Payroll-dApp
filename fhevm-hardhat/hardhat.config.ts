@@ -19,7 +19,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: "W44RFMQN6M8SMRV5WSN4GY9VB25Q7SHYHC",
+    apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
   fhevm: {
     version: "0.3.0",

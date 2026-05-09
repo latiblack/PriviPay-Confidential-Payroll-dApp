@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Supabase temp
+supabase/.temp/
+
+# Claude
+.claude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,7 +33,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-node_modules/
-cache/
-broadcast/
-out/
