@@ -50,6 +50,7 @@ const EmployeeDashboard = () => {
   const [editNameForm, setEditNameForm] = useState({ name: "", position: "" });
   const [savingName, setSavingName] = useState(false);
   const [fheBalance, setFheBalance] = useState<number>(0);
+  const [fheHandle, setFheHandle] = useState<string | null>(null);
   const [fheLoading, setFheLoading] = useState(false);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [namePromptInput, setNamePromptInput] = useState("");
@@ -84,9 +85,12 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     const fetchFheBalance = async () => {
       if (!employee?.wallet_address || !walletClient) return;
+      if (isOwner || isManager) return;
       const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
       if (!orgContractAddress) return;
 
+      setFheBalance(0);
+      setFheHandle(null);
       setFheLoading(true);
       try {
         const { createPublicClient, http } = await import("viem");
@@ -95,8 +99,7 @@ const EmployeeDashboard = () => {
 
         const handle = await getBalance(publicClient, orgContractAddress as `0x${string}`, employee.wallet_address as `0x${string}`);
         if (handle && handle !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
-          const decrypted = await decryptUint64(handle, orgContractAddress, walletClient);
-          setFheBalance(decrypted);
+          setFheHandle(handle);
         }
       } catch (err) {
         console.error("Failed to fetch FHE balance:", err);
@@ -105,7 +108,7 @@ const EmployeeDashboard = () => {
       }
     };
     fetchFheBalance();
-  }, [employee?.wallet_address, walletClient, profile?.currentOrganization]);
+  }, [employee?.wallet_address, walletClient, profile?.currentOrganization, isOwner, isManager]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -265,6 +268,22 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const handleDecryptBalance = async () => {
+    if (!fheHandle || !walletClient) return;
+    const orgContractAddress = (profile?.currentOrganization as any)?.contract_address;
+    if (!orgContractAddress) return;
+
+    setFheLoading(true);
+    try {
+      const decrypted = await decryptUint64(fheHandle, orgContractAddress, walletClient);
+      setFheBalance(decrypted);
+    } catch (err) {
+      console.error("Failed to decrypt FHE balance:", err);
+    } finally {
+      setFheLoading(false);
+    }
+  };
+
   const targetEmployeeId = (isOwner || isManager) ? selectedEmployeeId : employee?.id;
   const employeeBonus = targetEmployeeId ? bonuses.filter(b => b.employee_id === targetEmployeeId).reduce((sum, b) => sum + Number(b.amount), 0) : 0;
   const totalReceived = payments.reduce((sum, p) => sum + (p.status === "completed" ? p.amount : 0), 0) + employeeBonus;
@@ -405,13 +424,20 @@ if (!isOwner) {
                 {fheLoading ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">Loading...</span>
+                    <span className="text-sm text-muted-foreground">Decrypting...</span>
                   </div>
-                ) : (
+                ) : fheBalance > 0 ? (
                   <>
                     <div className="text-2xl font-bold text-primary">{formatCurrency(fheBalance)}</div>
                     <p className="text-xs text-muted-foreground mt-1">encrypted on-chain</p>
                   </>
+                ) : fheHandle ? (
+                  <Button variant="outline" size="sm" onClick={handleDecryptBalance}>
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Decrypt Balance
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No encrypted balance</p>
                 )}
               </CardContent>
             </Card>
