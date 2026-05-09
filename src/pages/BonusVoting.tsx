@@ -9,9 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWalletClient, useAccount, useSwitchChain, usePublicClient } from "wagmi";
 import { encryptUint64 } from "@/lib/fhe/encrypt";
-import { setBonus, getAllEmployees, getSalary } from "@/lib/fhe/contract";
+import { setBonus, getAllEmployees } from "@/lib/fhe/contract";
 import { getAddress } from "viem";
-import { DollarSign, Loader2, Gift, Plus } from "lucide-react";
+import { Loader2, Gift, Plus, Lock } from "lucide-react";
 
 const SEPOLIA = 11155111;
 
@@ -25,7 +25,7 @@ const Bonuses = () => {
   const { toast } = useToast();
   const isOwner = state.isOwner;
 
-  const [employees, setEmployees] = useState<{ address: string; salaryCents: number }[]>([]);
+  const [employees, setEmployees] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState("");
@@ -39,12 +39,7 @@ const Bonuses = () => {
       try {
         const addr = state.contractAddress as `0x${string}`;
         const list = await getAllEmployees(publicClient as any, addr);
-        const data = [];
-        for (const empAddr of list) {
-          const sal = await getSalary(publicClient as any, addr, empAddr).catch(() => "0");
-          data.push({ address: empAddr, salaryCents: Number(sal || 0) });
-        }
-        setEmployees(data);
+        setEmployees(list);
       } catch (err) { console.error(err); }
       setLoading(false);
     })();
@@ -60,9 +55,9 @@ const Bonuses = () => {
 
       const cents = Math.round(parseFloat(bonusAmount) * 100);
       const encrypted = await encryptUint64(cents, state.contractAddress, walletAddress!);
-      const txHash = await setBonus(walletClient, addr, empAddr, encrypted.handle, encrypted.inputProof);
+      await setBonus(walletClient, addr, empAddr, encrypted.handle, encrypted.inputProof);
 
-      toast({ title: "Bonus Set", description: `$${bonusAmount} bonus set on-chain for ${empAddr.slice(0, 6)}…` });
+      toast({ title: "Bonus Set", description: `$${bonusAmount} bonus set on-chain` });
       setShowAdd(false);
       setSelectedEmployee("");
       setBonusAmount("");
@@ -71,9 +66,8 @@ const Bonuses = () => {
     } finally { setSaving(false); }
   };
 
-  // For employees: only show their own row
   const myAddress = walletAddress?.toLowerCase();
-  const displayEmployees = isOwner ? employees : employees.filter(e => e.address.toLowerCase() === myAddress);
+  const displayEmployees = isOwner ? employees : employees.filter(e => e.toLowerCase() === myAddress);
 
   return (
     <div className="p-6 space-y-6">
@@ -97,7 +91,7 @@ const Bonuses = () => {
               <Label>Employee</Label>
               <select className="w-full p-2 border rounded-lg bg-background" value={selectedEmployee} onChange={e => setSelectedEmployee(e.target.value)}>
                 <option value="">Select…</option>
-                {employees.map(e => <option key={e.address} value={e.address}>{e.address.slice(0, 8)}… — ${(e.salaryCents / 100).toLocaleString()}/mo</option>)}
+                {employees.map(e => <option key={e} value={e}>{e.slice(0, 8)}…{e.slice(-6)}</option>)}
               </select>
             </div>
             <div className="space-y-1"><Label>Bonus (USD)</Label><Input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} placeholder="500" /></div>
@@ -107,15 +101,21 @@ const Bonuses = () => {
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Gift className="h-4 w-4" />Bonuses</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Gift className="h-4 w-4" />{isOwner ? "Employees" : "My Bonus"}</CardTitle></CardHeader>
         <CardContent>
           {loading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> :
            displayEmployees.length === 0 ? <p className="text-center py-8 text-muted-foreground">No employees.</p> :
            <div className="space-y-2">
-            {displayEmployees.map((emp, i) => (
-              <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-                <div><p className="text-sm font-mono">{emp.address.slice(0, 8)}…{emp.address.slice(-6)}</p><p className="text-xs text-muted-foreground">Salary: ${(emp.salaryCents / 100).toLocaleString()}/mo</p></div>
-                <Badge variant="outline" className="text-xs">Active</Badge>
+            {displayEmployees.map((addr, i) => (
+              <div key={addr} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">{i + 1}</div>
+                  <p className="text-sm font-mono">{addr.slice(0, 8)}…{addr.slice(-6)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Lock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-mono">euint64</span>
+                </div>
               </div>
             ))}
           </div>}

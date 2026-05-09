@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { useAccount, useSwitchChain } from "wagmi";
-import { Shield, Wallet2 } from "lucide-react";
+import { Wallet2 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const SEPOLIA = 11155111;
 
@@ -18,7 +19,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (state.isReady) {
-      navigate(state.isOwner ? "/payments" : "/employee");
+      navigate(state.isOwner ? "/employee" : "/employee");
     }
   }, [state.isReady]);
 
@@ -28,7 +29,7 @@ const Auth = () => {
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-              <Shield className="h-8 w-8 text-primary" />
+              <Logo size={32} alt="PriviPay" />
             </div>
             <CardTitle className="text-2xl">PriviPay</CardTitle>
             <CardDescription className="text-lg">Confidential on-chain payroll</CardDescription>
@@ -64,7 +65,7 @@ const Auth = () => {
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-            <Shield className="h-8 w-8 text-primary" />
+            <Logo size={32} alt="PriviPay" />
           </div>
           <CardTitle className="text-2xl">Connected</CardTitle>
           <CardDescription className="text-lg">

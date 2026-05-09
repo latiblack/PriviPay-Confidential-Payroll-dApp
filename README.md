@@ -1,4 +1,4 @@
-# PriviPay
+# PriviPay - Confidential Payroll dApp
 
 Confidential on-chain payroll powered by Zama's Fully Homomorphic Encryption.
 
@@ -68,7 +68,7 @@ Copy `.env.example` to `.env` and fill in:
 
 ## How to Use
 
-### As an Owner
+### Owner
 
 1. **Set up the contract** — follow Quick Start above to deploy and configure.
 2. **Connect your wallet** — open the app, connect. You'll go straight to the Treasury dashboard.
@@ -77,10 +77,9 @@ Copy `.env.example` to `.env` and fill in:
 5. **Process payroll** — deposit ETH into the contract pool, then run the payroll. The contract adds salary + bonus to each employee's encrypted balance.
 6. Employees can now withdraw.
 
-### As an Employee
+### Employee
 
-1. **Ask your employer for the app URL** and the contract address (they configure it).
-2. **Connect your wallet** — you'll go to your dashboard.
+1. **Connect your wallet** — you'll go to your dashboard.
 3. **Dashboard** — click "Decrypt Balance" to see your on-chain balance (requires a wallet signature).
 4. **Withdraw** — go to the Withdraw page and pull your earned ETH from the contract.
 

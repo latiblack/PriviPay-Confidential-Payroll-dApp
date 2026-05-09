@@ -12,9 +12,9 @@ export const AppSidebar = () => {
   const { state, clearContract } = useAuth();
 
   const ownerItems = [
-    { icon: LayoutGrid, label: "Treasury", path: "/payments" },
-    { icon: Gift, label: "Bonuses", path: "/bonus" },
     { icon: LayoutGrid, label: "Dashboard", path: "/employee" },
+    { icon: DollarSign, label: "Treasury", path: "/payments" },
+    { icon: Gift, label: "Bonuses", path: "/bonus" },
   ];
 
   const employeeItems = [

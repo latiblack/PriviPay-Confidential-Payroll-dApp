@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWalletClient, useAccount, useSwitchChain, useBalance, usePublicClient } from "wagmi";
 import { encryptUint64 } from "@/lib/fhe/encrypt";
-import { getEmployeeCount, getAllEmployees, getFundPool, getSalary, getBalance, addEmployee, setSalary, processPayroll, depositFunds, withdrawFunds, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
+import { getEmployeeCount, getAllEmployees, getFundPool, addEmployee, setSalary, processPayroll, depositFunds, withdrawFunds, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { getAddress, parseEther, formatEther } from "viem";
 import { Wallet, DollarSign, Loader2, ArrowDownToLine, Plus, Send, Users, RefreshCw, ExternalLink } from "lucide-react";
 
@@ -17,8 +17,6 @@ const SEPOLIA = 11155111;
 
 interface Employee {
   address: string;
-  salaryCents: number;
-  balanceCents: number;
 }
 
 const Payments = () => {
@@ -59,12 +57,7 @@ const Payments = () => {
       setFundPool(formatEther(pool));
 
       const chainEmployees = await getAllEmployees(publicClient as any, addr);
-      const empData: Employee[] = [];
-      for (const empAddr of chainEmployees) {
-        const sal = await getSalary(publicClient as any, addr, empAddr).catch(() => "0");
-        const bal = await getBalance(publicClient as any, addr, empAddr).catch(() => "0");
-        empData.push({ address: empAddr, salaryCents: Number(sal || 0), balanceCents: Number(bal || 0) });
-      }
+      const empData: Employee[] = chainEmployees.map((addr: string) => ({ address: addr }));
       setEmployees(empData);
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -144,8 +137,6 @@ const Payments = () => {
     } finally { setProcessing(false); }
   };
 
-  const totalPayroll = employees.reduce((s, e) => s + e.salaryCents, 0) / 100;
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -166,15 +157,12 @@ const Payments = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {isOwner && (
-          <>
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
-            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Monthly Payroll</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">${totalPayroll.toLocaleString()}</p></CardContent></Card>
-          </>
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
         )}
-        <Card className="bg-gradient-to-br from-violet-500 to-violet-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
-        <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
       </div>
 
       {/* Add Employee Dialog */}
@@ -222,12 +210,9 @@ const Payments = () => {
               <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">{i + 1}</div>
-                  <div>
-                    <p className="text-sm font-mono">{emp.address.slice(0, 8)}…{emp.address.slice(-6)}</p>
-                    <p className="text-xs text-muted-foreground">Salary: ${(emp.salaryCents / 100).toLocaleString()}</p>
-                  </div>
+                  <p className="text-sm font-mono">{emp.address.slice(0, 8)}…{emp.address.slice(-6)}</p>
                 </div>
-                <Badge variant="outline" className="text-xs">Active</Badge>
+                <Badge variant="outline" className="text-xs font-mono">euint64</Badge>
               </div>
             ))}
           </div>}

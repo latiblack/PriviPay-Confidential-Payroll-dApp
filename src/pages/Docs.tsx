@@ -1,4 +1,5 @@
 import { Shield, Lock, ArrowRight, FileText, ChevronDown, Wallet, DollarSign, Users, ExternalLink, Cpu, Globe, Key, Code } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -34,7 +35,7 @@ const Docs = () => {
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <Shield className="h-7 w-7 text-primary" />
+            <Logo size={28} alt="PriviPay" />
             <span className="text-lg font-semibold tracking-tight">PriviPay</span>
           </Link>
           <div className="flex items-center gap-2">
@@ -153,11 +154,11 @@ cp .env.example .env
           <Section id="faq" title="5. FAQ">
             <div className="space-y-3">
               {[
-                { q: "Why no database?", a: "Everything lives on-chain. The contract stores employee addresses, encrypted salaries, encrypted balances, and the fund pool. The browser reads directly from the contract via Sepolia RPC. No servers, no infrastructure, nothing to maintain." },
-                { q: "Can anyone see the salaries?", a: "No. Salaries and bonuses are stored as encrypted euint64 values. Even the contract itself can't read them — it only operates on ciphertexts. Only the employee (via wallet signature) can decrypt their own balance." },
-                { q: "What does the employee need?", a: "Just the app URL and a wallet. The contract address is configured in the app's .env by the owner. Employees connect, see their encrypted balance, decrypt it, and withdraw." },
-                { q: "How do I deploy to production?", a: "Replace Sepolia with a mainnet fhEVM deployment in wagmi-config.ts and the contract deployment. The frontend works identically — just point it at the production contract address." },
-                { q: "What blockchain does this use?", a: "Sepolia testnet with Zama's fhEVM protocol. The fhEVM adds FHE precompiles to standard EVM, allowing Solidity contracts to operate on encrypted types." },
+                { q: "How do I add an employee?", a: "Go to Treasury, click Add Employee, paste their wallet address and enter a monthly salary. The salary is encrypted client-side via Zama's FHE SDK before being written on-chain. Both addEmployee() and setSalary() are called in one step." },
+                { q: "How does process payroll work?", a: "First, deposit ETH into the contract pool (this funds employee withdrawals). Then processPayroll() iterates all employees, adding each one's encrypted salary + bonus to their encrypted balance using FHE arithmetic — without ever decrypting." },
+                { q: "How does an employee withdraw?", a: "The employee connects their wallet, goes to Withdraw, enters an ETH amount, and confirms. The contract checks their encrypted balance is sufficient (via FHE comparison), deducts the balance, and transfers ETH from the pool." },
+                { q: "Can I see employee salaries?", a: "No. Salaries are stored as encrypted euint64 values. Even the contract can't read them — it operates entirely on ciphertexts. Only the employee can decrypt their own balance using their wallet signature." },
+                { q: "What network does this use?", a: "Sepolia testnet with Zama fhEVM. Gas costs are minimal since it's testnet. For production, deploy to mainnet or an fhEVM L2." },
               ].map((faq, i) => (
                 <div key={i} className="border border-border/50 rounded-lg">
                   <button onClick={() => setExpanded(expanded === i ? null : i)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30">
@@ -176,7 +177,7 @@ cp .env.example .env
       <footer className="border-t border-border/40 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <Shield className="h-6 w-6 text-primary" />
+            <Logo size={24} alt="PriviPay" />
             <span className="text-sm font-semibold">PriviPay</span>
           </div>
           <div className="flex items-center gap-6">
