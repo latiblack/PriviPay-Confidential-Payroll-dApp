@@ -37,14 +37,22 @@ cd privipay
 # 2. Install
 npm install
 
-# 3. Configure
-cp .env.example .env
-# Edit .env with your WalletConnect project ID and Infura/Alchemy RPC URL
-# Optional: add VITE_CONTRACT_ADDRESS if you already have a deployed contract
+# 3. Deploy the contract
+cd fhevm-hardhat
+cp .env.example .env   # add your private key and Sepolia RPC URL
+npm install
+npx hardhat compile
+npx hardhat run scripts/deploy.ts --network sepolia
+# Copy the deployed contract address from the output
 
-# 4. Run
+# 4. Configure the app
+cd ..
+cp .env.example .env
+# Fill in your WalletConnect project ID, Sepolia RPC URL, and the deployed contract address
+
+# 5. Run
 npm run dev
-# Open http://localhost:8080
+# Open http://localhost:8080 — connects and goes straight to the dashboard
 ```
 
 ## Environment Variables
@@ -55,45 +63,15 @@ Copy `.env.example` to `.env` and fill in:
 |---|---|---|
 | `VITE_WALLETCONNECT_PROJECT_ID` | WalletConnect project ID from [cloud.walletconnect.com](https://cloud.walletconnect.com) | Yes |
 | `VITE_SEPOLIA_RPC` | Sepolia RPC URL from [Infura](https://infura.io) or [Alchemy](https://alchemy.com) | Yes |
-| `VITE_CONTRACT_ADDRESS` | Pre-deployed contract address (optional — can also deploy via app) | No |
+| `VITE_CONTRACT_ADDRESS` | Deployed ConfidentialPayroll contract address | Yes |
 | `VITE_RELAYER_URL` | Zama relayer URL (default: testnet relayer) | No |
-| `VITE_ETHERSCAN_API_KEY` | Etherscan API key for contract verification | No |
 
 ## How to Use
 
-You have three options for setting up the payroll contract:
-
-### Option 1: Deploy inside the app (easiest)
-
-1. Connect your wallet, click **"Create New Payroll"**, enter a name, and confirm the transaction. The contract is deployed from your browser — no CLI needed.
-2. The app saves the contract address locally. You'll go straight to the dashboard.
-
-### Option 2: Deploy with Hardhat, add to .env
-
-1. Deploy the contract manually from `fhevm-hardhat/`:
-   ```bash
-   cd fhevm-hardhat
-   cp .env.example .env   # add your private key and RPC URL
-   npm install
-   npx hardhat compile
-   npx hardhat run scripts/deploy.ts --network sepolia
-   ```
-2. Copy the deployed address into your root `.env`:
-   ```env
-   VITE_CONTRACT_ADDRESS="0x_your_deployed_contract"
-   ```
-3. Run `npm run dev` — the app picks up the address automatically.
-
-### Option 3: Deploy with Hardhat, import in-app
-
-1. Deploy via Hardhat (same as Option 2, steps 1-2).
-2. Instead of setting `VITE_CONTRACT_ADDRESS`, open the app, connect your wallet, and click **"Use Existing Contract"** — paste the address.
-3. The app stores it locally.
-
 ### As an Owner
 
-1. **Connect your wallet** — click "Connect Wallet" on the landing page.
-2. **Create a new payroll** — give it a name, deploy the ConfidentialPayroll contract. You'll pay a small gas fee (Sepolia ETH).
+1. **Set up the contract** — follow Quick Start above to deploy and configure.
+2. **Connect your wallet** — open the app, connect. You'll go straight to the Treasury dashboard.
 3. **Add employees** — paste their wallet addresses and set monthly salaries. The salary is encrypted client-side and stored on-chain.
 4. **Set bonuses** — navigate to Bonuses, select an employee, enter a bonus amount.
 5. **Process payroll** — deposit ETH into the contract pool, then run the payroll. The contract adds salary + bonus to each employee's encrypted balance.
@@ -101,8 +79,8 @@ You have three options for setting up the payroll contract:
 
 ### As an Employee
 
-1. **Connect your wallet**
-2. **Use existing contract** — paste the contract address your employer gave you.
+1. **Ask your employer for the app URL** and the contract address (they configure it).
+2. **Connect your wallet** — you'll go to your dashboard.
 3. **Dashboard** — click "Decrypt Balance" to see your on-chain balance (requires a wallet signature).
 4. **Withdraw** — go to the Withdraw page and pull your earned ETH from the contract.
 

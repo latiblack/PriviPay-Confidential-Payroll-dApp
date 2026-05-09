@@ -167,10 +167,14 @@ const Payments = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Monthly Payroll</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">${totalPayroll.toLocaleString()}</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs font-medium text-muted-foreground">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
+        {isOwner && (
+          <>
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Monthly Payroll</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">${totalPayroll.toLocaleString()}</p></CardContent></Card>
+          </>
+        )}
+        <Card className="bg-gradient-to-br from-violet-500 to-violet-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
+        <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
       </div>
 
       {/* Add Employee Dialog */}
@@ -209,12 +213,12 @@ const Payments = () => {
 
       {/* Employee List */}
       <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" />Employees</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" />{isOwner ? "Employees" : "My Info"}</CardTitle></CardHeader>
         <CardContent>
           {loading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> :
            employees.length === 0 ? <p className="text-center py-8 text-muted-foreground">No employees yet.</p> :
            <div className="space-y-2">
-            {employees.map((emp, i) => (
+            {(isOwner ? employees : employees.filter(e => e.address.toLowerCase() === walletAddress?.toLowerCase())).map((emp, i) => (
               <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">{i + 1}</div>

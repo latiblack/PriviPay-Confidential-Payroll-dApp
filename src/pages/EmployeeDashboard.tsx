@@ -82,7 +82,7 @@ const EmployeeDashboard = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
+            <Card className="bg-gradient-to-br from-slate-600 to-slate-700 text-white">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2"><Shield className="h-4 w-4" />Wallet</CardTitle>
               </CardHeader>
@@ -91,9 +91,9 @@ const EmployeeDashboard = () => {
                 <Badge variant="outline" className="mt-2">{state.isOwner ? "Owner" : "Employee"}</Badge>
               </CardContent>
             </Card>
-            <Card className="border-primary/20 bg-primary/5">
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><Wallet className="h-4 w-4 text-primary" />FHE Balance</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><Wallet className="h-4 w-4" />FHE Balance</CardTitle>
                 <CardDescription>Your encrypted on-chain balance</CardDescription>
               </CardHeader>
               <CardContent>
@@ -101,8 +101,8 @@ const EmployeeDashboard = () => {
                   <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Decrypting…</span></div>
                 ) : fheDecrypted ? (
                   <div>
-                    <p className="text-2xl font-bold text-primary">${fheBalance?.toLocaleString() ?? "0"}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Encrypted on-chain — decrypted for you</p>
+                    <p className="text-2xl font-bold">${fheBalance?.toLocaleString() ?? "0"}</p>
+                    <p className="text-xs opacity-75 mt-1">Encrypted on-chain — decrypted for you</p>
                   </div>
                 ) : fheHandle ? (
                   <Button variant="outline" size="sm" onClick={handleDecrypt}><Wallet className="h-4 w-4 mr-2" />Decrypt Balance</Button>
