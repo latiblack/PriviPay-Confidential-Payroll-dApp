@@ -10,7 +10,7 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWalletClient, useAccount, useSwitchChain, useBalance, usePublicClient } from "wagmi";
 import { encryptUint64 } from "@/lib/fhe/encrypt";
 import { getEmployeeCount, getAllEmployees, getFundPool, addEmployee, setSalary, processPayroll, depositFunds, withdrawFunds, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
-import { getAddress, parseEther, formatEther } from "viem";
+import { getAddress, parseEther, formatEther, parseAbiItem } from "viem";
 import { Wallet, DollarSign, Loader2, ArrowDownToLine, Plus, Send, Users, RefreshCw, ExternalLink } from "lucide-react";
 
 const SEPOLIA = 11155111;
@@ -34,6 +34,26 @@ const Payments = () => {
   const [fundPool, setFundPool] = useState("0");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [withdrawTotal, setWithdrawTotal] = useState("0");
+
+  // Fetch total withdrawn for employee
+  useEffect(() => {
+    if (!state.contractAddress || !publicClient || !walletAddress || state.isOwner) return;
+    (async () => {
+      try {
+        const fromBlock = await publicClient.getBlockNumber().then(b => b - 10000n).catch(() => 0n);
+        const logs = await publicClient.getLogs({
+          address: state.contractAddress as `0x${string}`,
+          event: parseAbiItem("event Withdrawn(address indexed employee, uint256 amount)"),
+          args: { employee: walletAddress as `0x${string}` },
+          fromBlock,
+          toBlock: "latest",
+        });
+        const total = logs.reduce((s, l) => s + ((l as any).args.amount as bigint), 0n);
+        setWithdrawTotal(formatEther(total));
+      } catch {}
+    })();
+  }, [state.contractAddress, publicClient, walletAddress, state.isOwner]);
 
   // Add employee form
   const [showAdd, setShowAdd] = useState(false);
@@ -132,6 +152,7 @@ const Payments = () => {
       setWithdrawAmount("");
       fetchData();
       refetchBalance();
+      setWithdrawTotal(prev => (parseFloat(prev) + parseFloat(withdrawAmount)).toFixed(6));
     } catch (err: any) {
       toast({ title: "Error", description: err?.shortMessage || err?.message || "Failed", variant: "destructive" });
     } finally { setProcessing(false); }
@@ -163,6 +184,9 @@ const Payments = () => {
         )}
         <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
         <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
+        {!isOwner && (
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Total Withdrawn</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(withdrawTotal).toFixed(4)} ETH</p></CardContent></Card>
+        )}
       </div>
 
       {/* Add Employee Dialog */}

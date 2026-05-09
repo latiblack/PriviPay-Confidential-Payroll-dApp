@@ -7,10 +7,13 @@ import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWalletClient, usePublicClient } from "wagmi";
 import { getBalance, getEmployeeCount, getAllEmployees, getFundPool, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { decryptUint64 } from "@/lib/fhe/decrypt";
-import { formatEther, getAddress } from "viem";
-import { Wallet, Loader2, Shield, DollarSign, Users, TrendingUp, Link2 } from "lucide-react";
+import { formatEther, getAddress, parseAbiItem } from "viem";
+import { Wallet, Loader2, Shield, DollarSign, Users, TrendingUp, Link2, Clock, CheckCircle, XCircle, ArrowDownToLine } from "lucide-react";
 
 const SEPOLIA = 11155111;
+
+interface PayrollEvent { txHash: string; employeeCount: number; blockNumber: bigint; }
+interface WithdrawEvent { txHash: string; amount: bigint; blockNumber: bigint; }
 
 const EmployeeDashboard = () => {
   const { state } = useAuth();
@@ -20,9 +23,13 @@ const EmployeeDashboard = () => {
 
   const [employeeCount, setEmployeeCount] = useState(0);
   const [fundPool, setFundPool] = useState("0");
-  const [contractOwner, setContractOwner] = useState("");
   const [employeeList, setEmployeeList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Event history
+  const [payrollHistory, setPayrollHistory] = useState<PayrollEvent[]>([]);
+  const [withdrawHistory, setWithdrawHistory] = useState<WithdrawEvent[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Employee-specific
   const [fheBalance, setFheBalance] = useState<number | null>(null);
@@ -36,20 +43,59 @@ const EmployeeDashboard = () => {
     (async () => {
       setLoading(true);
       try {
-        const [count, pool, list, owner] = await Promise.all([
+        const [count, pool, list] = await Promise.all([
           getEmployeeCount(publicClient as any, addr),
           getFundPool(publicClient as any, addr),
           getAllEmployees(publicClient as any, addr),
-          publicClient.readContract({ address: addr, abi: CONFIDENTIAL_PAYROLL_ABI, functionName: "owner" }) as Promise<string>,
         ]);
         setEmployeeCount(count);
         setFundPool(formatEther(pool));
         setEmployeeList(list);
-        setContractOwner(owner);
       } catch (err) { console.error(err); }
       setLoading(false);
     })();
   }, [state.contractAddress, publicClient, state.isReady]);
+
+  // Fetch event history
+  useEffect(() => {
+    if (!state.contractAddress || !publicClient) return;
+    const addr = state.contractAddress as `0x${string}`;
+    setLoadingHistory(true);
+    (async () => {
+      try {
+        const fromBlock = await publicClient.getBlockNumber().then(b => b - 10000n).catch(() => 0n);
+
+        if (state.isOwner) {
+          const logs = await publicClient.getLogs({
+            address: addr,
+            event: parseAbiItem("event PayrollProcessed(uint256 employeeCount)"),
+            fromBlock,
+            toBlock: "latest",
+          });
+          setPayrollHistory(logs.map(l => ({
+            txHash: l.transactionHash,
+            employeeCount: Number((l as any).args.employeeCount),
+            blockNumber: l.blockNumber,
+          })).reverse());
+        }
+
+        // Fetch withdraw events for both owner and employee
+        const withdrawLogs = await publicClient.getLogs({
+          address: addr,
+          event: parseAbiItem("event Withdrawn(address indexed employee, uint256 amount)"),
+          args: state.isOwner ? undefined : { employee: walletAddress as `0x${string}` },
+          fromBlock,
+          toBlock: "latest",
+        });
+        setWithdrawHistory(withdrawLogs.map(l => ({
+          txHash: l.transactionHash,
+          amount: (l as any).args.amount,
+          blockNumber: l.blockNumber,
+        })).reverse());
+      } catch (err) { console.error("Event history:", err); }
+      setLoadingHistory(false);
+    })();
+  }, [state.contractAddress, publicClient, state.isOwner]);
 
   // Employee: fetch own encrypted balance
   useEffect(() => {
@@ -85,8 +131,6 @@ const EmployeeDashboard = () => {
 
   // ─── OWNER VIEW ───
   if (state.isOwner) {
-    const isYou = contractOwner.toLowerCase() === walletAddress?.toLowerCase();
-
     return (
       <div className="p-6 space-y-6">
         <div>
@@ -94,18 +138,14 @@ const EmployeeDashboard = () => {
           <p className="text-muted-foreground mt-1">Contract overview</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><Users className="h-4 w-4" />Employees</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold">{employeeCount}</p><p className="text-xs opacity-75 mt-1">registered on-chain</p></CardContent>
+            <CardContent><p className="text-3xl font-bold">{employeeCount}</p></CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><TrendingUp className="h-4 w-4" />Fund Pool</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold">{parseFloat(fundPool).toFixed(4)}</p><p className="text-xs opacity-75 mt-1">ETH available</p></CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
-            <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><Shield className="h-4 w-4" />Ownership</CardTitle></CardHeader>
-            <CardContent><p className="text-xl font-bold">{isYou ? "You" : contractOwner.slice(0, 6) + "…" + contractOwner.slice(-4)}</p><p className="text-xs opacity-75 mt-1">{isYou ? "connected wallet" : "contract owner"}</p></CardContent>
+            <CardContent><p className="text-3xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><Link2 className="h-4 w-4" />Contract</CardTitle></CardHeader>
@@ -116,34 +156,27 @@ const EmployeeDashboard = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Payroll History */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Employee Roster</CardTitle><CardDescription>{employeeCount} employees registered on-chain</CardDescription></CardHeader>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4" />Payroll History</CardTitle><CardDescription>Past payroll processing runs</CardDescription></CardHeader>
             <CardContent>
-              {employeeList.length === 0 ? <p className="text-sm text-muted-foreground py-4">No employees yet. Go to Treasury to add some.</p> :
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {employeeList.map((addr, i) => (
-                    <div key={addr} className="flex items-center gap-3 p-2 rounded-lg border bg-muted/20">
-                      <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
-                      <span className="text-sm font-mono flex-1">{addr.slice(0, 8)}…{addr.slice(-6)}</span>
-                      <Badge variant="outline" className="text-xs font-mono">euint64</Badge>
+              {loadingHistory ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> :
+               payrollHistory.length === 0 ? <p className="text-sm text-muted-foreground py-4">No payroll processed yet.</p> :
+               <div className="space-y-2 max-h-80 overflow-y-auto">
+                {payrollHistory.slice(0, 20).map((p, i) => (
+                  <div key={p.txHash} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-4 w-4 text-emerald-500" />
+                      <div>
+                        <p className="text-sm font-medium">Payroll #{payrollHistory.length - i}</p>
+                        <p className="text-xs text-muted-foreground">{p.employeeCount} employees processed</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              }
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle className="text-base">Quick Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <a href="/payments" className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <div><p className="text-sm font-medium">Treasury</p><p className="text-xs text-muted-foreground">Add employees, deposit, process payroll</p></div>
-                <span className="text-primary text-sm">→</span>
-              </a>
-              <a href="/bonus" className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <div><p className="text-sm font-medium">Bonuses</p><p className="text-xs text-muted-foreground">Set monthly employee bonuses</p></div>
-                <span className="text-primary text-sm">→</span>
-              </a>
+                    <a href={`https://sepolia.etherscan.io/tx/${p.txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View tx</a>
+                  </div>
+                ))}
+              </div>}
             </CardContent>
           </Card>
         </div>
@@ -185,6 +218,26 @@ const EmployeeDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Withdraw History */}
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><ArrowDownToLine className="h-4 w-4" />Withdrawal History</CardTitle><CardDescription>Your past withdrawals from the contract</CardDescription></CardHeader>
+        <CardContent>
+          {loadingHistory ? <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div> :
+           withdrawHistory.length === 0 ? <p className="text-sm text-muted-foreground py-4">No withdrawals yet.</p> :
+           <div className="space-y-2">
+            {withdrawHistory.slice(0, 20).map(w => (
+              <div key={w.txHash} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  <ArrowDownToLine className="h-4 w-4 text-blue-500" />
+                  <p className="text-sm font-medium">{formatEther(w.amount)} ETH</p>
+                </div>
+                <a href={`https://sepolia.etherscan.io/tx/${w.txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View tx</a>
+              </div>
+            ))}
+          </div>}
+        </CardContent>
+      </Card>
     </div>
   );
 };
