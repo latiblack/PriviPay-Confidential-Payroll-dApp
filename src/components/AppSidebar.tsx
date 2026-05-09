@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign, Gift, MailPlus } from "lucide-react";
+import { Shield, LayoutGrid, FileText, BarChart3, Vote, Bell, Settings, LogOut, Users, DollarSign, Gift, MailPlus, BookOpen } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useAuth } from "@/hooks/useAuth";
@@ -107,6 +107,19 @@ export const AppSidebar = () => {
 
       {/* Bottom */}
       <div className="flex flex-col items-center gap-2">
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link
+              to="/docs"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              <BookOpen className="h-5 w-5" />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="text-xs">
+            Documentation
+          </TooltipContent>
+        </Tooltip>
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Link

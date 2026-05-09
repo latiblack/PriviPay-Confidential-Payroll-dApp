@@ -12,6 +12,7 @@ import { TopBar } from "@/components/TopBar";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import Docs from "./pages/Docs";
 import PendingRole from "./pages/PendingRole";
 import PendingInvitations from "./pages/PendingInvitations";
 import NotFound from "./pages/NotFound";
@@ -252,6 +253,7 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/docs" element={<Docs />} />
                     <Route path="/*" element={<AppLayout />} />
                   </Routes>
                 </BrowserRouter>

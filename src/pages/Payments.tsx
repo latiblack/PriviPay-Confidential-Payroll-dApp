@@ -16,6 +16,7 @@ import { CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatCurrency, getCurrencySymbol } from "@/lib/currency";
 import {
+  getFheInstance,
   encryptUint64,
   addEmployee as addEmployeeToContract,
   setSalary as setContractSalary,
@@ -83,6 +84,10 @@ const [ethBalance, setEthBalance] = useState("0");
   const [totalReceived, setTotalReceived] = useState<string>("$0.00");
   const [loadingTotalReceived, setLoadingTotalReceived] = useState(false);
   const [fheInitialized, setFheInitialized] = useState(false);
+
+  useEffect(() => {
+    getFheInstance().then(() => setFheInitialized(true)).catch(() => {});
+  }, []);
   const [depositAmount, setDepositAmount] = useState("");
   const [fundPool, setFundPool] = useState("0");
   const SEPOLIA_CHAIN_ID_NUM = 11155111;
@@ -721,6 +726,13 @@ const handleWithdraw = async () => {
     const bonus = (e as any).bonus || 0;
     return sum + (Number(sal) || 0) + bonus;
   }, 0);
+
+  useEffect(() => {
+    if (totalPayroll > 0 && ethPrice > 0) {
+      const ethNeeded = totalPayroll / ethPrice;
+      setDepositAmount(ethNeeded.toFixed(6));
+    }
+  }, [totalPayroll, ethPrice]);
 
   const openAddDialog = () => {
     setSelectedMemberId("");

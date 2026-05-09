@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/currency";
 import { getAddress } from "viem";
-import { encryptUint64, setBonus as setContractBonus } from "@/lib/fhe";
+import { getFheInstance, encryptUint64, setBonus as setContractBonus } from "@/lib/fhe";
 import { useWalletClient, useAccount, useSwitchChain } from "wagmi";
 import { DollarSign, Users, Loader2, Plus, Gift, Calendar, Trash2, CheckCircle, XCircle, Send } from "lucide-react";
 
@@ -56,6 +56,8 @@ const BonusPage = () => {
   const [bonusAmount, setBonusAmount] = useState("");
   const [bonusMonth, setBonusMonth] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => { getFheInstance().catch(() => {}); }, []);
 
   useEffect(() => {
     const fetchData = async () => {
