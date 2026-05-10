@@ -349,7 +349,6 @@ const Payments = () => {
            <div className="space-y-2">
             {(isOwner ? employees : employees.filter(e => e.address.toLowerCase() === walletAddress?.toLowerCase())).map((emp, i) => {
               const sKey = `${emp.address}-salary`;
-              const bKey = `${emp.address}-balance`;
               return (
                 <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                   <div className="flex items-center gap-3">
@@ -363,10 +362,6 @@ const Payments = () => {
                           <span className="text-xs text-muted-foreground">|</span>
                           <button onClick={() => decryptField(emp.address, "bonus")} disabled={decrypting[`${emp.address}-bonus`]} className="text-xs text-primary hover:underline">
                             {decrypting[`${emp.address}-bonus`] ? <Loader2 className="h-3 w-3 animate-spin inline" /> : decryptedVals[`${emp.address}-bonus`] ? decryptedVals[`${emp.address}-bonus`] : "Bonus ▸"}
-                          </button>
-                          <span className="text-xs text-muted-foreground">|</span>
-                          <button onClick={() => decryptField(emp.address, "balance")} disabled={decrypting[bKey]} className="text-xs text-primary hover:underline">
-                            {decrypting[bKey] ? <Loader2 className="h-3 w-3 animate-spin inline" /> : decryptedVals[bKey] ? decryptedVals[bKey] : "Balance ▸"}
                           </button>
                         </div>
                     </div>
