@@ -72,9 +72,9 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
       <RainbowKitProvider>
         <ThemeProvider defaultTheme="light" storageKey="privipay-theme">
-          <QueryClientProvider client={queryClient}>
             <TooltipProvider>
               <AuthProvider>
                 <Toaster />
@@ -89,9 +89,9 @@ const App = () => {
                 </BrowserRouter>
               </AuthProvider>
             </TooltipProvider>
-          </QueryClientProvider>
         </ThemeProvider>
       </RainbowKitProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 };
