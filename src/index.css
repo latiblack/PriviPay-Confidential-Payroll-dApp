@@ -157,8 +157,8 @@
 }
 
 /* RainbowKit modal centering */
-[data-rk] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+[data-rk] > div:first-child {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
