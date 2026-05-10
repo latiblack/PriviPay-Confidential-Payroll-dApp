@@ -1,4 +1,5 @@
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useCallback, useState, useEffect } from 'react';
 
 interface WalletAuthState {
@@ -13,34 +14,26 @@ interface WalletAuthState {
 export const useWalletAuth = (): WalletAuthState => {
   const { address, isConnected, chain } = useAccount();
   const { connect, connectors } = useConnect();
+  const { openConnectModal } = useConnectModal();
   const { disconnect } = useDisconnect();
-  
   const [lastKnownAddress, setLastKnownAddress] = useState<string | null>(null);
-  
-  // Preserve last known wallet address during chain switches
+
   useEffect(() => {
-    if (isConnected && address) {
-      setLastKnownAddress(address);
-    }
+    if (isConnected && address) setLastKnownAddress(address);
   }, [isConnected, address]);
 
   const isAuthenticated = isConnected || !!lastKnownAddress;
   const walletAddress = address || lastKnownAddress;
-  
-  // Get provider from window.ethereum (injected by wallet)
   const provider = typeof window !== 'undefined' ? window.ethereum : null;
 
   const connectWallet = useCallback(() => {
-    // Prefer Injected connector (MetaMask, etc.)
-    const injectedConnector = connectors.find(c => c.type === 'injected');
-    const fallbackConnector = connectors[0];
-
-    if (injectedConnector) {
-      connect({ connector: injectedConnector });
-    } else if (fallbackConnector) {
-      connect({ connector: fallbackConnector });
+    if (openConnectModal) {
+      openConnectModal();
+    } else {
+      const injected = connectors.find(c => c.type === 'injected');
+      connect({ connector: injected || connectors[0] });
     }
-  }, [connect, connectors]);
+  }, [connect, connectors, openConnectModal]);
 
   const disconnectWallet = useCallback(() => {
     disconnect();
