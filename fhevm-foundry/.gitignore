@@ -1,7 +1,0 @@
-node_modules/
-out/
-cache/
-lib/
-.env
-*.env.local
-*.log

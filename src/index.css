@@ -155,3 +155,10 @@
   min-zoom: 1;
   max-zoom: 1;
 }
+
+/* RainbowKit modal centering */
+[data-rk] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
