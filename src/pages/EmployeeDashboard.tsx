@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWalletClient, usePublicClient } from "wagmi";
-import { getBalance, getEmployeeCount, getAllEmployees, getFundPool, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
+import { getBalance, getSalary, getBonus, getEmployeeCount, getAllEmployees, getFundPool, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { decryptUint64 } from "@/lib/fhe/decrypt";
 import { formatEther, getAddress, parseAbiItem } from "viem";
 import { Wallet, Loader2, Shield, DollarSign, Users, TrendingUp, Link2, Clock, CheckCircle, XCircle, ArrowDownToLine } from "lucide-react";
@@ -36,6 +36,14 @@ const EmployeeDashboard = () => {
   const [fheHandle, setFheHandle] = useState<string | null>(null);
   const [fheDecrypted, setFheDecrypted] = useState(false);
   const [fheLoading, setFheLoading] = useState(false);
+
+  const [salaryHandle, setSalaryHandle] = useState<string | null>(null);
+  const [salaryValue, setSalaryValue] = useState<number | null>(null);
+  const [salaryDecrypted, setSalaryDecrypted] = useState(false);
+
+  const [bonusHandle, setBonusHandle] = useState<string | null>(null);
+  const [bonusValue, setBonusValue] = useState<number | null>(null);
+  const [bonusDecrypted, setBonusDecrypted] = useState(false);
 
   useEffect(() => {
     if (!state.contractAddress || !publicClient || !state.isReady) return;
@@ -110,19 +118,27 @@ const EmployeeDashboard = () => {
         if (handle && handle !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
           setFheHandle(handle);
         }
+        const sh = await getSalary(publicClient as any, addr, walletAddress as `0x${string}`).catch(() => null);
+        if (sh && sh !== "0x0000000000000000000000000000000000000000000000000000000000000000") setSalaryHandle(sh);
+        const bh = await getBonus(publicClient as any, addr, walletAddress as `0x${string}`).catch(() => null);
+        if (bh && bh !== "0x0000000000000000000000000000000000000000000000000000000000000000") setBonusHandle(bh);
       } catch {}
     })();
   }, [state.contractAddress, walletAddress, publicClient, state.isOwner]);
 
-  const handleDecrypt = async () => {
-    if (!fheHandle || !walletClient || !state.contractAddress) return;
-    setFheLoading(true);
+  const handleDecrypt = async (field: "balance" | "salary" | "bonus") => {
+    const handle = field === "balance" ? fheHandle : field === "salary" ? salaryHandle : bonusHandle;
+    if (!handle || !walletClient || !state.contractAddress) return;
+    const setLoading = field === "balance" ? setFheLoading : () => {};
+    const setValue = field === "balance" ? setFheBalance : field === "salary" ? setSalaryValue : setBonusValue;
+    const setDecrypted = field === "balance" ? setFheDecrypted : field === "salary" ? setSalaryDecrypted : setBonusDecrypted;
+    setLoading(true);
     try {
-      const decrypted = await decryptUint64(fheHandle, state.contractAddress, walletClient);
-      setFheBalance(decrypted / 100);
-      setFheDecrypted(true);
+      const decrypted = await decryptUint64(handle, state.contractAddress, walletClient);
+      setValue(decrypted / 100);
+      setDecrypted(true);
     } catch (err) { console.error(err); }
-    finally { setFheLoading(false); }
+    finally { setLoading(false); }
   };
 
   if (loading && state.isReady) {
@@ -192,28 +208,36 @@ const EmployeeDashboard = () => {
         <p className="text-muted-foreground mt-1">Contract: {state.contractAddress?.slice(0, 8)}…{state.contractAddress?.slice(-6)}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Shield className="h-4 w-4" />Wallet</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4" />Wallet</CardTitle></CardHeader>
           <CardContent>
-            <p className="font-mono text-sm break-all">{walletAddress}</p>
-            <Badge variant="outline" className="mt-2 !text-white border-white/30">Employee</Badge>
+            <p className="font-mono text-xs break-all">{walletAddress}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Wallet className="h-4 w-4" />FHE Balance</CardTitle>
-            <CardDescription className="!text-white/70">Your encrypted on-chain balance</CardDescription>
-          </CardHeader>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2 text-white"><DollarSign className="h-4 w-4" />Salary</CardTitle></CardHeader>
+          <CardContent>
+            {salaryDecrypted ? (
+              <p className="text-2xl font-bold text-white">${salaryValue?.toLocaleString() ?? "0"}</p>
+            ) : salaryHandle ? (
+              <Button variant="secondary" size="sm" onClick={() => handleDecrypt("salary")} className="bg-white/10 hover:bg-white/20 text-white border-white/20">Decrypt</Button>
+            ) : (
+              <p className="text-sm text-white/70">No salary set yet</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2 text-white"><Wallet className="h-4 w-4" />Balance</CardTitle></CardHeader>
           <CardContent>
             {fheLoading ? (
-              <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Decrypting…</span></div>
+              <div className="flex items-center gap-2 text-white/70"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">Decrypting…</span></div>
             ) : fheDecrypted ? (
-              <div><p className="text-2xl font-bold">${fheBalance?.toLocaleString() ?? "0"}</p><p className="text-xs opacity-75 mt-1">Encrypted on-chain — only you can decrypt</p></div>
+              <p className="text-2xl font-bold text-white">${fheBalance?.toLocaleString() ?? "0"}</p>
             ) : fheHandle ? (
-              <Button variant="outline" size="sm" onClick={handleDecrypt} className="!text-white border-white/30 hover:bg-white/10"><Wallet className="h-4 w-4 mr-2" />Decrypt Balance</Button>
+              <Button variant="secondary" size="sm" onClick={() => handleDecrypt("balance")} className="bg-white/10 hover:bg-white/20 text-white border-white/20">Decrypt</Button>
             ) : (
-              <p className="text-sm opacity-75">No balance yet. Payroll hasn't been processed.</p>
+              <p className="text-sm text-white/70">No balance yet</p>
             )}
           </CardContent>
         </Card>

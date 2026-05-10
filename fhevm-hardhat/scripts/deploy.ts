@@ -1,16 +1,13 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const orgId = ethers.id("test-org");
-  
-  const ConfidentialPayrollFHE = await ethers.getContractFactory("ConfidentialPayrollFHE");
-  const contract = await ConfidentialPayrollFHE.deploy(orgId);
+  const ConfidentialPayroll = await ethers.getContractFactory("ConfidentialPayroll");
+  const contract = await ConfidentialPayroll.deploy();
   
   await contract.waitForDeployment();
   const address = await contract.getAddress();
   
-  console.log("ConfidentialPayrollFHE deployed to:", address);
-  console.log("Org ID:", orgId);
+  console.log("ConfidentialPayroll deployed to:", address);
 }
 
 main()

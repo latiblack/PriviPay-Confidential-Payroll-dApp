@@ -141,8 +141,8 @@ contract ConfidentialPayroll is ZamaEthereumConfig {
         emit PayrollProcessed(count);
     }
 
-    function withdraw(uint64 amount) external onlyEmployee {
-        euint64 requested = FHE.asEuint64(amount);
+    function withdraw(uint64 amountCents, uint64 ethAmount) external onlyEmployee {
+        euint64 requested = FHE.asEuint64(amountCents);
         euint64 balance = balances[msg.sender];
 
         ebool canWithdraw = FHE.le(requested, balance);
@@ -155,12 +155,12 @@ contract ConfidentialPayroll is ZamaEthereumConfig {
 
         balances[msg.sender] = newBalance;
 
-        if (fundPool < amount) revert InsufficientFunds();
-        fundPool -= amount;
-        (bool ok, ) = msg.sender.call{value: amount}("");
+        if (fundPool < ethAmount) revert InsufficientFunds();
+        fundPool -= ethAmount;
+        (bool ok, ) = msg.sender.call{value: ethAmount}("");
         require(ok, "ETH transfer failed");
 
-        emit Withdrawn(msg.sender, amount);
+        emit Withdrawn(msg.sender, ethAmount);
     }
 
     function getBalance(address employee) external view returns (euint64) {
@@ -176,6 +176,22 @@ contract ConfidentialPayroll is ZamaEthereumConfig {
     function getBonus(address employee) external view returns (euint64) {
         if (!isEmployee[employee]) revert NotEmployee();
         return bonuses[employee];
+    }
+
+    euint64 public totalCompensation;
+
+    function updateTotalCompensation() external onlyOwner {
+        euint64 total = FHE.asEuint64(0);
+        FHE.allow(total, owner);
+        for (uint256 i = 0; i < employeeList.length; i++) {
+            address emp = employeeList[i];
+            total = FHE.add(total, salaries[emp]);
+            FHE.allow(total, owner);
+            total = FHE.add(total, bonuses[emp]);
+            FHE.allow(total, owner);
+        }
+        FHE.allowThis(total);
+        totalCompensation = total;
     }
 
     function getEmployeeCount() external view returns (uint256) {

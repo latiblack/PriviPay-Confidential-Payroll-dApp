@@ -308,8 +308,8 @@
       ]
     },
     "C:\\Users\\hp\\Desktop\\Privipay\\chat-buddy-ai-894\\fhevm-hardhat\\contracts\\ConfidentialPayroll.sol": {
-      "lastModificationDate": 1778093339406,
-      "contentHash": "4520aae7c0cad6eef3fdf11a54f0a0d2",
+      "lastModificationDate": 1778381745170,
+      "contentHash": "710f7dcd0f15f96ed63b45e18948a15b",
       "sourceName": "contracts/ConfidentialPayroll.sol",
       "solcConfig": {
         "version": "0.8.24",

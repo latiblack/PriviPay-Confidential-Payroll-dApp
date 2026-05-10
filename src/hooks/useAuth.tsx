@@ -7,6 +7,7 @@ export interface AppState {
   walletAddress: string | null;
   contractAddress: string | null;
   isOwner: boolean;
+  isEmployee: boolean;
   isReady: boolean;
 }
 
@@ -24,25 +25,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     () => import.meta.env.VITE_CONTRACT_ADDRESS || null
   );
   const [isOwner, setIsOwner] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (!contractAddress || !walletAddress || !publicClient) {
       setIsOwner(false);
+      setIsEmployee(false);
       setIsReady(false);
       return;
     }
     (async () => {
+      let owner = false;
+      let emp = false;
       try {
-        const owner = await publicClient.readContract({
+        const onchainOwner = await publicClient.readContract({
           address: contractAddress as `0x${string}`,
           abi: CONFIDENTIAL_PAYROLL_ABI,
           functionName: "owner",
         }) as string;
-        setIsOwner(owner.toLowerCase() === walletAddress.toLowerCase());
-      } catch {
-        setIsOwner(false);
+        owner = onchainOwner.toLowerCase() === walletAddress.toLowerCase();
+      } catch {}
+
+      if (!owner) {
+        await new Promise(r => setTimeout(r, 300));
+        try {
+          emp = await publicClient.readContract({
+            address: contractAddress as `0x${string}`,
+            abi: CONFIDENTIAL_PAYROLL_ABI,
+            functionName: "isEmployee",
+            args: [walletAddress as `0x${string}`],
+          }) as boolean;
+        } catch {}
       }
+
+      setIsOwner(owner);
+      setIsEmployee(emp);
       setIsReady(true);
     })();
   }, [contractAddress, walletAddress, publicClient]);
@@ -51,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     walletAddress: walletAddress || null,
     contractAddress,
     isOwner,
+    isEmployee,
     isReady,
   };
 

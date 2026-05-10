@@ -7,7 +7,7 @@ Confidential on-chain payroll powered by Zama's Fully Homomorphic Encryption.
 PriviPay lets organizations process payroll on the blockchain while keeping every employee's salary and bonus encrypted. Nobody — not even validators — can see the plaintext.
 
 - **Owner**: Deploy a payroll contract, add employees with encrypted salaries, set bonuses, deposit ETH, and process payroll.
-- **Employee**: View your encrypted balance, decrypt it with your wallet, and withdraw funds.
+- **Employee**: View and decrypt your encrypted salary, bonus, and balance with your wallet, then withdraw funds in USD.
 - **Contract is everything**: There is no database. All data lives on-chain in the ConfidentialPayroll contract.
 
 ## Architecture
@@ -70,38 +70,46 @@ Copy `.env.example` to `.env` and fill in:
 
 ### Owner
 
-1. **Set up the contract** — follow Quick Start above to deploy and configure.
-2. **Connect your wallet** — open the app, connect. You'll go straight to the Treasury dashboard.
-3. **Add employees** — paste their wallet addresses and set monthly salaries. The salary is encrypted client-side and stored on-chain.
-4. **Set bonuses** — navigate to Bonuses, select an employee, enter a bonus amount.
-5. **Process payroll** — deposit ETH into the contract pool, then run the payroll. The contract adds salary + bonus to each employee's encrypted balance.
-6. Employees can now withdraw.
+1. **Deploy & configure** — follow Quick Start above.
+2. **Connect wallet** — opens the Dashboard with contract overview, employee roster, and payroll history.
+3. **Add employees** (Treasury page) — paste wallet addresses and set monthly salaries. Both `addEmployee` and `setSalary` are called and confirmed on-chain before continuing.
+4. **Set bonuses** (Bonuses page) — select an employee, enter a USD bonus. Only employees with bonuses appear in the list.
+5. **Calculate total** (Treasury page) — click "Calculate" to compute the on-chain FHE sum of all salaries + bonuses, decrypted and shown in USD. Auto-fills the ETH deposit amount.
+6. **Process payroll** — deposit ETH into the contract pool, then run payroll. The contract adds salary + bonus to each employee's encrypted balance.
+7. **Decrypt any value** — click Salary ▸, Bonus ▸, or Balance ▸ on any employee row to decrypt and see the actual on-chain value.
 
 ### Employee
 
-1. **Connect your wallet** — you'll go to your dashboard.
-3. **Dashboard** — click "Decrypt Balance" to see your on-chain balance (requires a wallet signature).
-4. **Withdraw** — go to the Withdraw page and pull your earned ETH from the contract.
+1. **Connect wallet** — opens your Dashboard with Wallet, Salary, and Balance cards.
+2. **Decrypt** — click "Decrypt" on any card to see your salary, bonus, or accumulated balance. Requires a wallet signature.
+3. **Withdraw** (Treasury page) — enter a USD amount. The app converts to cents for FHE balance check and ETH for the transfer. Only withdraws up to your balance.
+4. **View history** — Dashboard shows your withdrawal history from on-chain events.
 
 ## Contract Reference
 
 The `ConfidentialPayroll.sol` contract ([source](fhevm-hardhat/contracts/ConfidentialPayroll.sol)):
 
-- `addEmployee(address)` — registers employee
-- `setSalary(address, bytes32, bytes)` — sets encrypted salary
-- `setBonus(address, bytes32, bytes)` — sets encrypted bonus
-- `processPayroll()` — adds salary + bonus to each employee's balance
-- `depositFunds()` — deposits ETH into the contract pool (payable)
-- `withdraw(uint64)` — withdraws ETH (employee only)
-- `getBalance(address)` — returns encrypted balance handle
+| Function | Access | Description |
+|---|---|---|
+| `depositFunds()` | onlyOwner | Adds ETH to fund pool (payable) |
+| `addEmployee(address)` | onlyOwner | Registers employee, initializes encrypted slots to zero |
+| `setSalary(address,bytes32,bytes)` | onlyOwner | Sets encrypted monthly salary |
+| `setBonus(address,bytes32,bytes)` | onlyOwner | Sets encrypted bonus |
+| `updateTotalCompensation()` | onlyOwner | Computes FHE sum of all salaries + bonuses, stores with ACL |
+| `totalCompensation()` | view | Returns the stored total compensation handle |
+| `processPayroll()` | onlyOwner | Adds salary + bonus to each employee's encrypted balance |
+| `withdraw(uint64,uint64)` | onlyEmployee | Deducts from balance (cents), transfers ETH (wei) |
+| `getSalary(address)` | view | Returns encrypted salary handle |
+| `getBonus(address)` | view | Returns encrypted bonus handle |
+| `getBalance(address)` | view | Returns encrypted balance handle |
 
-All sensitive data is stored as FHE `euint64` ciphertexts.
+All sensitive data stored as FHE `euint64` ciphertexts. Decryption requires wallet signature + Zama KMS.
 
 ## Tech Stack
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Wallet**: Wagmi, RainbowKit, Viem
-- **FHE**: Zama fhEVM Protocol, fhevm relayer SDK
+- **FHE**: Zama fhEVM Protocol, fhevm relayer SDK v0.4.2
 - **Chain**: Sepolia testnet
 
 ## License

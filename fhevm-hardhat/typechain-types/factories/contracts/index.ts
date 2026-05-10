@@ -2,4 +2,3 @@
 /* tslint:disable */
 /* eslint-disable */
 export { ConfidentialPayroll__factory } from "./ConfidentialPayroll__factory";
-export { ConfidentialPayrollFHE__factory } from "./ConfidentialPayrollFHE__factory";

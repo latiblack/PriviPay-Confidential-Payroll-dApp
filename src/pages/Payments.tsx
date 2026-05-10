@@ -9,9 +9,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useWalletClient, useAccount, useSwitchChain, useBalance, usePublicClient } from "wagmi";
 import { encryptUint64 } from "@/lib/fhe/encrypt";
-import { getEmployeeCount, getAllEmployees, getFundPool, addEmployee, setSalary, processPayroll, depositFunds, withdrawFunds, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
+import { decryptUint64 } from "@/lib/fhe/decrypt";
+import { getEmployeeCount, getAllEmployees, getFundPool, getSalary, getBalance, getBonus, getTotalCompensation, updateTotalCompensation, addEmployee, setSalary, processPayroll, depositFunds, withdrawFunds, CONFIDENTIAL_PAYROLL_ABI } from "@/lib/fhe/contract";
 import { getAddress, parseEther, formatEther, parseAbiItem } from "viem";
-import { Wallet, DollarSign, Loader2, ArrowDownToLine, Plus, Send, Users, RefreshCw, ExternalLink } from "lucide-react";
+import { Wallet, DollarSign, Loader2, ArrowDownToLine, Plus, Send, Users, RefreshCw, ExternalLink, Info } from "lucide-react";
 
 const SEPOLIA = 11155111;
 
@@ -63,22 +64,102 @@ const Payments = () => {
 
   // Deposit form
   const [depositAmount, setDepositAmount] = useState("");
+  const [totalCompHandle, setTotalCompHandle] = useState<string | null>(null);
+  const [totalCompUSD, setTotalCompUSD] = useState(0);
+  const [decryptingTotal, setDecryptingTotal] = useState(false);
+  const [decrypting, setDecrypting] = useState<Record<string, boolean>>({});
+  const [decryptedVals, setDecryptedVals] = useState<Record<string, string>>({});
+
+  const decryptField = async (empAddr: string, field: "salary" | "balance" | "bonus") => {
+    if (!walletClient || !state.contractAddress) return;
+    const key = `${empAddr}-${field}`;
+    setDecrypting(prev => ({ ...prev, [key]: true }));
+    try {
+      const addr = state.contractAddress as `0x${string}`;
+      const fn = field === "salary" ? getSalary : field === "bonus" ? getBonus : getBalance;
+      const handle = await fn(publicClient as any, addr, empAddr as `0x${string}`);
+      const cents = await decryptUint64(handle, state.contractAddress, walletClient);
+      setDecryptedVals(prev => ({ ...prev, [key]: `$${(cents / 100).toLocaleString()}` }));
+    } catch (err: any) {
+      setDecryptedVals(prev => ({ ...prev, [key]: "Failed" }));
+    }
+    setDecrypting(prev => ({ ...prev, [key]: false }));
+  };
+  const [ethPrice, setEthPrice] = useState(0);
+
+  // Fetch ETH price
+  useEffect(() => {
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+      .then(r => r.json()).then(d => setEthPrice(d.ethereum?.usd || 0)).catch(() => {});
+  }, []);
+
+  const decryptTotal = async () => {
+    if (!walletClient || !state.contractAddress) return;
+    setDecryptingTotal(true);
+    setTotalCompUSD(0);
+    try {
+      const addr = state.contractAddress as `0x${string}`;
+      toast({ title: "Step 1/3", description: "Computing total on-chain (FHE)…" });
+      const txHash = await updateTotalCompensation(walletClient, addr);
+      await publicClient!.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+
+      toast({ title: "Step 2/3", description: "Reading encrypted total…" });
+      const handle = await getTotalCompensation(publicClient as any, addr);
+      console.log("Total handle:", handle);
+
+      toast({ title: "Step 3/3", description: "Decrypting total — sign in wallet…" });
+      const cents = await decryptUint64(handle, state.contractAddress, walletClient);
+      console.log("Decrypted cents:", cents);
+      const usd = cents / 100;
+      setTotalCompUSD(usd);
+      setTotalCompHandle(handle);
+      if (ethPrice > 0) setDepositAmount((usd / ethPrice).toFixed(6));
+      toast({ title: "Done", description: `Total payroll: $${usd.toLocaleString()}` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.shortMessage || err?.message || "Failed", variant: "destructive" });
+    }
+    finally { setDecryptingTotal(false); }
+  };
 
   // Withdraw form
   const [withdrawAmount, setWithdrawAmount] = useState("");
+
+  const friendlyError = (err: any) => {
+    const raw = String(err?.shortMessage || err?.cause?.reason || err?.message || err);
+    if (/AlreadyEmployee/i.test(raw)) return "This wallet is already registered as an employee.";
+    if (/NotOwner/i.test(raw)) return "Only the contract owner can perform this action.";
+    if (/NotEmployee/i.test(raw)) return "This wallet is not registered as an employee.";
+    if (/rejected|denied/i.test(raw)) return "Transaction rejected in wallet.";
+    if (/insufficient/i.test(raw)) return "Insufficient Sepolia ETH for gas.";
+    if (/429|Too Many/i.test(raw)) return "RPC rate limited. Please wait a moment and try again.";
+    return raw || "Transaction failed";
+  };
 
   const fetchData = async () => {
     if (!state.contractAddress || !publicClient) return;
     setLoading(true);
     try {
       const addr = state.contractAddress as `0x${string}`;
+      const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
       const count = await getEmployeeCount(publicClient as any, addr);
+      await sleep(200);
       const pool = await getFundPool(publicClient as any, addr);
       setFundPool(formatEther(pool));
 
+      await sleep(200);
       const chainEmployees = await getAllEmployees(publicClient as any, addr);
       const empData: Employee[] = chainEmployees.map((addr: string) => ({ address: addr }));
       setEmployees(empData);
+
+      // Fetch total compensation (encrypted handle, FHE sum of all salaries + bonuses)
+      if (isOwner) {
+        await sleep(200);
+        try {
+          const handle = await getTotalCompensation(publicClient as any, addr);
+          setTotalCompHandle(handle);
+        } catch {}
+      }
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -98,18 +179,26 @@ const Payments = () => {
 
       if (chainId !== SEPOLIA) await switchChain({ chainId: SEPOLIA });
 
-      await addEmployee(walletClient, addr, empAddr);
+      console.log("Adding employee:", empAddr, "salary cents:", salaryCents);
+      const addTx = await addEmployee(walletClient, addr, empAddr);
+      console.log("addEmployee tx:", addTx);
+      await publicClient!.waitForTransactionReceipt({ hash: addTx as `0x${string}` });
+      console.log("addEmployee confirmed");
+
       const encrypted = await encryptUint64(salaryCents, state.contractAddress, walletAddress!);
-      await setSalary(walletClient, addr, empAddr, encrypted.handle, encrypted.inputProof);
+      console.log("Encrypted handle:", encrypted.handle.slice(0, 20), "... proof:", encrypted.inputProof.slice(0, 20));
+      
+      const salTx = await setSalary(walletClient, addr, empAddr, encrypted.handle, encrypted.inputProof);
+      console.log("setSalary tx:", salTx);
+      await publicClient!.waitForTransactionReceipt({ hash: salTx as `0x${string}` });
+      console.log("setSalary confirmed");
 
       toast({ title: "Employee Added", description: `${empAddr.slice(0, 6)}…${empAddr.slice(-4)} added with salary $${newSalary}` });
       setShowAdd(false);
-      setNewAddress("");
       setNewSalary("");
       fetchData();
     } catch (err: any) {
-      const msg = err?.shortMessage || err?.message || "Failed";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      toast({ title: "Error", description: friendlyError(err), variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -133,7 +222,7 @@ const Payments = () => {
       setDepositAmount("");
       fetchData();
     } catch (err: any) {
-      toast({ title: "Error", description: err?.shortMessage || err?.message || "Failed", variant: "destructive" });
+      toast({ title: "Error", description: friendlyError(err), variant: "destructive" });
     } finally { setProcessing(false); }
   };
 
@@ -144,17 +233,20 @@ const Payments = () => {
       const addr = state.contractAddress as `0x${string}`;
       if (chainId !== SEPOLIA) await switchChain({ chainId: SEPOLIA });
 
-      const wei = parseEther(withdrawAmount);
-      const txHash = await withdrawFunds(walletClient, addr, wei);
+      const dollarAmount = parseFloat(withdrawAmount);
+      const cents = BigInt(Math.round(dollarAmount * 100));
+      const ethWei = parseEther((dollarAmount / (ethPrice || 3000)).toFixed(18));
+      
+      const txHash = await withdrawFunds(walletClient, addr, cents, ethWei);
       await publicClient!.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
 
-      toast({ title: "Withdrawn", description: `${withdrawAmount} ETH withdrawn` });
+      toast({ title: "Withdrawn", description: `$${dollarAmount.toFixed(2)} withdrawn (${formatEther(ethWei)} ETH)` });
       setWithdrawAmount("");
       fetchData();
       refetchBalance();
-      setWithdrawTotal(prev => (parseFloat(prev) + parseFloat(withdrawAmount)).toFixed(6));
+      setWithdrawTotal(prev => (parseFloat(prev) + parseFloat(formatEther(ethWei))).toFixed(6));
     } catch (err: any) {
-      toast({ title: "Error", description: err?.shortMessage || err?.message || "Failed", variant: "destructive" });
+      toast({ title: "Error", description: friendlyError(err), variant: "destructive" });
     } finally { setProcessing(false); }
   };
 
@@ -204,9 +296,31 @@ const Payments = () => {
       {/* Process Payroll - Owner only */}
       {isOwner && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Process Payroll</CardTitle><CardDescription>Deposit ETH and distribute salaries + bonuses</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Process Payroll</CardTitle>
+            <CardDescription>
+              Deposit ETH to distribute salaries + bonuses to {employees.length} employee{employees.length !== 1 ? "s" : ""}
+            </CardDescription>
+          </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1"><Label>ETH to Deposit</Label><Input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} placeholder="0.01" /></div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border text-sm">
+              <span className="text-muted-foreground">Total payroll (FHE sum)</span>
+              {totalCompUSD > 0 ? (
+                <span className="font-semibold">${totalCompUSD.toLocaleString()}</span>
+              ) : (
+                <Button variant="outline" size="sm" onClick={decryptTotal} disabled={decryptingTotal}>
+                  {decryptingTotal ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Calculate
+                </Button>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label>ETH to Deposit</Label>
+              <Input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} placeholder="0.01" />
+              {ethPrice > 0 && depositAmount && (
+                <p className="text-xs text-muted-foreground">≈ ${(parseFloat(depositAmount) * ethPrice).toFixed(2)} USD</p>
+              )}
+            </div>
             <Button onClick={handleProcessPayroll} disabled={processing || !depositAmount} className="w-full gap-2">{processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{processing ? "Processing…" : "Deposit & Process Payroll"}</Button>
           </CardContent>
         </Card>
@@ -217,7 +331,10 @@ const Payments = () => {
         <Card>
           <CardHeader><CardTitle className="text-base">Withdraw Funds</CardTitle><CardDescription>Withdraw your earned salary from the contract pool</CardDescription></CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1"><Label>ETH Amount</Label><Input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="0.001" /></div>
+            <div className="space-y-1"><Label>Amount (USD)</Label><Input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} placeholder="100" /></div>
+            {ethPrice > 0 && withdrawAmount && (
+              <p className="text-xs text-muted-foreground">≈ {(parseFloat(withdrawAmount) / ethPrice).toFixed(6)} ETH</p>
+            )}
             <Button onClick={handleWithdraw} disabled={processing || !withdrawAmount} className="w-full gap-2">{processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}{processing ? "Withdrawing…" : "Withdraw"}</Button>
           </CardContent>
         </Card>
@@ -230,16 +347,35 @@ const Payments = () => {
           {loading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> :
            employees.length === 0 ? <p className="text-center py-8 text-muted-foreground">No employees yet.</p> :
            <div className="space-y-2">
-            {(isOwner ? employees : employees.filter(e => e.address.toLowerCase() === walletAddress?.toLowerCase())).map((emp, i) => (
-              <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">{i + 1}</div>
-                  <p className="text-sm font-mono">{emp.address.slice(0, 8)}…{emp.address.slice(-6)}</p>
+            {(isOwner ? employees : employees.filter(e => e.address.toLowerCase() === walletAddress?.toLowerCase())).map((emp, i) => {
+              const sKey = `${emp.address}-salary`;
+              const bKey = `${emp.address}-balance`;
+              return (
+                <div key={emp.address} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">{i + 1}</div>
+                    <div>
+                      <p className="text-sm font-mono">{emp.address.slice(0, 8)}…{emp.address.slice(-6)}</p>
+                        <div className="flex gap-2 mt-1">
+                          <button onClick={() => decryptField(emp.address, "salary")} disabled={decrypting[sKey]} className="text-xs text-primary hover:underline">
+                            {decrypting[sKey] ? <Loader2 className="h-3 w-3 animate-spin inline" /> : decryptedVals[sKey] ? decryptedVals[sKey] : "Salary ▸"}
+                          </button>
+                          <span className="text-xs text-muted-foreground">|</span>
+                          <button onClick={() => decryptField(emp.address, "bonus")} disabled={decrypting[`${emp.address}-bonus`]} className="text-xs text-primary hover:underline">
+                            {decrypting[`${emp.address}-bonus`] ? <Loader2 className="h-3 w-3 animate-spin inline" /> : decryptedVals[`${emp.address}-bonus`] ? decryptedVals[`${emp.address}-bonus`] : "Bonus ▸"}
+                          </button>
+                          <span className="text-xs text-muted-foreground">|</span>
+                          <button onClick={() => decryptField(emp.address, "balance")} disabled={decrypting[bKey]} className="text-xs text-primary hover:underline">
+                            {decrypting[bKey] ? <Loader2 className="h-3 w-3 animate-spin inline" /> : decryptedVals[bKey] ? decryptedVals[bKey] : "Balance ▸"}
+                          </button>
+                        </div>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-mono">euint64</Badge>
                 </div>
-                <Badge variant="outline" className="text-xs font-mono">euint64</Badge>
-              </div>
-            ))}
-          </div>}
+              );
+            })}
+            </div>}
         </CardContent>
       </Card>
     </div>
@@ -247,3 +383,4 @@ const Payments = () => {
 };
 
 export default Payments;
+

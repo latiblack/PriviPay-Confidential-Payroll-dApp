@@ -18,10 +18,10 @@ const Auth = () => {
   const { switchChain } = useSwitchChain();
 
   useEffect(() => {
-    if (state.isReady) {
+    if (state.isReady && (state.isOwner || state.isEmployee)) {
       navigate(state.isOwner ? "/employee" : "/employee");
     }
-  }, [state.isReady]);
+  }, [state.isReady, state.isOwner, state.isEmployee]);
 
   if (!isAuthenticated) {
     return (
@@ -54,6 +54,29 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <Button onClick={() => switchChain({ chainId: SEPOLIA })} className="w-full">Switch to Sepolia</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (state.isReady && !state.isOwner && !state.isEmployee) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-destructive/10 rounded-2xl flex items-center justify-center">
+              <Logo size={32} alt="PriviPay" />
+            </div>
+            <CardTitle className="text-2xl">Access Denied</CardTitle>
+            <CardDescription className="text-lg">
+              Your wallet is not authorized to access this payroll contract.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center text-sm text-muted-foreground">
+            <p className="mb-2">Contract: {state.contractAddress?.slice(0, 10)}…</p>
+            <p>Only the contract owner and registered employees can access this dApp.</p>
+            <p className="mt-2">Contact the contract owner to be added as an employee.</p>
           </CardContent>
         </Card>
       </div>

@@ -2,4 +2,3 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { ConfidentialPayroll } from "./ConfidentialPayroll";
-export type { ConfidentialPayrollFHE } from "./ConfidentialPayrollFHE";

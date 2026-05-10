@@ -25,7 +25,5 @@ export type { IInputVerifier } from "./@fhevm/solidity/lib/Impl.sol/IInputVerifi
 export { IInputVerifier__factory } from "./factories/@fhevm/solidity/lib/Impl.sol/IInputVerifier__factory";
 export type { ConfidentialPayroll } from "./contracts/ConfidentialPayroll";
 export { ConfidentialPayroll__factory } from "./factories/contracts/ConfidentialPayroll__factory";
-export type { ConfidentialPayrollFHE } from "./contracts/ConfidentialPayrollFHE";
-export { ConfidentialPayrollFHE__factory } from "./factories/contracts/ConfidentialPayrollFHE__factory";
 export type { ITFHEExecutor } from "./fhevm/lib/Impl.sol/ITFHEExecutor";
 export { ITFHEExecutor__factory } from "./factories/fhevm/lib/Impl.sol/ITFHEExecutor__factory";

@@ -12,9 +12,12 @@ export {
   withdrawFunds,
   getBalance,
   getSalary,
+  getBonus,
   getFundPool,
   getEmployeeCount,
   getAllEmployees,
   checkIsEmployee,
+  getTotalCompensation,
+  updateTotalCompensation,
   CONFIDENTIAL_PAYROLL_ABI,
 } from "./contract";

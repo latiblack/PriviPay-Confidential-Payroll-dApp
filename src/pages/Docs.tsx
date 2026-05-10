@@ -118,8 +118,13 @@ const Docs = () => {
                   <tr><td className="py-2 pr-4 font-mono text-xs">addEmployee(address)</td><td className="py-2 pr-4"><Badge>onlyOwner</Badge></td><td className="py-2 text-muted-foreground">Registers an employee, initializes encrypted salary/balance to zero</td></tr>
                   <tr><td className="py-2 pr-4 font-mono text-xs">setSalary(address,bytes32,bytes)</td><td className="py-2 pr-4"><Badge>onlyOwner</Badge></td><td className="py-2 text-muted-foreground">Sets encrypted monthly salary</td></tr>
                   <tr><td className="py-2 pr-4 font-mono text-xs">setBonus(address,bytes32,bytes)</td><td className="py-2 pr-4"><Badge>onlyOwner</Badge></td><td className="py-2 text-muted-foreground">Sets encrypted bonus</td></tr>
+                  <tr><td className="py-2 pr-4 font-mono text-xs">updateTotalCompensation()</td><td className="py-2 pr-4"><Badge>onlyOwner</Badge></td><td className="py-2 text-muted-foreground">FHE-sums all salaries+bonuses, stores result with ACL</td></tr>
+                  <tr><td className="py-2 pr-4 font-mono text-xs">totalCompensation()</td><td className="py-2 pr-4"><Badge>view</Badge></td><td className="py-2 text-muted-foreground">Returns encrypted total compensation handle</td></tr>
                   <tr><td className="py-2 pr-4 font-mono text-xs">processPayroll()</td><td className="py-2 pr-4"><Badge>onlyOwner</Badge></td><td className="py-2 text-muted-foreground">Adds salary + bonus to each employee's encrypted balance</td></tr>
-                  <tr><td className="py-2 pr-4 font-mono text-xs">withdraw(uint64)</td><td className="py-2 pr-4"><Badge>onlyEmployee</Badge></td><td className="py-2 text-muted-foreground">Withdraws ETH from fund pool</td></tr>
+                  <tr><td className="py-2 pr-4 font-mono text-xs">withdraw(uint64,uint64)</td><td className="py-2 pr-4"><Badge>onlyEmployee</Badge></td><td className="py-2 text-muted-foreground">Deducts from balanced (cents), transfers ETH (wei)</td></tr>
+                  <tr><td className="py-2 pr-4 font-mono text-xs">getSalary(address)</td><td className="py-2 pr-4"><Badge>view</Badge></td><td className="py-2 text-muted-foreground">Returns encrypted salary handle</td></tr>
+                  <tr><td className="py-2 pr-4 font-mono text-xs">getBonus(address)</td><td className="py-2 pr-4"><Badge>view</Badge></td><td className="py-2 text-muted-foreground">Returns encrypted bonus handle</td></tr>
+                  <tr><td className="py-2 pr-4 font-mono text-xs">getBalance(address)</td><td className="py-2 pr-4"><Badge>view</Badge></td><td className="py-2 text-muted-foreground">Returns encrypted balance handle</td></tr>
                 </tbody>
               </table>
             </div>
@@ -154,11 +159,11 @@ cp .env.example .env
           <Section id="faq" title="5. FAQ">
             <div className="space-y-3">
               {[
-                { q: "How do I add an employee?", a: "Go to Treasury, click Add Employee, paste their wallet address and enter a monthly salary. The salary is encrypted client-side via Zama's FHE SDK before being written on-chain. Both addEmployee() and setSalary() are called in one step." },
-                { q: "How does process payroll work?", a: "First, deposit ETH into the contract pool (this funds employee withdrawals). Then processPayroll() iterates all employees, adding each one's encrypted salary + bonus to their encrypted balance using FHE arithmetic — without ever decrypting." },
-                { q: "How does an employee withdraw?", a: "The employee connects their wallet, goes to Withdraw, enters an ETH amount, and confirms. The contract checks their encrypted balance is sufficient (via FHE comparison), deducts the balance, and transfers ETH from the pool." },
-                { q: "Can I see employee salaries?", a: "No. Salaries are stored as encrypted euint64 values. Even the contract can't read them — it operates entirely on ciphertexts. Only the employee can decrypt their own balance using their wallet signature." },
-                { q: "What network does this use?", a: "Sepolia testnet with Zama fhEVM. Gas costs are minimal since it's testnet. For production, deploy to mainnet or an fhEVM L2." },
+                { q: "How do I add an employee?", a: "Go to Treasury, click Add Employee, paste their wallet address and enter a monthly salary. Both addEmployee() and setSalary() are confirmed on-chain before continuing — the salary is encrypted via Zama's FHE SDK and stored as euint64." },
+                { q: "How does decryption work?", a: "Click Salary ▸, Bonus ▸, or Balance ▸ on any employee row. Your wallet signs an EIP-712 authorization, and Zama's KMS threshold-decrypts the euint64 value. Only wallets with ACL permission can decrypt — the owner can decrypt all employees, employees can only decrypt their own data." },
+                { q: "How does withdraw work?", a: "Enter a USD amount. The app converts to cents for the FHE balance check (ensuring you can't withdraw more than your balance) and ETH wei for the transfer. Both parameters are sent to the contract." },
+                { q: "What does the Calculate button do?", a: "Calls updateTotalCompensation() — an on-chain FHE sum of all salaries + bonuses — then decrypts the result. Shows total payroll in USD and auto-fills the ETH deposit." },
+                { q: "Can I see employee salaries?", a: "Only by decrypting them. All salary, bonus, and balance data is stored as encrypted euint64 ciphertexts. The contract processes payroll entirely on encrypted data without ever decrypting." },
               ].map((faq, i) => (
                 <div key={i} className="border border-border/50 rounded-lg">
                   <button onClick={() => setExpanded(expanded === i ? null : i)} className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30">

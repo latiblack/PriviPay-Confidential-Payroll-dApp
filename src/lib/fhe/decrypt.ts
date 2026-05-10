@@ -35,5 +35,10 @@ export async function decryptUint64(
     durationDays
   );
 
-  return Number(results[0]);
+  console.log("Decrypt results:", results);
+  const raw = results[handle] ?? results[0] ?? 0;
+  console.log("Decrypt raw:", raw, "type:", typeof raw);
+  const value = typeof raw === "bigint" ? Number(raw) : Number(raw);
+  console.log("Decrypt value:", value);
+  return isNaN(value) ? 0 : value;
 }

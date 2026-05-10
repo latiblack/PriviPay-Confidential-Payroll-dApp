@@ -50,10 +50,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ConfidentialPayroll__factory>;
     getContractFactory(
-      name: "ConfidentialPayrollFHE",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ConfidentialPayrollFHE__factory>;
-    getContractFactory(
       name: "IACL",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IACL__factory>;
@@ -108,11 +104,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ConfidentialPayroll>;
     getContractAt(
-      name: "ConfidentialPayrollFHE",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ConfidentialPayrollFHE>;
-    getContractAt(
       name: "IACL",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -159,10 +150,6 @@ declare module "hardhat/types/runtime" {
       name: "ConfidentialPayroll",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialPayroll>;
-    deployContract(
-      name: "ConfidentialPayrollFHE",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ConfidentialPayrollFHE>;
     deployContract(
       name: "IACL",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -217,11 +204,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ConfidentialPayroll>;
-    deployContract(
-      name: "ConfidentialPayrollFHE",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ConfidentialPayrollFHE>;
     deployContract(
       name: "IACL",
       args: any[],

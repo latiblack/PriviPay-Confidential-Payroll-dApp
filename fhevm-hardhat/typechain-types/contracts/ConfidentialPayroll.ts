@@ -42,6 +42,8 @@ export interface ConfidentialPayrollInterface extends Interface {
       | "removeEmployee"
       | "setBonus"
       | "setSalary"
+      | "totalCompensation"
+      | "updateTotalCompensation"
       | "withdraw"
   ): FunctionFragment;
 
@@ -115,8 +117,16 @@ export interface ConfidentialPayrollInterface extends Interface {
     values: [AddressLike, BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "totalCompensation",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "updateTotalCompensation",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "withdraw",
-    values: [BigNumberish]
+    values: [BigNumberish, BigNumberish]
   ): string;
 
   decodeFunctionResult(
@@ -159,6 +169,14 @@ export interface ConfidentialPayrollInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "setBonus", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setSalary", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "totalCompensation",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "updateTotalCompensation",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 }
 
@@ -339,7 +357,15 @@ export interface ConfidentialPayroll extends BaseContract {
     "nonpayable"
   >;
 
-  withdraw: TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
+  totalCompensation: TypedContractMethod<[], [string], "view">;
+
+  updateTotalCompensation: TypedContractMethod<[], [void], "nonpayable">;
+
+  withdraw: TypedContractMethod<
+    [amountCents: BigNumberish, ethAmount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -402,8 +428,18 @@ export interface ConfidentialPayroll extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "totalCompensation"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "updateTotalCompensation"
+  ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "withdraw"
-  ): TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [amountCents: BigNumberish, ethAmount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   getEvent(
     key: "BonusSet"

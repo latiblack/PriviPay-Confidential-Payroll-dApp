@@ -18,10 +18,13 @@ export const CONFIDENTIAL_PAYROLL_ABI = parseAbi([
   "function setBonus(address employee, bytes32 encBonus, bytes calldata inputProof)",
   "function processPayroll()",
   "function depositFunds() payable",
-  "function withdraw(uint64 amount)",
+  "function withdraw(uint64 amountCents, uint64 ethAmount)",
   "function getBalance(address employee) view returns (bytes32)",
   "function getSalary(address employee) view returns (bytes32)",
   "function getBonus(address employee) view returns (bytes32)",
+  "function getTotalCompensation() returns (bytes32)",
+  "function updateTotalCompensation()",
+  "function totalCompensation() view returns (bytes32)",
   "function getEmployeeCount() view returns (uint256)",
   "function getEmployeeAt(uint256 index) view returns (address)",
   "function getAllEmployees() view returns (address[])",
@@ -182,13 +185,14 @@ export async function depositFunds(
 export async function withdrawFunds(
   walletClient: WalletClient,
   contractAddress: Address,
-  amount: bigint
+  amountCents: bigint,
+  ethAmount: bigint
 ): Promise<string> {
   return walletClient.writeContract({
     address: contractAddress,
     abi: CONFIDENTIAL_PAYROLL_ABI,
     functionName: "withdraw",
-    args: [amount],
+    args: [amountCents, ethAmount],
     account: walletClient.account!,
     chain: walletClient.chain,
   });
@@ -222,6 +226,20 @@ export async function getSalary(
   return result as string;
 }
 
+export async function getBonus(
+  publicClient: any,
+  contractAddress: Address,
+  employee: Address
+): Promise<string> {
+  const result = await publicClient.readContract({
+    address: contractAddress,
+    abi: CONFIDENTIAL_PAYROLL_ABI,
+    functionName: "getBonus",
+    args: [employee],
+  });
+  return result as string;
+}
+
 export async function getFundPool(
   publicClient: any,
   contractAddress: Address
@@ -233,6 +251,33 @@ export async function getFundPool(
     args: [],
   });
   return result as bigint;
+}
+
+export async function getTotalCompensation(
+  publicClient: any,
+  contractAddress: Address
+): Promise<string> {
+  const result = await publicClient.readContract({
+    address: contractAddress,
+    abi: CONFIDENTIAL_PAYROLL_ABI,
+    functionName: "totalCompensation",
+    args: [],
+  });
+  return result as string;
+}
+
+export async function updateTotalCompensation(
+  walletClient: WalletClient,
+  contractAddress: Address
+): Promise<string> {
+  return walletClient.writeContract({
+    address: contractAddress,
+    abi: CONFIDENTIAL_PAYROLL_ABI,
+    functionName: "updateTotalCompensation",
+    args: [],
+    account: walletClient.account!,
+    chain: walletClient.chain,
+  });
 }
 
 export async function getEmployeeCount(
