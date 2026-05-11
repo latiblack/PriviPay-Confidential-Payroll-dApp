@@ -60,6 +60,9 @@ const Landing = () => {
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               PriviPay encrypts every salary and bonus before it touches the blockchain. No public pay data, no leaked spreadsheets, no competitor intelligence.
             </p>
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1.5 text-sm text-primary font-medium">
+              Built with <a href="https://zama.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary/80">Zama</a> FHE
+            </div>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth">
                 <Button size="lg" className="gap-2 px-8 h-12 text-base">Launch App <ArrowRight className="h-5 w-5" /></Button>
@@ -205,7 +208,9 @@ const Landing = () => {
               <a href="#solution" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How</a>
               <Link to="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Docs</Link>
             </div>
-            <p className="text-sm text-muted-foreground">Powered by Zama FHE</p>
+            <p className="text-sm text-muted-foreground">
+              Built with <a href="https://zama.org" target="_blank" rel="noopener noreferrer" className="hover:text-foreground underline">Zama FHE</a>
+            </p>
           </div>
         </div>
       </footer>

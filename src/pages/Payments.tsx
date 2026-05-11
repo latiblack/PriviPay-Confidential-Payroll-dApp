@@ -272,12 +272,12 @@ const Payments = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {isOwner && (
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
+          <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Employees</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{employees.length}</p></CardContent></Card>
         )}
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
+        <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Contract Pool</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent></Card>
+        <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Wallet ETH</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{balanceData ? parseFloat(balanceData.formatted).toFixed(4) : "0"} ETH</p></CardContent></Card>
         {!isOwner && (
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Total Withdrawn</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(withdrawTotal).toFixed(4)} ETH</p></CardContent></Card>
+          <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white"><CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-90">Total Withdrawn</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{parseFloat(withdrawTotal).toFixed(4)} ETH</p></CardContent></Card>
         )}
       </div>
 
@@ -378,4 +378,7 @@ const Payments = () => {
 };
 
 export default Payments;
+
+
+
 

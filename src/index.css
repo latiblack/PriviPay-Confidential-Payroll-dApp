@@ -1,4 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,8 +15,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 231 75% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 45 93% 50%;
+    --primary-foreground: 0 0% 10%;
 
     --secondary: 220 14% 96%;
     --secondary-foreground: 222 47% 11%;
@@ -38,12 +38,12 @@
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 9% 46%;
-    --sidebar-primary: 231 75% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 231 75% 97%;
-    --sidebar-accent-foreground: 231 75% 60%;
+    --sidebar-primary: 45 93% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 45 93% 95%;
+    --sidebar-accent-foreground: 45 80% 30%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 231 75% 60%;
+    --sidebar-ring: 45 93% 50%;
 
     --chart-1: 231 75% 60%;
     --chart-2: 170 60% 45%;
@@ -62,7 +62,7 @@
     --popover: 228 25% 14%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 231 75% 60%;
+    --primary: 45 93% 55%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 228 20% 20%;
@@ -83,12 +83,12 @@
 
     --sidebar-background: 228 25% 10%;
     --sidebar-foreground: 215 20% 55%;
-    --sidebar-primary: 231 75% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 45 93% 50%;
+    --sidebar-primary-foreground: 0 0% 10%;
     --sidebar-accent: 228 25% 16%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 228 20% 20%;
-    --sidebar-ring: 231 75% 60%;
+    --sidebar-ring: 45 93% 50%;
 
     --chart-1: 231 75% 60%;
     --chart-2: 170 60% 45%;
@@ -105,7 +105,7 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Satoshi', system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 }
 

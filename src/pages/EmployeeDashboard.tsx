@@ -155,15 +155,15 @@ const EmployeeDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
+          <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><Users className="h-4 w-4" />Employees</CardTitle></CardHeader>
             <CardContent><p className="text-3xl font-bold">{employeeCount}</p></CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
+          <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><TrendingUp className="h-4 w-4" />Fund Pool</CardTitle></CardHeader>
             <CardContent><p className="text-3xl font-bold">{parseFloat(fundPool).toFixed(4)} ETH</p></CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
+          <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white">
             <CardHeader className="pb-2"><CardTitle className="text-xs font-medium opacity-80 flex items-center gap-2"><Link2 className="h-4 w-4" />Contract</CardTitle></CardHeader>
             <CardContent>
               <p className="text-sm font-mono break-all">{state.contractAddress?.slice(0, 10)}…</p>
@@ -209,13 +209,13 @@ const EmployeeDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white [&_*]:text-white">
+        <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white [&_*]:text-white">
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4" />Wallet</CardTitle></CardHeader>
           <CardContent>
             <p className="font-mono text-xs break-all">{walletAddress}</p>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+        <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2 text-white"><DollarSign className="h-4 w-4" />Salary</CardTitle></CardHeader>
           <CardContent>
             {salaryDecrypted ? (
@@ -227,7 +227,7 @@ const EmployeeDashboard = () => {
             )}
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
+        <Card className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
           <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2 text-white"><Wallet className="h-4 w-4" />Balance</CardTitle></CardHeader>
           <CardContent>
             {fheLoading ? (
@@ -267,3 +267,6 @@ const EmployeeDashboard = () => {
 };
 
 export default EmployeeDashboard;
+
+
+

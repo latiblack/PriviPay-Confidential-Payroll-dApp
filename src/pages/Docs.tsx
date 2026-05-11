@@ -188,6 +188,7 @@ cp .env.example .env
           <div className="flex items-center gap-6">
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">Home</Link>
             <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground">Launch App</Link>
+            <a href="https://zama.org" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-foreground">Built with Zama</a>
           </div>
         </div>
       </footer>
